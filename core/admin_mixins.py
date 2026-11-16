@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from django.contrib import admin, messages
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group, Permission
 from django.db.models import Model, Q, QuerySet
 from django.http import HttpRequest, HttpResponse, StreamingHttpResponse
 from django.utils import timezone
@@ -46,8 +46,10 @@ def has_unscoped_view(request: HttpRequest, model: type[Model]) -> bool:
         return getattr(request, key)
     codenames = [f"view_{model._meta.model_name}", f"change_{model._meta.model_name}"]
     perms = Permission.objects.filter(content_type__app_label=model._meta.app_label, codename__in=codenames)
+    # Ask "does a NON-scoped group of this user hold the permission?" (filtering on Permission and
+    # excluding by group name would wrongly drop perms shared with a scoped group).
     result = (
-        perms.filter(group__user=user).exclude(group__name__in=SCOPED_ROLES).exists()
+        Group.objects.filter(user=user, permissions__in=perms).exclude(name__in=SCOPED_ROLES).exists()
         or perms.filter(user=user).exists()
     )
     setattr(request, key, result)
