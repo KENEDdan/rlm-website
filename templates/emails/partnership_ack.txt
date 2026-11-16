@@ -1,0 +1,5 @@
+{% autoescape off %}Hello,
+
+Thank you for your interest in partnering with {{ site.ministry_name }}. We have received your enquiry and will be in touch soon.
+
+{{ site_url }}{% endautoescape %}

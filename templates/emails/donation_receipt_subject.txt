@@ -1,0 +1,1 @@
+{% autoescape off %}Receipt {{ obj.receipt_number }}: thank you{% endautoescape %}

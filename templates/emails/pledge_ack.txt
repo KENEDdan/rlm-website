@@ -1,0 +1,9 @@
+{% autoescape off %}Hello,
+
+Thank you for letting us know about your gift to {{ site.ministry_name }}. Our finance team will confirm it once received and send you a receipt.
+
+Reference: donation #{{ obj.pk }}
+
+We will never ask you for card numbers, PINs or passwords by email, phone or WhatsApp.
+
+{{ site_url }}{% endautoescape %}

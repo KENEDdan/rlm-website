@@ -1,0 +1,13 @@
+{% autoescape off %}Hello,
+
+We confirm with thanks that we have received your gift.
+
+Receipt number: {{ obj.receipt_number }}
+Amount: {{ obj.amount }} {{ obj.currency }}
+{% if obj.category %}Towards: {{ obj.category.name }}
+{% endif %}Date confirmed: {{ obj.confirmed_at|date:"j F Y" }}
+
+Thank you for helping to rebuild lives and revive generations.
+
+{{ site.ministry_name }}
+{{ site_url }}{% endautoescape %}

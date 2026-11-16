@@ -1,0 +1,18 @@
+{% if giving.has_bank_details %}
+<div class="rounded-2xl border-2 border-rlm-flame/40 bg-white p-6">
+  <h3 class="text-lg font-bold">Bank transfer</h3>
+  <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+    <div><dt class="text-rlm-grey">Account name</dt><dd class="font-semibold">{{ giving.account_name }}</dd></div>
+    <div><dt class="text-rlm-grey">Bank</dt><dd class="font-semibold">{{ giving.bank_name }}{% if giving.branch_name %}, {{ giving.branch_name }}{% endif %}</dd></div>
+    <div><dt class="text-rlm-grey">Account number</dt><dd class="select-all font-mono font-semibold">{{ giving.account_number }}</dd></div>
+    {% if giving.swift_code %}<div><dt class="text-rlm-grey">SWIFT / BIC</dt><dd class="select-all font-mono font-semibold">{{ giving.swift_code }}</dd></div>{% endif %}
+    {% if giving.currency %}<div><dt class="text-rlm-grey">Currency</dt><dd class="font-semibold">{{ giving.currency }}</dd></div>{% endif %}
+  </dl>
+  {% if giving.transfer_instructions %}<p class="mt-4 text-sm">{{ giving.transfer_instructions|linebreaksbr }}</p>{% endif %}
+</div>
+{% else %}
+<div class="rounded-2xl bg-rlm-cream p-6 text-sm"><h3 class="text-lg font-bold">Bank details coming soon</h3><p class="mt-2">Our official giving account details will be published here shortly. In the meantime, please <a class="font-semibold underline" href="{% url 'contact:contact' %}">contact us</a> to give or partner.</p></div>
+{% endif %}
+{% if giving.mobile_money_enabled and giving.mobile_money_instructions %}
+<div class="mt-4 rounded-2xl border border-rlm-line bg-white p-6 text-sm"><h3 class="text-lg font-bold">Mobile money</h3><p class="mt-2">{{ giving.mobile_money_instructions|linebreaksbr }}</p></div>
+{% endif %}

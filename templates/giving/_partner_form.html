@@ -1,0 +1,5 @@
+<form id="partner-form" method="post" action="{{ request.path }}" hx-post="{{ request.path }}" hx-target="this" hx-swap="outerHTML" class="rlm-form space-y-5" novalidate>
+  {% csrf_token %}
+  {% include "includes/form_fields.html" %}
+  <button type="submit" class="btn-primary w-full sm:w-auto">Send enquiry <span class="htmx-indicator" aria-hidden="true">…</span></button>
+</form>

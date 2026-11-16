@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}Partner with us · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Partnership" heading="Partner with us" intro=giving.partnership_intro|default:"Churches, organisations and individuals partnering in prayer, missions, resources and finance." %}
+<section class="section"><div class="container-rlm grid gap-12 lg:grid-cols-12">
+  <div class="space-y-6 lg:col-span-5">
+    <div class="grid gap-4">
+      <div class="card p-5"><span class="text-rlm-flame-dark">{% icon "hands" "h-7 w-7" %}</span><h2 class="mt-2 font-bold">Prayer partners</h2><p class="text-sm text-rlm-grey">Stand with us in regular prayer.</p></div>
+      <div class="card p-5"><span class="text-rlm-flame-dark">{% icon "globe" "h-7 w-7" %}</span><h2 class="mt-2 font-bold">Missions &amp; outreach</h2><p class="text-sm text-rlm-grey">Join or sponsor outreach and missions.</p></div>
+      <div class="card p-5"><span class="text-rlm-flame-dark">{% icon "heart" "h-7 w-7" %}</span><h2 class="mt-2 font-bold">Financial partners</h2><p class="text-sm text-rlm-grey">Monthly or one-off support for the work.</p></div>
+    </div>
+    {% include "giving/_bank_details.html" %}
+  </div>
+  <div class="lg:col-span-7"><h2 class="section-title text-2xl">Partnership enquiry</h2><div class="mt-6">{% include "giving/_partner_form.html" %}</div></div>
+</div></section>
+{% include "giving/_needs.html" %}
+{% include "includes/turnstile_script.html" %}
+{% endblock %}
