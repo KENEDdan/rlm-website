@@ -1,0 +1,10 @@
+{% extends "staff_base.html" %}
+{% block title %}Backup codes{% endblock %}
+{% block content %}
+<h1 class="text-xl font-display font-bold mb-2">Save your backup codes</h1>
+<p class="text-sm mb-4">Each code works <strong>once</strong> if you lose your phone. Store them somewhere safe and offline, such as a password manager or a printed copy in a locked drawer. They will not be shown again.</p>
+<ul class="grid grid-cols-2 gap-2 font-mono text-center mb-6">
+  {% for code in codes %}<li class="rounded bg-rlm-cream py-2 select-all">{{ code }}</li>{% endfor %}
+</ul>
+<a href="{{ admin_home }}" class="btn-primary w-full text-center block" id="continue-admin">I have saved them, continue</a>
+{% endblock %}

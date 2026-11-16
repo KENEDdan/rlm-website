@@ -1,0 +1,17 @@
+{% extends "staff_base.html" %}
+{% block title %}Set up two-factor{% endblock %}
+{% block content %}
+<h1 class="text-xl font-display font-bold mb-2">Set up two-factor authentication</h1>
+<ol class="text-sm text-rlm-ink list-decimal pl-5 space-y-1 mb-4">
+  <li>Install an authenticator app (e.g. Google Authenticator, Microsoft Authenticator, Aegis, 2FAS).</li>
+  <li>Scan this QR code, or type the key below.</li>
+  <li>Enter the 6-digit code the app shows.</li>
+</ol>
+<img src="{{ qr_data_uri }}" alt="QR code for your authenticator app" width="200" height="200" class="mx-auto mb-3 bg-white">
+<p class="text-xs text-center text-rlm-grey mb-4">Key: <code class="break-all select-all">{{ secret }}</code></p>
+<form method="post" novalidate class="staff-form">
+  {% csrf_token %}
+  {% include "accounts/_form.html" %}
+  <button type="submit" class="btn-primary w-full">Confirm and continue</button>
+</form>
+{% endblock %}

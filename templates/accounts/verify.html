@@ -1,0 +1,12 @@
+{% extends "staff_base.html" %}
+{% block title %}Two-factor check{% endblock %}
+{% block content %}
+<h1 class="text-xl font-display font-bold mb-2">Two-factor check</h1>
+<p class="text-sm text-rlm-grey mb-4">Open your authenticator app and enter the current code.</p>
+<form method="post" novalidate class="staff-form">
+  {% csrf_token %}
+  {% include "accounts/_form.html" %}
+  <button type="submit" class="btn-primary w-full">Verify</button>
+</form>
+<p class="mt-4 text-xs text-rlm-grey">Lost your phone? Use a backup code, or ask the Founder to reset your two-factor device.</p>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% if form.non_field_errors %}
+  <div class="mb-4 rounded-lg border border-rlm-flame-deep bg-rlm-cream px-3 py-2 text-sm text-rlm-ink" role="alert">
+    {% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}
+  </div>
+{% endif %}
+{% for field in form %}
+  <div class="mb-4">
+    <label for="{{ field.id_for_label }}" class="block text-sm font-semibold mb-1">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<p class="mt-1 text-xs text-rlm-grey">{{ field.help_text }}</p>{% endif %}
+    {% for e in field.errors %}<p class="mt-1 text-sm text-rlm-flame-dark" role="alert">{{ e }}</p>{% endfor %}
+  </div>
+{% endfor %}

@@ -1,0 +1,19 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block title %}{% endblock %} · Rebuilding Lives Ministry</title>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body class="min-h-screen bg-rlm-black text-rlm-white font-sans antialiased">
+  <main class="min-h-screen flex flex-col items-center justify-center px-4 text-center">
+    <img src="{% static 'brand/logo-on-dark-160.webp' %}" width="96" height="96" alt="" class="h-24 w-24 mb-6">
+    <p class="font-display text-6xl font-extrabold text-rlm-flame">{% block code %}{% endblock %}</p>
+    <h1 class="mt-4 font-display text-2xl font-bold">{% block heading %}{% endblock %}</h1>
+    <p class="mt-3 max-w-md text-rlm-line">{% block message %}{% endblock %}</p>
+    <a href="/" class="btn-primary mt-8">Go to the home page</a>
+  </main>
+</body>
+</html>

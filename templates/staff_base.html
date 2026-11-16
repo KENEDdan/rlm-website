@@ -1,0 +1,30 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}Staff sign in{% endblock %} · {{ site.short_name|default:"RLM" }}</title>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="icon" href="{% static 'brand/favicon.ico' %}" sizes="any">
+</head>
+<body class="min-h-screen bg-rlm-black text-rlm-white font-sans antialiased">
+  <main class="min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <img src="{% static 'brand/logo-on-dark-160.webp' %}" width="80" height="80" alt="{{ site.ministry_name }}" class="mx-auto h-20 w-20">
+        <p class="mt-3 font-display font-bold tracking-wide">{{ site.ministry_name|upper }}</p>
+        <p class="text-sm text-rlm-gold">Staff area</p>
+      </div>
+      <div class="rounded-2xl bg-white text-rlm-ink p-6 sm:p-8 shadow-xl">
+        {% if messages %}
+          <ul class="mb-4 space-y-2" role="status">
+            {% for message in messages %}<li class="rounded-lg bg-rlm-cream px-3 py-2 text-sm">{{ message }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </main>
+</body>
+</html>
