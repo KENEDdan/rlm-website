@@ -1,0 +1,68 @@
+{% load static rlm %}
+<footer class="mt-auto bg-rlm-black text-rlm-white">
+  <div class="flame-bar"></div>
+  <div class="container-rlm grid gap-10 py-14 md:grid-cols-12">
+    <div class="md:col-span-4">
+      <img src="{% static 'brand/logo-on-dark-320.webp' %}" width="160" height="165" alt="{{ site.ministry_name }}" class="h-28 w-auto" loading="lazy">
+      <p class="mt-4 font-display text-lg font-bold">{{ site.tagline }}</p>
+      <figure class="mt-4 border-l-2 border-rlm-flame pl-4">
+        <blockquote class="text-sm italic text-rlm-line/90">“{{ site.scripture_text }}”</blockquote>
+        <figcaption class="mt-1 text-xs font-semibold uppercase tracking-widest text-rlm-gold">{{ site.scripture_reference }}</figcaption>
+      </figure>
+    </div>
+
+    <nav aria-label="Footer" class="grid grid-cols-2 gap-8 text-sm md:col-span-4">
+      <div>
+        <h2 class="eyebrow-light">Ministry</h2>
+        <ul class="mt-3 space-y-2">
+          <li><a class="hover:text-rlm-gold" href="{% url 'core:about' %}">About us</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'leadership:list' %}">Leadership</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'programs:list' %}">Programs</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'branches:list' %}">Branches</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'news:list' %}">News</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'testimonies' %}">Testimonies</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="eyebrow-light">Get involved</h2>
+        <ul class="mt-3 space-y-2">
+          <li><a class="hover:text-rlm-gold" href="{% url 'events:list' %}">Events</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'registrations:volunteer' %}">Volunteer</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'prayer:request' %}">Prayer requests</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'giving:partner' %}">Partner with us</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'giving:give' %}">Give</a></li>
+          <li><a class="hover:text-rlm-gold" href="{% url 'contact:contact' %}">Contact</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="md:col-span-4">
+      <h2 class="eyebrow-light">Stay connected</h2>
+      <p class="mt-3 text-sm text-rlm-line/90">News, events and prayer points, about once a month.</p>
+      <a href="{% url 'newsletter:subscribe' %}" class="btn-primary mt-4">Subscribe to updates</a>
+      {% if site.public_email or site.public_phone or site.address %}
+        <ul class="mt-6 space-y-2 text-sm">
+          {% if site.public_email %}<li class="flex items-center gap-2">{% icon "mail" "h-4 w-4 text-rlm-gold" %}<a class="hover:text-rlm-gold" href="mailto:{{ site.public_email }}">{{ site.public_email }}</a></li>{% endif %}
+          {% if site.public_phone %}<li class="flex items-center gap-2">{% icon "phone" "h-4 w-4 text-rlm-gold" %}<a class="hover:text-rlm-gold" href="{{ site.public_phone|phone_href }}">{{ site.public_phone }}</a></li>{% endif %}
+          {% if site.address %}<li class="flex items-start gap-2">{% icon "pin" "h-4 w-4 flex-none text-rlm-gold mt-0.5" %}<span>{{ site.address|linebreaksbr }}</span></li>{% endif %}
+        </ul>
+      {% endif %}
+      {% if social_links %}
+        <ul class="mt-6 flex flex-wrap gap-3" aria-label="Social media">
+          {% for link in social_links %}
+            <li><a href="{{ link.url }}" rel="noopener noreferrer me" target="_blank" class="flex h-10 w-10 items-center justify-center rounded-full border border-rlm-white/25 hover:border-rlm-flame hover:text-rlm-flame">{% icon link.platform "h-5 w-5" link %}</a></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+  <div class="border-t border-rlm-white/10">
+    <div class="container-rlm flex flex-col gap-3 py-6 text-xs text-rlm-line/70 sm:flex-row sm:items-center sm:justify-between">
+      <p>© {% now "Y" %} {{ site.ministry_name }}.{% if site.footer_text %} {{ site.footer_text }}{% endif %}</p>
+      <ul class="flex gap-4">
+        <li><a class="hover:text-rlm-gold" href="{% url 'core:privacy' %}">Privacy policy</a></li>
+        <li><a class="hover:text-rlm-gold" href="{% url 'core:terms' %}">Terms</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>

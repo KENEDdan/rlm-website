@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{{ page.seo_title|default:page.title }} · {{ site.ministry_name }}{% endblock %}
+{% block description %}{{ page.seo_description|default:page.title }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with heading=page.title %}
+<section class="section"><div class="container-rlm">
+  {% if page.last_reviewed %}<p class="mb-6 text-sm text-rlm-grey">Last reviewed: {{ page.last_reviewed|date:"j F Y" }}</p>{% endif %}
+  <div class="prose-rlm">{{ page.body|paragraphs }}</div>
+</div></section>
+{% endblock %}

@@ -1,3 +1,120 @@
+/* Rebuilding Lives Ministry: brand tokens (from CLAUDE.md, sampled from the official logo). */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/inter-latin-wght-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/montserrat-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../fonts/montserrat-latin-800-normal.woff2") format("woff2");
+}
+
+:root {
+  --rlm-black: #0A0A0A;
+  --rlm-flame: #F0652A;
+  --rlm-flame-deep: #EE362C;
+  --rlm-flame-dark: #C2410C; /* for WHITE text on orange (AA) */
+  --rlm-amber: #F3A831;
+  --rlm-gold: #F8C124;
+  --rlm-flame-gradient: linear-gradient(135deg, #F8C124 0%, #F0652A 55%, #EE362C 100%);
+  --rlm-white: #FFFFFF;
+  --rlm-cream: #FFF8F2;
+  --rlm-ink: #1C1C1C;
+  --rlm-grey: #6B6B6B;
+  --rlm-line: #E8E8E8;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { background: var(--rlm-white); color: var(--rlm-ink); }
+  h1, h2, h3, h4 { font-family: Montserrat, Inter, system-ui, sans-serif; letter-spacing: -0.01em; }
+  a { text-underline-offset: 3px; }
+  :focus-visible { outline: 3px solid var(--rlm-gold); outline-offset: 2px; border-radius: 4px; }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  .container-rlm { @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8; }
+  .skip-link { @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-rlm-gold focus:px-4 focus:py-2 focus:font-semibold focus:text-rlm-black; }
+
+  /* Buttons: text on flame orange is ALWAYS black (contrast rule). */
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rlm-gold/60; }
+  .btn-primary { @apply btn bg-rlm-flame text-rlm-black hover:bg-rlm-flame-deep; }
+  .btn-dark { @apply btn bg-rlm-black text-rlm-white hover:bg-rlm-ink; }
+  .btn-outline { @apply btn border-2 border-rlm-black text-rlm-black hover:bg-rlm-black hover:text-rlm-white; }
+  .btn-outline-light { @apply btn border-2 border-rlm-white/80 text-rlm-white hover:bg-rlm-white hover:text-rlm-black; }
+  .btn-sm { @apply px-4 py-2 text-xs; }
+
+  .eyebrow { @apply text-xs font-bold uppercase tracking-[0.2em] text-rlm-flame-dark; }
+  .eyebrow-light { @apply text-xs font-bold uppercase tracking-[0.2em] text-rlm-gold; }
+  .section { @apply py-16 sm:py-20; }
+  .section-title { @apply font-display text-3xl font-extrabold tracking-tight text-rlm-black sm:text-4xl; }
+  .lead { @apply mt-4 max-w-2xl text-lg text-rlm-grey; }
+  .flame-bar { height: 4px; background: var(--rlm-flame-gradient); }
+  .text-flame-gradient { background: var(--rlm-flame-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .card { @apply flex flex-col overflow-hidden rounded-2xl border border-rlm-line bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md; }
+  .card-body { @apply flex flex-1 flex-col p-5; }
+  .chip { @apply inline-flex items-center rounded-full bg-rlm-cream px-3 py-1 text-xs font-semibold text-rlm-ink; }
+  .chip-active { @apply bg-rlm-black text-rlm-white; }
+
+  .prose-rlm { @apply max-w-prose text-[1.05rem] leading-relaxed text-rlm-ink; }
+  .prose-rlm p { @apply mb-4; }
+  .prose-rlm h2 { @apply mb-3 mt-8 text-xl font-bold text-rlm-black; }
+
+  .hero-glow { background:
+      radial-gradient(60rem 30rem at 85% -10%, rgba(240, 101, 42, 0.35), transparent 60%),
+      radial-gradient(40rem 25rem at -10% 110%, rgba(248, 193, 36, 0.18), transparent 60%),
+      var(--rlm-black); }
+
+  /* Forms (Django renders plain widgets; style them here). */
+  .rlm-form label { @apply mb-1 block text-sm font-semibold text-rlm-ink; }
+  .rlm-form input[type="text"], .rlm-form input[type="email"], .rlm-form input[type="tel"],
+  .rlm-form input[type="number"], .rlm-form input[type="date"], .rlm-form input[type="search"],
+  .rlm-form select, .rlm-form textarea, .staff-form input[type="text"], .staff-form input[type="email"],
+  .staff-form input[type="password"] {
+    @apply block w-full rounded-xl border border-rlm-line bg-white px-4 py-3 text-base text-rlm-ink shadow-sm placeholder:text-rlm-grey focus:border-rlm-flame focus:outline-none focus:ring-4 focus:ring-rlm-flame/20;
+  }
+  .rlm-form input[type="checkbox"] { @apply h-5 w-5 rounded border-rlm-grey accent-[color:var(--rlm-flame-dark)]; }
+  .rlm-form .field-checkbox label { @apply flex items-start gap-3 font-normal; }
+  .rlm-form .checkbox-list { @apply grid gap-2 sm:grid-cols-2; }
+  .rlm-form .checkbox-list label { @apply flex items-center gap-3 rounded-xl border border-rlm-line px-3 py-2 font-normal; }
+  .rlm-form .help { @apply mt-1 text-xs text-rlm-grey; }
+  .rlm-form .error { @apply mt-1 text-sm font-semibold text-rlm-flame-dark; }
+  .field-error input, .field-error textarea, .field-error select { @apply border-rlm-flame-deep; }
+  .hp-field { position: absolute !important; left: -10000px !important; width: 1px; height: 1px; overflow: hidden; }
+
+  .placeholder-badge { @apply absolute left-2 top-2 rounded bg-rlm-black/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rlm-white; }
+  .yt-facade { @apply relative block aspect-video w-full overflow-hidden rounded-2xl bg-rlm-black; }
+  .yt-facade img { @apply h-full w-full object-cover opacity-90 transition group-hover:opacity-100; }
+  .yt-play { @apply absolute inset-0 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-rlm-flame text-rlm-black shadow-lg; }
+
+  .progress-rlm { @apply h-2 w-full overflow-hidden rounded-full; appearance: none; background: var(--rlm-line); }
+  .progress-rlm::-webkit-progress-bar { background: var(--rlm-line); border-radius: 9999px; }
+  .progress-rlm::-webkit-progress-value { background: var(--rlm-flame-gradient); border-radius: 9999px; }
+  .progress-rlm::-moz-progress-bar { background: var(--rlm-flame-gradient); border-radius: 9999px; }
+
+  .htmx-request .htmx-indicator { display: inline-block; }
+  .htmx-indicator { display: none; }
+}

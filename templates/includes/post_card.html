@@ -1,0 +1,11 @@
+{% load rlm %}<article class="card">
+  <a href="{{ post.get_absolute_url }}" class="relative block aspect-[16/10] overflow-hidden bg-rlm-cream" tabindex="-1" aria-hidden="true">
+    {% responsive_img post.image post.image_alt|default:post.title %}
+    {% if not post.image %}<span class="placeholder-badge">Placeholder image</span>{% endif %}
+  </a>
+  <div class="card-body">
+    <p class="eyebrow">{{ post.get_kind_display }} · <time datetime="{{ post.publish_at|date:'c' }}">{{ post.publish_at|date:"j M Y" }}</time></p>
+    <h3 class="mt-2 text-lg font-bold leading-snug"><a href="{{ post.get_absolute_url }}" class="hover:text-rlm-flame-dark">{{ post.title }}</a></h3>
+    <p class="mt-2 text-sm text-rlm-grey">{{ post.summary }}</p>
+  </div>
+</article>

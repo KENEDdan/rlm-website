@@ -1,0 +1,56 @@
+{% load static rlm %}
+{% url 'core:about' as about_url %}{% url 'programs:list' as programs_url %}{% url 'branches:list' as branches_url %}
+{% url 'events:list' as events_url %}{% url 'media_library:gallery' as media_url %}{% url 'resources:list' as resources_url %}
+{% url 'news:list' as news_url %}{% url 'registrations:volunteer' as involved_url %}{% url 'contact:contact' as contact_url %}
+<header class="sticky top-0 z-50 border-b border-rlm-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+  <div class="container-rlm flex h-16 items-center justify-between gap-4 lg:h-20">
+    <a href="{% url 'core:home' %}" class="flex items-center gap-3" aria-label="{{ site.ministry_name }}, home">
+      <img src="{% static 'brand/mark-light-128.webp' %}" width="44" height="44" alt="" class="h-10 w-10 lg:h-11 lg:w-11">
+      <span class="font-display text-[0.8rem] font-extrabold leading-tight tracking-wide text-rlm-black sm:text-sm">
+        REBUILDING LIVES<br class="sm:hidden"> <span class="text-rlm-flame-dark">MINISTRY</span>
+      </span>
+    </a>
+
+    <nav aria-label="Main" class="hidden lg:block">
+      <ul class="flex items-center gap-0.5 whitespace-nowrap text-sm font-semibold xl:gap-1">
+        <li><a href="{{ about_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if request.path == about_url %}text-rlm-flame-dark{% endif %}" {% if request.path == about_url %}aria-current="page"{% endif %}>About</a></li>
+        <li><a href="{{ programs_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if programs_url in request.path %}text-rlm-flame-dark{% endif %}">Programs</a></li>
+        <li><a href="{{ branches_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if branches_url in request.path %}text-rlm-flame-dark{% endif %}">Branches</a></li>
+        <li><a href="{{ events_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if events_url in request.path %}text-rlm-flame-dark{% endif %}">Events</a></li>
+        <li><a href="{{ media_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if media_url in request.path %}text-rlm-flame-dark{% endif %}">Media</a></li>
+        <li><a href="{{ resources_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if resources_url in request.path %}text-rlm-flame-dark{% endif %}">Sermons</a></li>
+        <li><a href="{{ news_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if news_url in request.path %}text-rlm-flame-dark{% endif %}">News</a></li>
+        <li><a href="{{ involved_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if involved_url in request.path %}text-rlm-flame-dark{% endif %}">Get involved</a></li>
+        <li><a href="{{ contact_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if contact_url in request.path %}text-rlm-flame-dark{% endif %}">Contact</a></li>
+      </ul>
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <a href="{% url 'giving:give' %}" class="btn-primary btn-sm sm:px-5 sm:py-2.5 sm:text-sm">Give</a>
+      <details id="mobile-menu" class="relative lg:hidden">
+        <summary class="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-full border border-rlm-line [&::-webkit-details-marker]:hidden" aria-label="Open menu">
+          {% icon "menu" "h-6 w-6" %}
+        </summary>
+        <nav aria-label="Mobile" class="fixed inset-x-0 top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-rlm-line bg-white px-4 pb-6 pt-2 shadow-xl">
+          <ul class="divide-y divide-rlm-line text-base font-semibold">
+            <li><a class="block py-3" href="{{ about_url }}">About</a></li>
+            <li><a class="block py-3" href="{% url 'leadership:list' %}">Leadership</a></li>
+            <li><a class="block py-3" href="{{ programs_url }}">Programs</a></li>
+            <li><a class="block py-3" href="{{ branches_url }}">Branches</a></li>
+            <li><a class="block py-3" href="{{ events_url }}">Events</a></li>
+            <li><a class="block py-3" href="{{ media_url }}">Media &amp; gallery</a></li>
+            <li><a class="block py-3" href="{{ resources_url }}">Sermons &amp; resources</a></li>
+            <li><a class="block py-3" href="{{ news_url }}">News</a></li>
+            <li><a class="block py-3" href="{% url 'prayer:request' %}">Prayer requests</a></li>
+            <li><a class="block py-3" href="{% url 'giving:partner' %}">Partner with us</a></li>
+            <li><a class="block py-3" href="{{ contact_url }}">Contact</a></li>
+          </ul>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <a href="{{ involved_url }}" class="btn-outline">Volunteer</a>
+            <a href="{% url 'giving:give' %}" class="btn-primary">Give</a>
+          </div>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}{% load static %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/rlm-admin.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<meta name="robots" content="noindex, nofollow"><link rel="icon" href="{% static 'brand/favicon.ico' %}">{% endblock %}
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}"><img src="{% static 'brand/mark-dark-64.webp' %}" alt="" width="34" height="34"> {{ site_header|default:_('Django administration') }}</a></div>
+{% if user.is_anonymous %}{% include "admin/color_theme_toggle.html" %}{% endif %}
+{% endblock %}
+{% block userlinks %}
+  <a href="{% url 'core:home' %}" target="_blank" rel="noopener">View site</a> /
+  {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">Change password</a> /{% endif %}
+  <form id="logout-form" method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
+  {% include "admin/color_theme_toggle.html" %}
+{% endblock %}
+{% block nav-global %}{% endblock %}

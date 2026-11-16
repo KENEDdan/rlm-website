@@ -1,0 +1,47 @@
+/* Brand theme for the Django admin via its built-in CSS variables (no JS, CSP-safe). */
+:root, html[data-theme="light"] {
+  --primary: #0A0A0A;
+  --secondary: #1C1C1C;
+  --accent: #F8C124;
+  --primary-fg: #FFFFFF;
+  --header-color: #FFF8F2;
+  --header-branding-color: #F8C124;
+  --header-bg: #0A0A0A;
+  --header-link-color: #FFFFFF;
+  --breadcrumbs-fg: #FFF8F2;
+  --breadcrumbs-link-fg: #F8C124;
+  --breadcrumbs-bg: #1C1C1C;
+  --link-fg: #C2410C;
+  --link-hover-color: #9A3412;
+  --link-selected-fg: #C2410C;
+  --button-fg: #FFFFFF;
+  --button-bg: #C2410C;          /* white text on orange needs the darker shade (AA) */
+  --button-hover-bg: #9A3412;
+  --default-button-bg: #0A0A0A;
+  --default-button-hover-bg: #1C1C1C;
+  --object-tools-bg: #C2410C;
+  --object-tools-hover-bg: #9A3412;
+  --selected-row: #FFF8F2;
+  --message-success-bg: #FFF8F2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #0A0A0A;
+    --header-bg: #0A0A0A;
+    --header-branding-color: #F8C124;
+    --breadcrumbs-bg: #1C1C1C;
+    --link-fg: #F3A831;
+    --link-hover-color: #F8C124;
+    --button-bg: #C2410C;
+    --button-hover-bg: #9A3412;
+    --object-tools-bg: #C2410C;
+  }
+}
+html[data-theme="dark"] {
+  --link-fg: #F3A831;
+  --link-hover-color: #F8C124;
+}
+#header { border-bottom: 4px solid transparent; border-image: linear-gradient(135deg, #F8C124 0%, #F0652A 55%, #EE362C 100%) 1; }
+#site-name a { display: inline-flex; align-items: center; gap: .6rem; font-weight: 800; letter-spacing: .02em; }
+#site-name img { height: 34px; width: 34px; }
+.rlm-env-banner { background: #F8C124; color: #0A0A0A; text-align: center; font-weight: 700; padding: 4px; font-size: 12px; }

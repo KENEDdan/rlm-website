@@ -1,0 +1,6 @@
+{% load rlm %}<div class="yt-facade group">
+  <a href="https://www.youtube.com/watch?v={{ video_id }}" data-yt="{{ video_id }}" data-title="{{ title }}" class="absolute inset-0 block" aria-label="Play video: {{ title }}" target="_blank" rel="noopener noreferrer">
+    <img src="https://i.ytimg.com/vi_webp/{{ video_id }}/hqdefault.webp" alt="" loading="lazy" decoding="async" width="480" height="360">
+    <span class="yt-play">{% icon "play" "h-7 w-7 translate-x-0.5" %}</span>
+  </a>
+</div>
