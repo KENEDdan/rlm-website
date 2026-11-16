@@ -80,3 +80,13 @@ keep readable labels. Edit rights: Page text = Founder + Media & Communications;
 Secretary. Neither can be deleted in the admin. Site settings also gained `logo_on_dark`; uploaded logos now
 actually replace the built-in ones (previously the `logo` field was unused), and the header wordmark follows
 the ministry name. Pages can be listed in the footer (`show_in_footer`).
+
+## D-012: Production stack prepared and rehearsed locally (phase K)
+(2026-11-16) `docker-compose.prod.yml`, `docker/Caddyfile`, `docker/backup/`, `scripts/deploy.sh` and
+`scripts/server/setup-ubuntu.sh` were written and rehearsed on the PC with a throwaway `.env` (HTTPS on
+`localhost:8443`); nothing was deployed (D-007). Choices: Caddy for automatic HTTPS; a separate `beat`
+container (exactly one scheduler); `data` network `internal: true` so Postgres/Redis have no internet; Redis
+password even on the private network; backups encrypted with **age** so only the public key lives on the
+server; a dedicated backup image so the server needs nothing but Docker; rollback to the last image that
+passed its health check (`rlm-web:good`). Lighthouse over HTTPS could not run against a self-signed
+`localhost` certificate; the HTTPS checks were verified directly with header tests instead.

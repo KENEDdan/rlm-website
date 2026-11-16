@@ -28,8 +28,8 @@ jobs:
       FIELD_ENCRYPTION_KEYS: ${{ vars.CI_FERNET_KEY || 'Q0ktT05MWS1GRVJORVQtS0VZLTAxMjM0NTY3ODlhYmM=' }}
       BLIND_INDEX_KEY: ci-only-blind-index
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: "3.12"
       - name: System packages
@@ -38,6 +38,12 @@ jobs:
         run: |
           pip install --require-hashes -r requirements/base.txt
           pip install --require-hashes -r requirements/dev.txt
+      - name: Shell scripts (shellcheck)
+        run: shellcheck -S warning scripts/deploy.sh scripts/server/setup-ubuntu.sh docker/backup/*.sh
+      - name: Production compose file is valid
+        run: >
+          RLM_ENV_FILE=.env.production.example
+          docker compose --env-file .env.production.example -f docker-compose.prod.yml config -q
       - name: Ruff
         run: ruff check .
       - name: Black

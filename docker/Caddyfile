@@ -1,0 +1,48 @@
+# Production reverse proxy: automatic HTTPS (Let's Encrypt), compression, media files, proxy to gunicorn.
+# Values come from the environment (.env): DOMAIN, ACME_EMAIL, TRUSTED_PROXIES.
+{
+	email {$ACME_EMAIL}
+	admin off
+	servers {
+		# Only these proxies may tell us the visitor's real IP (Cloudflare ranges when proxied, see
+		# docs/DEPLOYMENT.md). Without Cloudflare, nothing is trusted and the TCP peer is the client.
+		trusted_proxies static {$TRUSTED_PROXIES:127.0.0.1/32}
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
+	}
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Never serve anything under uploads/private (none exists today; defence in depth).
+	@private path /uploads/private/*
+	respond @private 404
+
+	# Uploaded media: served by Caddy directly, sandboxed so an uploaded file can never run script
+	# on our origin, and never sniffed into another type.
+	handle_path /uploads/* {
+		root * /media
+		header {
+			X-Content-Type-Options nosniff
+			Content-Security-Policy "sandbox; default-src 'none'; img-src 'self'; media-src 'self'"
+			Cache-Control "public, max-age=2592000"
+			Cross-Origin-Resource-Policy same-origin
+			-Server
+		}
+		file_server
+	}
+
+	handle {
+		reverse_proxy web:8000 {
+			# The real visitor IP (after trusted_proxies) for Django rate limits and lockouts.
+			header_up X-Real-IP {client_ip}
+		}
+	}
+
+	header -Server
+	# Access logs are off: request paths can contain one-time newsletter tokens. Errors still go to stderr.
+}

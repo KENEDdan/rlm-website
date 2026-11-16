@@ -79,11 +79,44 @@ yearly.
 `DJANGO_SECRET_KEY` can simply be replaced; everyone is signed out, and unused newsletter
 confirmation/unsubscribe links stop working.
 
-## 4. Production (phase K, not built yet)
+## 4. Production (built and rehearsed in phase K; runs once the server exists)
 
-* Nightly `pg_dump` + media archive, **encrypted** (restic or age) before leaving the server.
-* Copied to off-site storage owned by the ministry; 30 days of daily copies plus monthly copies.
-* Restore tested monthly into a scratch database with a written check, and after every major upgrade.
-* Backup credentials different from server credentials; the backup storage must not allow the server to
-  delete old backups (protects against ransomware).
-* Keys handled as in section 1, never stored in the backup bucket.
+Backups use the `backup` service in `docker-compose.prod.yml` (image `docker/backup`): `pg_dump` + media
+archive, **encrypted with age** using only the **public** key on the server, SHA-256 checksums, local
+retention (`BACKUP_RETENTION_DAYS`, default 30) and an optional off-site copy with rclone
+(`BACKUP_REMOTE`). Cron runs it nightly at 02:30 (`/etc/cron.d/rlm-backup`); `scripts/deploy.sh` also runs
+it before every migration.
+
+```bash
+cd /srv/rlm
+docker compose -f docker-compose.prod.yml run --rm backup          # manual backup
+ls -l /srv/rlm/backups                                              # rlm-<time>-db.dump.age, -media.tgz.age, .sha256
+```
+
+### Restore test (monthly; does not touch live data)
+The **private** age key comes from the password manager and is only mounted for the restore:
+```bash
+umask 077; nano /tmp/age.key                                        # paste the private key file
+docker compose -f docker-compose.prod.yml run --rm --entrypoint restore.sh   -v /tmp/age.key:/run/secrets/age.key:ro backup db rlm-YYYYmmdd-HHMMSS-db.dump.age
+shred -u /tmp/age.key
+```
+It verifies the checksum, restores into the scratch database `rlm_restore_test` and prints row counts.
+
+### Real restore (disaster recovery)
+```bash
+docker compose -f docker-compose.prod.yml stop caddy web worker beat
+CONFIRM_OVERWRITE=yes docker compose -f docker-compose.prod.yml run --rm --entrypoint restore.sh   -e CONFIRM_OVERWRITE -v /tmp/age.key:/run/secrets/age.key:ro backup db rlm-...-db.dump.age rlm
+CONFIRM_OVERWRITE=yes docker compose -f docker-compose.prod.yml run --rm --entrypoint restore.sh   -e CONFIRM_OVERWRITE -v /tmp/age.key:/run/secrets/age.key:ro backup media rlm-...-media.tgz.age
+docker compose -f docker-compose.prod.yml up -d
+shred -u /tmp/age.key
+```
+The restore refuses to overwrite the live database or media unless `CONFIRM_OVERWRITE=yes` is given.
+`.env` must hold the **same** `FIELD_ENCRYPTION_KEYS` / `BLIND_INDEX_KEY` as when the backup was taken.
+
+### Off-site storage rules
+* The server's storage key may **write** but not **delete** (protects against ransomware wiping backups).
+* The bucket has its own lifecycle rule (e.g. 90 days).
+* Keys (section 1) are never stored in the backup bucket.
+
+Rehearsed on 2026-11-16 with the real image: encrypted backup, checksum, restore into a scratch database,
+refusal to overwrite the live database without confirmation.

@@ -6,8 +6,9 @@ The ministry's "connection centre": information, events and registration, volunt
 contact, newsletter, partnership, sermons and resources, gallery, news and giving. Every branch, programme,
 leader, event and page is data managed in the admin, so a new branch or country needs no code change.
 
-> **Status:** runs locally only (Docker on a PC). Production deployment is a later phase; see
-> `docs/DEPLOYMENT.md` (a plan, nothing is deployed yet).
+> **Status:** runs locally only (Docker on a PC). The production stack (`docker-compose.prod.yml`, Caddy
+> HTTPS, encrypted backups, deploy + rollback script, server hardening script) is built and was rehearsed
+> locally; nothing is deployed yet. Runbook: `docs/DEPLOYMENT.md`.
 
 ## Stack
 

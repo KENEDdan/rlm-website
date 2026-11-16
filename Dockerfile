@@ -1,6 +1,6 @@
 # Multi-stage build: tailwind CSS -> python deps -> slim non-root runtime.
 
-ARG PYTHON_IMAGE=python:3.12.16-slim-bookworm
+ARG PYTHON_IMAGE=python:3.12.16-slim-bookworm@sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df
 
 # ---------------------------------------------------------------- 1. CSS (Tailwind standalone CLI, no Node)
 FROM ${PYTHON_IMAGE} AS css

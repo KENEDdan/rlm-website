@@ -86,13 +86,14 @@ Opening one prayer request/volunteer/donation was logged, but the list pages (wh
 | R-2 | First sign-in enrols 2FA for whoever holds the password first | Low | Inherent to self-enrolment. Mitigation in the admin guide (phase J): Founder hands out the first password out-of-band and the user signs in straight away; 2FA enrolment is audit-logged (`2fa_setup`). |
 | R-3 | Lockout is per username+IP, so slow password spraying from many IPs is possible | Low | Locking on username alone lets anyone lock staff out. Password alone never grants access (mandatory TOTP). |
 | R-4 | Debian base image: unfixed CVEs (e.g. CRITICAL CVE-2025-7458 libsqlite3, CVE-2023-45853 zlib/minizip) | Low | No upstream fix. SQLite is only used during the build step; minizip is not used. Rebuild monthly / on Dependabot alerts; consider a newer base when Python 3.12 slim on Debian 13 is adopted. |
-| R-5 | GitHub Actions pinned by tag (`@v4`), images by tag not digest | Low | Phase K: pin actions to commit SHAs and images to digests; Dependabot keeps them current. |
+| R-5 | ~~GitHub Actions pinned by tag, images by tag not digest~~ | Low | **Resolved in phase K:** actions pinned to commit SHAs, all images pinned by digest, Dependabot covers both. |
 | R-6 | Admin "event" list filter shows titles of unpublished events to scoped staff | Info | Titles only, staff only. |
 | R-7 | Donation `finance_notes` are kept when a donor is erased | Info | Staff-written accounting notes; Finance must not put donor identity in them (admin guide). |
 
 ## 5. Requirements for phase K (production)
 
-These are not code defects today but must be satisfied by the deployment:
+**Status: all five are implemented in `docker-compose.prod.yml` / `docker/Caddyfile` and were verified in
+the local production rehearsal (`docs/DEPLOYMENT.md`).** Original requirements:
 
 1. **Client IP:** Caddy must set `X-Real-IP` to the real visitor IP. Behind Cloudflare, use
    `trusted_proxies` with Cloudflare ranges and `CF-Connecting-IP`; otherwise rate limits and lockouts would

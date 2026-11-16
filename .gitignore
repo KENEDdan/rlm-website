@@ -2,6 +2,12 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
+# rclone remote credentials for off-site backups
+docker/rclone/
+# age private keys must never be in the repo
+*.age
+age.key
 *.pem
 *.key
 secrets/
