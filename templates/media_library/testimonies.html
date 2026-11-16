@@ -1,7 +1,8 @@
 {% extends "base.html" %}{% load rlm %}
-{% block title %}Testimonies · {{ site.ministry_name }}{% endblock %}
+{% block title %}{% page_text "testimonies" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Testimonies · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "testimonies" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Testimonies" heading="Lives rebuilt" intro="Stories of what God is doing, shared with permission." %}
+{% page_text "testimonies" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm grid gap-8 md:grid-cols-2">
   {% for t in testimonies %}
   <article class="card p-6"><h2 class="text-xl font-bold">{{ t.title }}</h2><p class="eyebrow mt-1">{{ t.person_display_name|default:"Anonymous" }}</p><div class="prose-rlm mt-4 text-sm">{{ t.body|paragraphs }}</div></article>

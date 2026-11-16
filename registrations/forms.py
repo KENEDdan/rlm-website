@@ -7,6 +7,7 @@ from django import forms
 from branches.models import Branch
 from core.forms import ConsentMixin, ProtectedFormMixin
 from core.models import phone_validator
+from core.site_text import option_choices
 
 from .models import EventRegistration, VolunteerApplication
 
@@ -27,11 +28,11 @@ class VolunteerForm(ProtectedFormMixin, ConsentMixin, forms.ModelForm):
     church_affiliation = forms.CharField(
         max_length=200, required=False, label="Church affiliation (optional)"
     )
+    # Choices are loaded per request from the admin-managed lists (Form options).
     interests = forms.MultipleChoiceField(
-        choices=VolunteerApplication.Interest.choices,
-        widget=forms.CheckboxSelectMultiple,
-        label="Where would you like to serve?",
+        choices=(), widget=forms.CheckboxSelectMultiple, label="Where would you like to serve?"
     )
+    availability = forms.ChoiceField(choices=(), label="Availability")
     skills = forms.CharField(
         max_length=2000,
         required=False,
@@ -72,6 +73,8 @@ class VolunteerForm(ProtectedFormMixin, ConsentMixin, forms.ModelForm):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        self.fields["interests"].choices = option_choices("volunteer_interest")
+        self.fields["availability"].choices = [("", "Choose…"), *option_choices("volunteer_availability")]
         self.fields["branch"].queryset = Branch.objects.published()
         self.fields["branch"].required = False
         self.fields["country"].max_length = 100

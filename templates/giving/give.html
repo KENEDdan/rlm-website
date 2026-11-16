@@ -1,8 +1,8 @@
 {% extends "base.html" %}{% load rlm %}
-{% block title %}Give · {{ site.ministry_name }}{% endblock %}
-{% block description %}Support the work of {{ site.ministry_name }}: revival, discipleship, evangelism and youth leadership.{% endblock %}
+{% block title %}{% page_text "give" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Give · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "give" as pt %}{% if pt.seo_description %}{{ pt.seo_description }}{% else %}Support the work of {{ site.ministry_name }}: revival, discipleship, evangelism and youth leadership.{% endif %}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Give" heading="Your generosity rebuilds lives" intro=giving.give_intro|default:"Every gift supports revival conferences, evangelism, discipleship and the next generation of leaders." %}
+{% page_text "give" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=giving.give_intro|default:pt.intro %}
 <section class="section"><div class="container-rlm grid gap-12 lg:grid-cols-12">
   <div class="lg:col-span-6">
     <h2 class="section-title text-2xl">1. Give</h2>

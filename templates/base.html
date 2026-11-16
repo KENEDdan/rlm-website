@@ -11,7 +11,7 @@
   <meta property="og:title" content="{% block og_title %}{{ site.ministry_name }}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{{ site.tagline }}{% endblock %}">
   <meta property="og:url" content="{{ site_url }}{{ request.path }}">
-  <meta property="og:image" content="{% block og_image %}{{ site_url }}{% static 'brand/og-default.jpg' %}{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{% if site.logo_on_dark %}{{ site_url }}{{ site.logo_on_dark|rendition:960 }}{% else %}{{ site_url }}{% static 'brand/og-default.jpg' %}{% endif %}{% endblock %}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0A0A0A">
   <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"allowScriptTags":false,"selfRequestsOnly":true}'>

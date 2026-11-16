@@ -81,6 +81,16 @@ set. All officers except the Founder start as "To be confirmed".
 ### 2.5 Events and news
 See sections 4 and 5. They are the same steps.
 
+### 2.6 Choices in the public forms (Form options)
+**Form options** holds every list visitors pick from: volunteer areas of service and availability, contact
+topics, partnership types and interests.
+* **Add a choice:** Add form option → pick the list, type the label (what visitors see) and a short code
+  (lowercase, e.g. `prison-ministry`). The code can never change later; the label can.
+* **Rename:** edit the label. Old submissions show the new name too.
+* **Remove:** untick **Active**. It disappears from the form but older submissions keep their label.
+  Options cannot be deleted, and the last active option of a list cannot be switched off.
+* **Order:** lower numbers appear first.
+
 ---
 
 ## 3. Founder / Super Admin
@@ -102,8 +112,16 @@ Coordinator** (own branch only), **Departmental Heads** (own department only), *
 number (for the floating chat button), address, footer, the **notification email** (where "new submission"
 alerts go), analytics and the **data retention** periods. Social media links are under **Social links**.
 
-### 3.3 Privacy policy and terms
+### 3.3 Privacy policy, terms and extra pages
 **Pages → Privacy policy / Terms**. Have them reviewed before launch, and update **Last reviewed**.
+To add another page (e.g. "Statement of faith"): **Pages → Add page**, tick **Published** and
+**Show in footer**. It appears at `/pages/<slug>/` and in the footer.
+
+### 3.3a Logos and ministry name
+**Site settings → Identity**: **Logo** (for light backgrounds, the header) and **Logo on dark background**
+(footer, home page hero, link previews on WhatsApp/Facebook). PNG with a transparent background works
+best. Leave empty to keep the built-in logos. The header wordmark is the **Ministry name**; its last word
+is shown in flame orange.
 
 ### 3.4 Someone asks to see or delete their data
 This needs the person who runs the computer/server (see README → *Maintenance commands*):
@@ -146,6 +164,15 @@ email). Mark people as cancelled to free their seats. Export only when needed (2
 
 ## 5. Media & Communications
 *Gallery, sermons and resources, news, social links, newsletter list.*
+
+### 5.0 Page headings and wording (Page text)
+**Page text** lists every heading on the site: each page's header (eyebrow, heading, intro), the home page
+hero and section titles, the three home cards, the "Be part of what God is rebuilding" band and the footer
+newsletter blurb. Edit and save; the change appears within a few minutes.
+* **Highlight** is only used by the home hero (the second line in flame colours).
+* **SEO title / description** change what Google and browser tabs show for that page.
+* The Give and Partner page intros come from **Giving settings** when Finance fills them in; otherwise
+  from Page text.
 
 ### 5.1 News
 **News posts → Add**: title, kind (news, announcement, report, testimony), summary, body, image + alt text.

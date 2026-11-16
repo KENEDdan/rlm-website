@@ -70,3 +70,13 @@ addresses, generated flame-gradient placeholder images marked "DEMO PLACEHOLDER"
 ## D-010: Data-subject requests via command line
 `manage.py personal_data` answers export/erase requests (rule 13). Donations are anonymised, not deleted,
 so accounting records stay complete. **Open question:** a Founder-only admin screen for the same task.
+
+## D-011: Page wording and form choices are data
+(2026-11-16) Page headings, intros, SEO text, home sections, the CTA band and the footer blurb live in
+`core.PageText`; public form choice lists live in `core.FormOption`. Defaults are in `core/page_texts.py`;
+`migrate` creates missing rows without overwriting edits, and templates fall back to the defaults if a row
+is missing. Option codes are immutable and options are deactivated rather than deleted, so old submissions
+keep readable labels. Edit rights: Page text = Founder + Media & Communications; Form options = Founder +
+Secretary. Neither can be deleted in the admin. Site settings also gained `logo_on_dark`; uploaded logos now
+actually replace the built-in ones (previously the `logo` field was unused), and the header wordmark follows
+the ministry name. Pages can be listed in the footer (`show_in_footer`).

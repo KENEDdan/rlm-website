@@ -7,28 +7,10 @@ from django.db import models
 from core.crypto import blind_index
 from core.fields import EncryptedCharField, EncryptedEmailField, EncryptedTextField
 from core.models import SubmissionModel
+from core.site_text import option_label
 
 
 class VolunteerApplication(SubmissionModel):
-    class Availability(models.TextChoices):
-        WEEKDAYS = "weekdays", "Weekdays"
-        WEEKENDS = "weekends", "Weekends"
-        EVENINGS = "evenings", "Evenings"
-        EVENTS = "events", "Special events only"
-        FLEXIBLE = "flexible", "Flexible"
-
-    class Interest(models.TextChoices):
-        PRAYER = "prayer", "Prayer & intercession"
-        WORSHIP = "worship", "Worship & music"
-        YOUTH = "youth", "Youth ministry"
-        CHILDREN = "children", "Children's ministry"
-        EVANGELISM = "evangelism", "Evangelism & outreach"
-        MEDIA = "media", "Media & communications"
-        LOGISTICS = "logistics", "Logistics & events"
-        TEACHING = "teaching", "Teaching & discipleship"
-        ADMIN = "admin", "Administration"
-        OTHER = "other", "Other"
-
     full_name = EncryptedCharField(max_length=150)
     email = EncryptedEmailField()
     email_hash = models.CharField(max_length=64, db_index=True, editable=False)
@@ -43,7 +25,8 @@ class VolunteerApplication(SubmissionModel):
     skills = EncryptedTextField(blank=True)
     previous_experience = EncryptedTextField(blank=True)
     testimony = EncryptedTextField(blank=True)
-    availability = models.CharField(max_length=20, choices=Availability.choices)
+    # Values come from the admin-managed lists (core.FormOption); labels via get_*_display below.
+    availability = models.CharField(max_length=20)
     consent = models.BooleanField(default=False)
     internal_notes = EncryptedTextField(blank=True, help_text="Visible to staff only.")
 
@@ -57,8 +40,13 @@ class VolunteerApplication(SubmissionModel):
 
     @property
     def interest_labels(self) -> list[str]:
-        labels = dict(self.Interest.choices)
-        return [labels.get(i, i) for i in self.interests]
+        return [option_label("volunteer_interest", i) for i in self.interests]
+
+    def get_interests_display(self) -> str:
+        return ", ".join(self.interest_labels)
+
+    def get_availability_display(self) -> str:
+        return option_label("volunteer_availability", self.availability)
 
 
 class EventRegistration(SubmissionModel):

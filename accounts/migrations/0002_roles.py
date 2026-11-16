@@ -16,7 +16,7 @@ def create_roles(apps, schema_editor):  # type: ignore[no-untyped-def]
         app_config.models_module = True
         create_permissions(app_config, apps=apps, verbosity=0)
         app_config.models_module = None
-    sync_roles(apps)
+    sync_roles(apps, strict=False)  # later models get their permissions in later migrations
 
 
 class Migration(migrations.Migration):

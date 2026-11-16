@@ -1,7 +1,8 @@
-{% extends "base.html" %}
-{% block title %}{% if showing == "past" %}Past events{% else %}Events{% endif %} · {{ site.ministry_name }}{% endblock %}
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{% page_text "events" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}{% if showing == "past" %}Past events{% else %}Events{% endif %} · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "events" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Events" heading="Gather. Worship. Grow." intro="Conferences, outreaches and gatherings across our branches." %}
+{% page_text "events" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm">
   <nav class="flex gap-2" aria-label="Event lists">
     <a href="{% url 'events:list' %}" class="chip {% if showing == 'upcoming' %}chip-active{% endif %}" {% if showing == 'upcoming' %}aria-current="page"{% endif %}>Upcoming</a>

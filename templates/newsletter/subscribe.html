@@ -1,7 +1,8 @@
-{% extends "base.html" %}
-{% block title %}Newsletter · {{ site.ministry_name }}{% endblock %}
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{% page_text "newsletter" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Newsletter · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "newsletter" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Stay connected" heading="Get ministry updates" intro="News, events and prayer points by email. We will ask you to confirm, and you can unsubscribe at any time." %}
+{% page_text "newsletter" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm max-w-xl">{% include "newsletter/_form.html" %}</div></section>
 {% include "includes/turnstile_script.html" %}
 {% endblock %}

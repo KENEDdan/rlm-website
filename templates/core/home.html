@@ -1,13 +1,14 @@
 {% extends "base.html" %}{% load static rlm %}
 {% block content %}
+{% page_text "home_hero" as hero %}
 <section class="hero-glow relative overflow-hidden text-rlm-white">
   <div class="container-rlm grid items-center gap-10 py-16 sm:py-24 lg:grid-cols-12">
     <div class="lg:col-span-7">
-      <p class="eyebrow-light">{{ site.ministry_name }}</p>
+      <p class="eyebrow-light">{{ hero.eyebrow|default:site.ministry_name }}</p>
       <h1 class="mt-4 font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-        Rebuilding Lives.<br><span class="text-flame-gradient">Reviving Generations.</span>
+        {{ hero.heading }}{% if hero.highlight %}<br><span class="text-flame-gradient">{{ hero.highlight }}</span>{% endif %}
       </h1>
-      {% if site.about_intro %}<p class="mt-6 max-w-xl text-lg text-rlm-line">{{ site.about_intro }}</p>{% endif %}
+      {% with intro=hero.intro|default:site.about_intro %}{% if intro %}<p class="mt-6 max-w-xl text-lg text-rlm-line">{{ intro }}</p>{% endif %}{% endwith %}
       <div class="mt-8 flex flex-wrap gap-3">
         <a href="{% url 'giving:give' %}" class="btn-primary">Give</a>
         <a href="{% url 'registrations:volunteer' %}" class="btn-outline-light">Volunteer</a>
@@ -19,7 +20,7 @@
       </figure>
     </div>
     <div class="hidden justify-center lg:col-span-5 lg:flex">
-      <img src="{% static 'brand/logo-on-dark-640.webp' %}" srcset="{% static 'brand/logo-on-dark-320.webp' %} 320w, {% static 'brand/logo-on-dark-640.webp' %} 640w" sizes="(min-width: 1024px) 400px, 0px" width="400" height="413" alt="" class="h-auto w-[400px] drop-shadow-[0_0_60px_rgba(240,101,42,0.35)]" loading="lazy">
+      {% if site.logo_on_dark %}<img src="{{ site.logo_on_dark|rendition:960 }}" alt="" class="h-auto w-[400px] object-contain drop-shadow-[0_0_60px_rgba(240,101,42,0.35)]" loading="lazy">{% else %}<img src="{% static 'brand/logo-on-dark-640.webp' %}" srcset="{% static 'brand/logo-on-dark-320.webp' %} 320w, {% static 'brand/logo-on-dark-640.webp' %} 640w" sizes="(min-width: 1024px) 400px, 0px" width="400" height="413" alt="" class="h-auto w-[400px] drop-shadow-[0_0_60px_rgba(240,101,42,0.35)]" loading="lazy">{% endif %}
     </div>
   </div>
   <div class="flame-bar"></div>
@@ -38,7 +39,7 @@
 <section class="section">
   <div class="container-rlm">
     <div class="flex flex-wrap items-end justify-between gap-4">
-      <div><p class="eyebrow">What we do</p><h2 class="section-title mt-2">Our programmes</h2></div>
+      {% page_text "home_programmes" as t %}<div>{% if t.eyebrow %}<p class="eyebrow">{{ t.eyebrow }}</p>{% endif %}<h2 class="section-title mt-2">{{ t.heading }}</h2>{% if t.intro %}<p class="mt-2 max-w-2xl text-rlm-grey">{{ t.intro }}</p>{% endif %}</div>
       <a href="{% url 'programs:list' %}" class="btn-outline btn-sm">All programmes</a>
     </div>
     <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -51,13 +52,13 @@
 <section class="section bg-rlm-cream">
   <div class="container-rlm">
     <div class="flex flex-wrap items-end justify-between gap-4">
-      <div><p class="eyebrow">Join us</p><h2 class="section-title mt-2">Upcoming events</h2></div>
+      {% page_text "home_events" as t %}<div>{% if t.eyebrow %}<p class="eyebrow">{{ t.eyebrow }}</p>{% endif %}<h2 class="section-title mt-2">{{ t.heading }}</h2></div>
       <a href="{% url 'events:list' %}" class="btn-outline btn-sm">All events</a>
     </div>
     {% if events %}
       <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{% for event in events %}{% include "includes/event_card.html" %}{% endfor %}</div>
     {% else %}
-      <p class="mt-8 rounded-2xl bg-white p-6 text-rlm-grey">New events will be announced soon. <a class="font-semibold text-rlm-flame-dark underline" href="{% url 'newsletter:subscribe' %}">Subscribe for updates</a>.</p>
+      <p class="mt-8 rounded-2xl bg-white p-6 text-rlm-grey">{{ t.intro|default:"New events will be announced soon." }} <a class="font-semibold text-rlm-flame-dark underline" href="{% url 'newsletter:subscribe' %}">Subscribe for updates</a>.</p>
     {% endif %}
   </div>
 </section>
@@ -65,7 +66,7 @@
 {% if branches %}
 <section class="section">
   <div class="container-rlm">
-    <p class="eyebrow">Where we are</p><h2 class="section-title mt-2">Our branches</h2>
+    {% page_text "home_branches" as t %}{% if t.eyebrow %}<p class="eyebrow">{{ t.eyebrow }}</p>{% endif %}<h2 class="section-title mt-2">{{ t.heading }}</h2>{% if t.intro %}<p class="mt-2 max-w-2xl text-rlm-grey">{{ t.intro }}</p>{% endif %}
     <ul class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {% for branch in branches %}
       <li><a href="{{ branch.get_absolute_url }}" class="card flex-row items-center gap-4 p-5">
@@ -82,7 +83,7 @@
 <section class="section bg-rlm-cream">
   <div class="container-rlm">
     <div class="flex flex-wrap items-end justify-between gap-4">
-      <div><p class="eyebrow">Latest</p><h2 class="section-title mt-2">News &amp; updates</h2></div>
+      {% page_text "home_news" as t %}<div>{% if t.eyebrow %}<p class="eyebrow">{{ t.eyebrow }}</p>{% endif %}<h2 class="section-title mt-2">{{ t.heading }}</h2>{% if t.intro %}<p class="mt-2 max-w-2xl text-rlm-grey">{{ t.intro }}</p>{% endif %}</div>
       <a href="{% url 'news:list' %}" class="btn-outline btn-sm">All news</a>
     </div>
     <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{% for post in posts %}{% include "includes/post_card.html" %}{% endfor %}</div>
@@ -92,9 +93,9 @@
 
 <section class="section">
   <div class="container-rlm grid gap-6 md:grid-cols-3">
-    <a href="{% url 'prayer:request' %}" class="card p-6"><span class="text-rlm-flame-dark">{% icon "hands" "h-8 w-8" %}</span><h3 class="mt-4 text-lg font-bold">Need prayer?</h3><p class="mt-2 text-sm text-rlm-grey">Share your request in confidence. Our team will pray with you.</p></a>
-    <a href="{% url 'giving:partner' %}" class="card p-6"><span class="text-rlm-flame-dark">{% icon "heart" "h-8 w-8" %}</span><h3 class="mt-4 text-lg font-bold">Partner with us</h3><p class="mt-2 text-sm text-rlm-grey">Churches, organisations and individuals building together.</p></a>
-    <a href="{% url 'resources:list' %}" class="card p-6"><span class="text-rlm-flame-dark">{% icon "book" "h-8 w-8" %}</span><h3 class="mt-4 text-lg font-bold">Sermons &amp; devotionals</h3><p class="mt-2 text-sm text-rlm-grey">Teaching to help you grow, wherever you are.</p></a>
+    <a href="{% url 'prayer:request' %}" class="card p-6"><span class="text-rlm-flame-dark">{% icon "hands" "h-8 w-8" %}</span>{% page_text "home_card_prayer" as t %}<h3 class="mt-4 text-lg font-bold">{{ t.heading }}</h3><p class="mt-2 text-sm text-rlm-grey">{{ t.intro }}</p></a>
+    <a href="{% url 'giving:partner' %}" class="card p-6"><span class="text-rlm-flame-dark">{% icon "heart" "h-8 w-8" %}</span>{% page_text "home_card_partner" as t %}<h3 class="mt-4 text-lg font-bold">{{ t.heading }}</h3><p class="mt-2 text-sm text-rlm-grey">{{ t.intro }}</p></a>
+    <a href="{% url 'resources:list' %}" class="card p-6"><span class="text-rlm-flame-dark">{% icon "book" "h-8 w-8" %}</span>{% page_text "home_card_resources" as t %}<h3 class="mt-4 text-lg font-bold">{{ t.heading }}</h3><p class="mt-2 text-sm text-rlm-grey">{{ t.intro }}</p></a>
   </div>
 </section>
 {% include "includes/cta_band.html" %}

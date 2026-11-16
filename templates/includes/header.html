@@ -5,10 +5,10 @@
 <header class="sticky top-0 z-50 border-b border-rlm-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
   <div class="container-rlm flex h-16 items-center justify-between gap-4 lg:h-20">
     <a href="{% url 'core:home' %}" class="flex items-center gap-3" aria-label="{{ site.ministry_name }}, home">
-      <img src="{% static 'brand/mark-light-128.webp' %}" srcset="{% static 'brand/mark-light-64.webp' %} 64w, {% static 'brand/mark-light-128.webp' %} 128w" sizes="44px" width="44" height="44" alt="" class="h-10 w-10 lg:h-11 lg:w-11">
-      <span class="font-display text-[0.8rem] font-extrabold leading-tight tracking-wide text-rlm-black sm:text-sm">
-        REBUILDING LIVES<br class="sm:hidden"> <span class="text-rlm-flame-dark">MINISTRY</span>
-      </span>
+      {% if site.logo %}<img src="{{ site.logo|rendition:480 }}" alt="" class="h-10 w-auto max-w-[160px] object-contain lg:h-11">{% else %}<img src="{% static 'brand/mark-light-128.webp' %}" srcset="{% static 'brand/mark-light-64.webp' %} 64w, {% static 'brand/mark-light-128.webp' %} 128w" sizes="44px" width="44" height="44" alt="" class="h-10 w-10 lg:h-11 lg:w-11">{% endif %}
+      {% with words=site.ministry_name.split %}<span class="font-display text-[0.8rem] font-extrabold uppercase leading-tight tracking-wide text-rlm-black sm:text-sm">
+        {{ words|slice:":-1"|join:" " }}<br class="sm:hidden"> <span class="text-rlm-flame-dark">{{ words|last }}</span>
+      </span>{% endwith %}
     </a>
 
     <nav aria-label="Main" class="hidden lg:block">

@@ -1,7 +1,8 @@
 {% extends "base.html" %}{% load rlm %}
-{% block title %}Sermons &amp; resources · {{ site.ministry_name }}{% endblock %}
+{% block title %}{% page_text "resources" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Sermons &amp; resources · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "resources" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Resources" heading="Sermons, devotionals &amp; study materials" %}
+{% page_text "resources" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm">
   <form method="get" action="{% url 'resources:list' %}" class="rlm-form grid gap-3 rounded-2xl bg-rlm-cream p-4 sm:grid-cols-5" role="search"
         hx-get="{% url 'resources:list' %}" hx-target="#results" hx-trigger="change, submit, keyup changed delay:400ms from:#q" hx-push-url="true">

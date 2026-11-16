@@ -1,7 +1,8 @@
-{% extends "base.html" %}
-{% block title %}Prayer requests · {{ site.ministry_name }}{% endblock %}
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{% page_text "prayer" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Prayer requests · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "prayer" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Prayer" heading="How can we pray for you?" intro="Share your request in confidence. It is encrypted and read only by our prayer team. Name and contact details are optional." %}
+{% page_text "prayer" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm max-w-2xl">{% include "prayer/_form.html" %}</div></section>
 {% include "includes/turnstile_script.html" %}
 {% endblock %}

@@ -1,7 +1,8 @@
 {% extends "base.html" %}{% load rlm %}
-{% block title %}Leadership · {{ site.ministry_name }}{% endblock %}
+{% block title %}{% page_text "leadership" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Leadership · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "leadership" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Leadership" heading="The people serving the vision" %}
+{% page_text "leadership" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm">
   {% if leaders %}
   <ul class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">

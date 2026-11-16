@@ -7,6 +7,7 @@ from django import forms
 
 from core.forms import ConsentMixin, ProtectedFormMixin
 from core.models import phone_validator
+from core.site_text import option_choices
 
 from .models import Donation, GivingCategory, PartnershipEnquiry
 
@@ -71,6 +72,8 @@ class PartnershipForm(ProtectedFormMixin, ConsentMixin, forms.ModelForm):
     phone = forms.CharField(
         max_length=30, required=False, validators=[phone_validator], label="Phone (optional)"
     )
+    partner_type = forms.ChoiceField(choices=(), label="I am partnering as")
+    interest = forms.ChoiceField(choices=(), label="Main interest")
     message = forms.CharField(
         max_length=3000,
         required=False,
@@ -81,7 +84,12 @@ class PartnershipForm(ProtectedFormMixin, ConsentMixin, forms.ModelForm):
     class Meta:
         model = PartnershipEnquiry
         fields = ["partner_type", "interest", "name", "organisation", "email", "phone", "country", "message"]
-        labels = {"partner_type": "I am partnering as", "interest": "Main interest"}
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["partner_type"].choices = [("", "Choose…"), *option_choices("partner_type")]
+        self.fields["interest"].choices = option_choices("partner_interest")
+        self.order_fields([*self.Meta.fields, "consent", "website"])
 
     def save(self, commit: bool = True) -> PartnershipEnquiry:
         obj = super().save(commit=False)

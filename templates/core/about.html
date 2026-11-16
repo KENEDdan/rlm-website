@@ -1,8 +1,9 @@
 {% extends "base.html" %}{% load static rlm %}
-{% block title %}About us · {{ site.ministry_name }}{% endblock %}
+{% block title %}{% page_text "about" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}About us · {{ site.ministry_name }}{% endif %}{% endblock %}
 {% block og_title %}About {{ site.ministry_name }}{% endblock %}
+{% block description %}{% page_text "about" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="About us" heading="Rebuilding lives through the Gospel" intro=site.tagline %}
+{% page_text "about" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro|default:site.tagline %}
 <section class="section">
   <div class="container-rlm grid gap-12 lg:grid-cols-12">
     <div class="prose-rlm lg:col-span-7">{{ site.about_body|paragraphs }}</div>

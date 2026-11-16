@@ -1,18 +1,45 @@
 from django.contrib import admin
 
-from core.admin_mixins import AuditedAdminMixin, ExportCsvMixin, ScopedAdminMixin, SubmissionAdminMixin
+from core.admin_mixins import (
+    AuditedAdminMixin,
+    ExportCsvMixin,
+    FormOptionFieldsMixin,
+    ScopedAdminMixin,
+    SubmissionAdminMixin,
+    option_list_filter,
+)
 
 from .models import EventRegistration, VolunteerApplication
 
 
 @admin.register(VolunteerApplication)
 class VolunteerApplicationAdmin(
-    ScopedAdminMixin, SubmissionAdminMixin, ExportCsvMixin, AuditedAdminMixin, admin.ModelAdmin
+    ScopedAdminMixin,
+    SubmissionAdminMixin,
+    ExportCsvMixin,
+    AuditedAdminMixin,
+    FormOptionFieldsMixin,
+    admin.ModelAdmin,
 ):
     audit_views = True
+    option_fields = {"interests": "volunteer_interest", "availability": "volunteer_availability"}
+    multi_option_fields = {"interests"}
     branch_lookup = "branch"
-    list_display = ("audit_label", "full_name", "location", "branch", "availability", "status", "created_at")
-    list_filter = ("status", "availability", "branch", "country")
+    list_display = (
+        "audit_label",
+        "full_name",
+        "location",
+        "branch",
+        "availability_label",
+        "status",
+        "created_at",
+    )
+    list_filter = (
+        "status",
+        option_list_filter("availability", "volunteer_availability", "availability"),
+        "branch",
+        "country",
+    )
     search_fields = ("location",)
     search_help_text = "Search by exact email address, ID number or location."
     actions = ["mark_handled", "export_csv"]
@@ -57,6 +84,10 @@ class VolunteerApplicationAdmin(
 
     def has_add_permission(self, request):  # type: ignore[no-untyped-def]
         return False  # submissions come from the public form only
+
+    @admin.display(description="Availability", ordering="availability")
+    def availability_label(self, obj: VolunteerApplication) -> str:
+        return obj.get_availability_display()
 
 
 @admin.register(EventRegistration)

@@ -1,8 +1,9 @@
-{% extends "base.html" %}
-{% block title %}Unsubscribe · {{ site.ministry_name }}{% endblock %}
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{% page_text "newsletter_unsubscribe" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Unsubscribe · {{ site.ministry_name }}{% endif %}{% endblock %}
 {% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block description %}{% page_text "newsletter_unsubscribe" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Newsletter" heading="Unsubscribe" %}
+{% page_text "newsletter_unsubscribe" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm max-w-xl">
   <form method="post" class="rounded-2xl bg-rlm-cream p-6">{% csrf_token %}<p>Click below to stop receiving emails from us.</p><button type="submit" class="btn-dark mt-4">Unsubscribe</button></form>
 </div></section>

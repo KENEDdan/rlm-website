@@ -1,7 +1,8 @@
-{% extends "base.html" %}
-{% block title %}Programmes · {{ site.ministry_name }}{% endblock %}
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{% page_text "programs" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Programmes · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "programs" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Programmes" heading="How we rebuild lives" intro="Revival, discipleship, evangelism and leadership: each programme helps people grow in faith and serve." %}
+{% page_text "programs" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
   {% for program in programs %}{% include "includes/program_card.html" %}{% empty %}<p class="text-rlm-grey">Programmes will be listed here soon.</p>{% endfor %}
 </div></section>

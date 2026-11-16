@@ -257,3 +257,51 @@ class SubmissionAdminMixin:
         if term.isdigit():
             return queryset.filter(pk=int(term)), False
         return super().get_search_results(request, queryset, search_term)  # type: ignore[misc]
+
+
+def option_list_filter(field: str, list_name: str, title: str) -> type[admin.SimpleListFilter]:
+    """Admin sidebar filter that shows the admin-managed labels of a Form options list."""
+    from core.site_text import option_choices
+
+    class _Filter(admin.SimpleListFilter):
+        parameter_name = field
+
+        def lookups(self, request: HttpRequest, model_admin: Any) -> list[tuple[str, str]]:
+            return option_choices(list_name, include_inactive=True)
+
+        def queryset(self, request: HttpRequest, queryset: QuerySet) -> QuerySet:
+            value = self.value()
+            return queryset.filter(**{field: value}) if value else queryset
+
+    _Filter.title = title
+    _Filter.__name__ = f"{field.title().replace('_', '')}OptionFilter"
+    return _Filter
+
+
+class FormOptionFieldsMixin:
+    """Edit fields backed by a Form options list with a dropdown (or checkboxes for list fields).
+
+    ``option_fields = {"availability": "volunteer_availability"}``. Switched-off options stay selectable
+    here so older submissions remain valid.
+    """
+
+    option_fields: dict[str, str] = {}
+    multi_option_fields: set[str] = set()
+
+    def formfield_for_dbfield(self, db_field: Any, request: HttpRequest, **kwargs: Any) -> Any:
+        from django import forms
+
+        from core.site_text import option_choices
+
+        list_name = self.option_fields.get(db_field.name)
+        if list_name is None:
+            return super().formfield_for_dbfield(db_field, request, **kwargs)  # type: ignore[misc]
+        choices = option_choices(list_name, include_inactive=True)
+        label = db_field.verbose_name.capitalize()
+        if db_field.name in self.multi_option_fields:
+            return forms.MultipleChoiceField(
+                choices=choices, widget=forms.CheckboxSelectMultiple, required=False, label=label
+            )
+        return forms.ChoiceField(
+            choices=[("", "---------"), *choices], required=not db_field.blank, label=label
+        )

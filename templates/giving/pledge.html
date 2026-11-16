@@ -1,8 +1,9 @@
-{% extends "base.html" %}
-{% block title %}Confirm your gift · {{ site.ministry_name }}{% endblock %}
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{% page_text "pledge" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Confirm your gift · {{ site.ministry_name }}{% endif %}{% endblock %}
 {% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block description %}{% page_text "pledge" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Give" heading="Tell us about your gift" %}
+{% page_text "pledge" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm max-w-2xl">{% include "giving/_pledge_form.html" %}</div></section>
 {% include "includes/turnstile_script.html" %}
 {% endblock %}

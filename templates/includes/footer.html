@@ -3,7 +3,7 @@
   <div class="flame-bar"></div>
   <div class="container-rlm grid gap-10 py-14 md:grid-cols-12">
     <div class="md:col-span-4">
-      <img src="{% static 'brand/logo-on-dark-320.webp' %}" srcset="{% static 'brand/logo-on-dark-160.webp' %} 160w, {% static 'brand/logo-on-dark-320.webp' %} 320w" sizes="112px" width="160" height="165" alt="{{ site.ministry_name }}" class="h-28 w-auto" loading="lazy">
+      {% if site.logo_on_dark %}<img src="{{ site.logo_on_dark|rendition:480 }}" alt="{{ site.ministry_name }}" class="h-28 w-auto max-w-[220px] object-contain" loading="lazy">{% else %}<img src="{% static 'brand/logo-on-dark-320.webp' %}" srcset="{% static 'brand/logo-on-dark-160.webp' %} 160w, {% static 'brand/logo-on-dark-320.webp' %} 320w" sizes="112px" width="160" height="165" alt="{{ site.ministry_name }}" class="h-28 w-auto" loading="lazy">{% endif %}
       <p class="mt-4 font-display text-lg font-bold">{{ site.tagline }}</p>
       <figure class="mt-4 border-l-2 border-rlm-flame pl-4">
         <blockquote class="text-sm italic text-rlm-line/90">“{{ site.scripture_text }}”</blockquote>
@@ -37,8 +37,8 @@
     </nav>
 
     <div class="md:col-span-4">
-      <h2 class="eyebrow-light">Stay connected</h2>
-      <p class="mt-3 text-sm text-rlm-line/90">News, events and prayer points, about once a month.</p>
+      {% page_text "footer_newsletter" as t %}<h2 class="eyebrow-light">{{ t.heading }}</h2>
+      {% if t.intro %}<p class="mt-3 text-sm text-rlm-line/90">{{ t.intro }}</p>{% endif %}
       <a href="{% url 'newsletter:subscribe' %}" class="btn-primary mt-4">Subscribe to updates</a>
       {% if site.public_email or site.public_phone or site.address %}
         <ul class="mt-6 space-y-2 text-sm">
@@ -62,6 +62,7 @@
       <ul class="flex gap-4">
         <li><a class="hover:text-rlm-gold" href="{% url 'core:privacy' %}">Privacy policy</a></li>
         <li><a class="hover:text-rlm-gold" href="{% url 'core:terms' %}">Terms</a></li>
+        {% for p in footer_pages %}<li><a class="hover:text-rlm-gold" href="{% url 'core:page' p.slug %}">{{ p.title }}</a></li>{% endfor %}
       </ul>
     </div>
   </div>

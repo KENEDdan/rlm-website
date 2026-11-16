@@ -7,7 +7,13 @@ from django.db.models import QuerySet
 from django.http import HttpRequest
 
 from core.admin import SingletonAdmin
-from core.admin_mixins import AuditedAdminMixin, ExportCsvMixin, SubmissionAdminMixin
+from core.admin_mixins import (
+    AuditedAdminMixin,
+    ExportCsvMixin,
+    FormOptionFieldsMixin,
+    SubmissionAdminMixin,
+    option_list_filter,
+)
 
 from . import services
 from .models import CurrentNeed, Donation, GivingCategory, GivingSettings, PartnershipEnquiry, WebhookEvent
@@ -167,10 +173,34 @@ class WebhookEventAdmin(admin.ModelAdmin):
 
 
 @admin.register(PartnershipEnquiry)
-class PartnershipEnquiryAdmin(SubmissionAdminMixin, ExportCsvMixin, AuditedAdminMixin, admin.ModelAdmin):
+class PartnershipEnquiryAdmin(
+    SubmissionAdminMixin, ExportCsvMixin, AuditedAdminMixin, FormOptionFieldsMixin, admin.ModelAdmin
+):
     audit_views = True
-    list_display = ("audit_label", "name", "partner_type", "interest", "country", "status", "created_at")
-    list_filter = ("status", "partner_type", "interest")
+    option_fields = {"partner_type": "partner_type", "interest": "partner_interest"}
+    list_display = (
+        "audit_label",
+        "name",
+        "partner_type_label",
+        "interest_label",
+        "country",
+        "status",
+        "created_at",
+    )
+    list_filter = (
+        "status",
+        option_list_filter("partner_type", "partner_type", "partner type"),
+        option_list_filter("interest", "partner_interest", "interest"),
+    )
+
+    @admin.display(description="Partner type", ordering="partner_type")
+    def partner_type_label(self, obj: PartnershipEnquiry) -> str:
+        return obj.get_partner_type_display()
+
+    @admin.display(description="Interest", ordering="interest")
+    def interest_label(self, obj: PartnershipEnquiry) -> str:
+        return obj.get_interest_display()
+
     search_help_text = "Search by exact email address or ID number."
     actions = ["mark_handled", "export_csv"]
     readonly_fields = ("created_at", "handled_by", "handled_at", "consent")

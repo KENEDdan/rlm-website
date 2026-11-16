@@ -1,7 +1,8 @@
 {% extends "base.html" %}{% load rlm %}
-{% block title %}Reports · {{ site.ministry_name }}{% endblock %}
+{% block title %}{% page_text "reports" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Reports · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "reports" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
 {% block content %}
-{% include "includes/page_header.html" with eyebrow="Media" heading="Reports" intro="Ministry reports and publications." %}
+{% page_text "reports" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm">
   <ul class="divide-y divide-rlm-line rounded-2xl border border-rlm-line">
     {% for report in reports %}

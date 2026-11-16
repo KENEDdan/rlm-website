@@ -45,6 +45,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
         "newsletter.subscriber": "vcx",
         **dict.fromkeys(MEDIA_MODELS, "v"),
         "news.post": "vacd",
+        "core.formoption": "vac",
     },
     FINANCE: {
         "giving.givingsettings": "vc",
@@ -63,6 +64,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
     },
     MEDIA: {
         "core.sociallink": "vacd",
+        "core.pagetext": "vc",
         "branches.branch": "v",
         "leadership.department": "vac",
         "leadership.leader": "vac",
@@ -104,8 +106,12 @@ def codenames_for(model_label: str, letters: str) -> list[tuple[str, str]]:
     return result
 
 
-def sync_roles(apps: Any = None) -> dict[str, int]:
-    """Create/refresh every role group. Safe to run any number of times."""
+def sync_roles(apps: Any = None, *, strict: bool = True) -> dict[str, int]:
+    """Create/refresh every role group. Safe to run any number of times.
+
+    ``strict=False`` skips permissions of models that do not exist yet; the early roles migration uses it,
+    because later migrations add models (and their own sync step) after it.
+    """
     if apps is None:
         from django.apps import apps as global_apps
 
@@ -124,6 +130,8 @@ def sync_roles(apps: Any = None) -> dict[str, int]:
         for model_label, letters in matrix.items():
             for app_label, codename in codenames_for(model_label, letters):
                 perm = Permission.objects.filter(content_type__app_label=app_label, codename=codename).first()
+                if perm is None and not strict:
+                    continue
                 if perm is None:
                     raise LookupError(f"Permission {app_label}.{codename} does not exist (role {role}).")
                 wanted.append(perm)

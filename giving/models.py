@@ -18,6 +18,7 @@ from django.utils import timezone
 from core.crypto import blind_index
 from core.fields import EncryptedCharField, EncryptedEmailField, EncryptedTextField
 from core.models import SingletonModel, SubmissionModel, TimeStampedModel
+from core.site_text import option_label
 
 
 class GivingSettings(SingletonModel):
@@ -184,20 +185,9 @@ class WebhookEvent(models.Model):
 
 
 class PartnershipEnquiry(SubmissionModel):
-    class PartnerType(models.TextChoices):
-        INDIVIDUAL = "individual", "Individual"
-        CHURCH = "church", "Church"
-        ORGANISATION = "organisation", "Organisation"
-
-    class Interest(models.TextChoices):
-        FINANCIAL = "financial", "Financial partnership"
-        PRAYER = "prayer", "Prayer partnership"
-        MISSIONS = "missions", "Missions & outreach"
-        RESOURCES = "resources", "Equipment & resources"
-        OTHER = "other", "Other"
-
-    partner_type = models.CharField(max_length=20, choices=PartnerType.choices)
-    interest = models.CharField(max_length=20, choices=Interest.choices, default=Interest.FINANCIAL)
+    # Admin-managed lists "partner_type" and "partner_interest" (core.FormOption).
+    partner_type = models.CharField(max_length=20)
+    interest = models.CharField(max_length=20, default="financial")
     name = EncryptedCharField(max_length=150)
     organisation = EncryptedCharField(max_length=200, blank=True)
     email = EncryptedEmailField()
@@ -212,6 +202,12 @@ class PartnershipEnquiry(SubmissionModel):
         verbose_name = "partnership enquiry"
         verbose_name_plural = "partnership enquiries"
         permissions: ClassVar = [("export_partnershipenquiry", "Can export partnership enquiries")]
+
+    def get_partner_type_display(self) -> str:
+        return option_label("partner_type", self.partner_type)
+
+    def get_interest_display(self) -> str:
+        return option_label("partner_interest", self.interest)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.email_hash = blind_index(self.email)

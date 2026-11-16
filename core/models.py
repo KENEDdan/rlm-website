@@ -90,7 +90,15 @@ class SiteSettings(SingletonModel):
         blank=True, help_text="Full About page text. Blank lines separate paragraphs."
     )
     logo = SafeImageField(
-        upload_to=RandomUploadTo("brand"), blank=True, help_text="Optional. Falls back to the built-in logo."
+        upload_to=RandomUploadTo("brand"),
+        blank=True,
+        help_text="Logo for LIGHT backgrounds (site header). PNG with transparency works best. "
+        "Leave empty to use the built-in logo.",
+    )
+    logo_on_dark = SafeImageField(
+        upload_to=RandomUploadTo("brand"),
+        blank=True,
+        help_text="Logo for DARK backgrounds (footer, home page hero, link previews). Leave empty for the built-in one.",
     )
 
     notification_email = models.EmailField(
@@ -183,14 +191,24 @@ class Page(PublishableModel):
         help_text="Plain text. Blank lines separate paragraphs; lines starting with '## ' are headings."
     )
     last_reviewed = models.DateField(null=True, blank=True)
+    show_in_footer = models.BooleanField(
+        default=False, help_text="List this page in the website footer (e.g. 'Statement of faith')."
+    )
+    order = models.PositiveSmallIntegerField(default=0, help_text="Footer position (lower first).")
 
     class Meta:
-        ordering: ClassVar = ["title"]
+        ordering: ClassVar = ["order", "title"]
 
     def __str__(self) -> str:
         return self.title
 
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        super().save(*args, **kwargs)
+        cache.delete(SITE_SETTINGS_CACHE_KEY + ":footer-pages")
+
     def get_absolute_url(self) -> str:
+        if self.slug in ("privacy", "terms"):
+            return reverse(f"core:{self.slug}")
         return reverse("core:page", args=[self.slug])
 
 
@@ -223,3 +241,93 @@ class SubmissionModel(TimeStampedModel):
     def audit_label(self) -> str:
         """Non-PII label used in audit logs, admin titles and email alerts."""
         return f"{self._meta.verbose_name} #{self.pk}"
+
+
+SITE_TEXT_CACHE_KEY = "core:site-text:v1"
+
+
+class PageText(TimeStampedModel):
+    """Editable wording for a page header or home/shared section (one row per place on the site).
+
+    Rows are created from ``core.page_texts.PAGE_TEXT_DEFAULTS`` on migrate; staff can edit but not add or
+    delete them, because each key is wired into a template.
+    """
+
+    key = models.SlugField(max_length=60, unique=True, editable=False)
+    label = models.CharField(max_length=120, editable=False, help_text="Where this text appears.")
+    eyebrow = models.CharField(
+        max_length=60, blank=True, help_text="Small label above the heading (optional)."
+    )
+    heading = models.CharField(max_length=160)
+    highlight = models.CharField(
+        max_length=160, blank=True, help_text="Optional second line in the flame colours (home hero only)."
+    )
+    intro = models.TextField(max_length=400, blank=True, help_text="Short text under the heading (optional).")
+    seo_title = models.CharField(
+        max_length=70, blank=True, help_text="Optional. Browser tab / search result title for this page."
+    )
+    seo_description = models.CharField(
+        max_length=160, blank=True, help_text="Optional. Search result summary for this page."
+    )
+
+    class Meta:
+        ordering: ClassVar = ["label"]
+        verbose_name = "page text"
+        verbose_name_plural = "page text"
+
+    def __str__(self) -> str:
+        return self.label
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        super().save(*args, **kwargs)
+        cache.delete(SITE_TEXT_CACHE_KEY + ":pages")
+
+
+class FormOption(TimeStampedModel):
+    """One choice in a public form list (e.g. a volunteer area of service), managed in the admin.
+
+    The stored ``value`` never changes once used (old submissions keep pointing at it); the ``label`` can be
+    renamed. Options are switched off instead of deleted so old submissions still show a readable label.
+    """
+
+    class List(models.TextChoices):
+        VOLUNTEER_INTEREST = "volunteer_interest", "Volunteer form: where would you like to serve?"
+        VOLUNTEER_AVAILABILITY = "volunteer_availability", "Volunteer form: availability"
+        CONTACT_TOPIC = "contact_topic", "Contact form: topic"
+        PARTNER_TYPE = "partner_type", "Partnership form: I am partnering as"
+        PARTNER_INTEREST = "partner_interest", "Partnership form: main interest"
+
+    list = models.CharField(max_length=40, choices=List.choices, db_index=True)
+    value = models.SlugField(
+        max_length=20,
+        help_text="Short internal code (lowercase, no spaces), e.g. 'prison-ministry'. Cannot be changed later.",
+    )
+    label = models.CharField(max_length=120, help_text="What visitors see.")
+    order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(
+        default=True, help_text="Untick to hide it from the form (old answers keep it)."
+    )
+
+    class Meta:
+        ordering: ClassVar = ["list", "order", "label"]
+        constraints: ClassVar = [
+            models.UniqueConstraint(fields=["list", "value"], name="unique_option_per_list")
+        ]
+        verbose_name = "form option"
+
+    def __str__(self) -> str:
+        return f"{self.get_list_display()}: {self.label}"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        super().save(*args, **kwargs)
+        cache.delete(f"{SITE_TEXT_CACHE_KEY}:options:{self.list}")
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        if not self.is_active and self.list:
+            others = FormOption.objects.filter(list=self.list, is_active=True).exclude(pk=self.pk)
+            if not others.exists():
+                raise ValidationError(
+                    "At least one option in this list must stay active, or the form cannot be sent."
+                )

@@ -18,6 +18,14 @@ register = template.Library()
 PLACEHOLDER_ALT = "Placeholder image: real photo coming soon"
 
 
+@register.filter
+def rendition(field: Any, width: int) -> str:
+    """URL of an uploaded image's WebP rendition (``{{ site.logo|rendition:480 }}``); '' if no image."""
+    if not field:
+        return ""
+    return field.storage.url(rendition_name(field.name, int(width)))
+
+
 @register.simple_tag
 def responsive_img(
     field: Any,
@@ -163,7 +171,8 @@ def organization_jsonld(context: dict[str, Any]) -> SafeString:
         "alternateName": site.short_name,
         "slogan": site.tagline,
         "url": base + "/",
-        "logo": base + static("brand/logo-transparent-640.webp"),
+        "logo": base
+        + (rendition(site.logo, 960) if site.logo else static("brand/logo-transparent-640.webp")),
         "sameAs": [link.url for link in context.get("social_links", [])],
     }
     if site.public_email:
@@ -181,3 +190,11 @@ def organization_jsonld(context: dict[str, Any]) -> SafeString:
 @register.simple_tag
 def absolute_static(request: Any, path: str) -> str:
     return escape(request.build_absolute_uri(static(path)))
+
+
+@register.simple_tag
+def page_text(key: str) -> Any:
+    """``{% page_text "events" as pt %}`` -> editable eyebrow/heading/intro (admin: Page text)."""
+    from core.site_text import page_text as lookup
+
+    return lookup(key)

@@ -8,7 +8,12 @@ class CoreConfig(AppConfig):
     verbose_name = "Site"
 
     def ready(self) -> None:
+        from django.db.models.signals import post_migrate
+
         from . import checks, signals  # noqa: F401
+        from .site_text import ensure_defaults
+
+        post_migrate.connect(ensure_defaults, sender=self, dispatch_uid="core.ensure_site_text_defaults")
 
 
 class RLMAdminConfig(AdminConfig):

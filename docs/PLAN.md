@@ -65,6 +65,8 @@ branch (Branch Coordinator) or department (Departmental Head) in every admin que
 | User, Group | VACD | – | – | – | – | – | – |
 | SiteSettings, Page | VC | – | – | – | – | – | – |
 | SocialLink | VACD | – | – | – | VACD | – | – |
+| PageText (headings/wording) | VC | – | – | – | VC | – | – |
+| FormOption (form choice lists) | VAC | VAC | – | – | – | – | – |
 | AuditLog | V | – | – | – | – | – | – |
 | Country, Branch | VACD | V | – | V | V | VC own | V |
 | Program | VACD | V | – | VACD | V | V | VC own |
