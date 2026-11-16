@@ -45,3 +45,23 @@ html[data-theme="dark"] {
 #site-name a { display: inline-flex; align-items: center; gap: .6rem; font-weight: 800; letter-spacing: .02em; }
 #site-name img { height: 34px; width: 34px; }
 .rlm-env-banner { background: #F8C124; color: #0A0A0A; text-align: center; font-weight: 700; padding: 4px; font-size: 12px; }
+
+/* "New backup codes" sits in the header next to "Log out" and must look the same. */
+#backup-codes-form {
+  display: inline;
+}
+#backup-codes-form button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--header-link-color);
+  font-family: var(--font-family-primary);
+  font-size: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+}
+#backup-codes-form button:hover,
+#backup-codes-form button:focus {
+  text-decoration: underline;
+}

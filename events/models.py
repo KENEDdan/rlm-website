@@ -72,7 +72,7 @@ class Event(PublishableModel):
     def seats_taken(self) -> int:
         from django.db.models import Sum
 
-        total = self.registrations.exclude(status="cancelled").aggregate(n=Sum("attendees"))["n"]
+        total = self.registrations.exclude(registration_status="cancelled").aggregate(n=Sum("attendees"))["n"]
         return total or 0
 
     @property

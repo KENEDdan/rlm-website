@@ -9,6 +9,7 @@
 {% block userlinks %}
   <a href="{% url 'core:home' %}" target="_blank" rel="noopener">View site</a> /
   {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">Change password</a> /{% endif %}
+  <form id="backup-codes-form" method="post" action="{% url 'accounts:regenerate_backup_codes' %}">{% csrf_token %}<button type="submit" title="Replaces your old backup codes">New backup codes</button></form> /
   <form id="logout-form" method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
   {% include "admin/color_theme_toggle.html" %}
 {% endblock %}

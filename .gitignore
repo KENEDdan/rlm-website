@@ -39,3 +39,6 @@ bin/
 .DS_Store
 Thumbs.db
 .cache/
+
+# Local Lighthouse reports
+lh/

@@ -49,3 +49,24 @@ added later if editors need headings or links.
 ## D-006: Admin theme
 The Django admin is themed with the brand tokens through its built-in CSS variables
 (`static/admin/rlm-admin.css`). No JS framework is involved, so it stays CSP-compatible.
+
+## D-007: Local only until the ministry creates the repository
+(2026-11-16) The site runs only on the developer PC with Docker. No remote repository, server, domain or
+deployment exists. `docs/DEPLOYMENT.md` is a plan for phase K, not a runbook. **Action:** ministry creates
+and owns the GitHub organisation and hosting accounts first.
+
+## D-008: Tooling run in throwaway containers, not installed on the PC
+Trivy (image scan) and Lighthouse (Node + Chromium) ran in disposable Docker containers, so no Node runtime or
+scanner is installed on the PC and the project keeps "no Node in prod". Lighthouse was run against the
+**production image behind a local Caddy** (mirroring phase K), because the dev `runserver` serves
+uncompressed, uncached files and would misreport performance.
+
+## D-009: Demo data
+`manage.py seed_demo` creates clearly fake content (titles start with "DEMO", `demo-` slugs, `@example.test`
+addresses, generated flame-gradient placeholder images marked "DEMO PLACEHOLDER"). It refuses to run when
+`DEBUG` is off and `--reset` removes only what it created. The placeholder video is a public sample
+(Big Buck Bunny) and must never be published on the real site.
+
+## D-010: Data-subject requests via command line
+`manage.py personal_data` answers export/erase requests (rule 13). Donations are anonymised, not deleted,
+so accounting records stay complete. **Open question:** a Founder-only admin screen for the same task.

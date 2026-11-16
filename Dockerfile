@@ -59,12 +59,15 @@ COPY --chown=root:root . /app
 COPY --from=css --chown=root:root /out/site.css /app/static/css/site.css
 # collectstatic needs settings to import; throwaway values are used ONLY in this build step.
 # pip is then removed: it is not needed at runtime (smaller attack surface, see docs/SECURITY_AUDIT.md).
+# collectstatic honours FILE_UPLOAD_PERMISSIONS (0640, root-owned), so static files are made world-readable
+# (still root-owned and read-only) or the non-root app user cannot serve them.
 RUN DJANGO_SETTINGS_MODULE=config.settings.prod \
     DJANGO_SECRET_KEY=build-only-not-a-secret \
     DATABASE_URL=sqlite:////tmp/build.sqlite3 \
     FIELD_ENCRYPTION_KEYS=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
     BLIND_INDEX_KEY=build-only \
     python manage.py collectstatic --noinput \
+    && chmod -R a+rX,go-w /app/staticfiles \
     && python -m compileall -q /app \
     && /opt/venv/bin/python -m pip uninstall -y -q pip \
     && /usr/local/bin/python -m pip uninstall -y -q pip \
@@ -74,6 +77,6 @@ RUN DJANGO_SETTINGS_MODULE=config.settings.prod \
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz/', timeout=4).status == 200 else 1)"
+    CMD ["python", "/app/docker/healthcheck.py"]
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--config", "/app/docker/gunicorn.conf.py"]
