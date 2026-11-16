@@ -1,0 +1,84 @@
+# Development stack. Postgres and Redis are NOT published to the host.
+# Web: http://localhost:8010   Mail UI (mailpit): http://localhost:8026
+name: rlm
+
+x-app: &app
+  build:
+    context: .
+    target: dev
+  image: rlm-web:dev
+  env_file: .env
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.dev
+  volumes:
+    - .:/app
+    - media:/app/data/media
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks: [internal]
+
+services:
+  web:
+    <<: *app
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "127.0.0.1:8010:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz/', timeout=4).status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  worker:
+    <<: *app
+    command: celery -A config worker --beat --loglevel=INFO --concurrency=2 --schedule=/tmp/celerybeat-schedule
+
+  css:
+    <<: *app
+    depends_on: []
+    command: tailwindcss -c tailwind.config.js -i static/css/input.css -o static/css/site.css --watch=always
+    profiles: ["css"]
+
+  db:
+    image: postgres:16.16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rlm}
+      POSTGRES_USER: ${POSTGRES_USER:-rlm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rlm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  redis:
+    image: redis:7.4.12-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    ports:
+      - "127.0.0.1:8026:8025"
+    networks: [internal]
+
+volumes:
+  pgdata:
+  media:
+
+networks:
+  internal:

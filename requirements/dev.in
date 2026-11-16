@@ -1,0 +1,11 @@
+-c base.txt
+pytest
+pytest-django
+pytest-cov
+ruff
+black
+bandit
+pip-audit
+pre-commit
+detect-secrets
+pip-tools

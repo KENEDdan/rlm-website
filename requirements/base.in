@@ -1,0 +1,17 @@
+Django>=5.2.19,<5.3
+django-environ
+psycopg[binary]
+gunicorn
+whitenoise
+celery
+redis
+argon2-cffi
+django-axes
+django-ratelimit
+django-csp>=4.0,<5
+django-otp
+qrcode
+cryptography
+Pillow
+python-magic
+sentry-sdk

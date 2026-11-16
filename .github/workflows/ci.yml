@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16.16-alpine
+        env:
+          POSTGRES_DB: rlm
+          POSTGRES_USER: rlm
+          POSTGRES_PASSWORD: ci-only-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rlm" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # CI-only throwaway values (not secrets).
+      DJANGO_SECRET_KEY: ci-only-insecure-key-for-tests-0123456789abcdefghijklmnop
+      DATABASE_URL: postgres://rlm:ci-only-password@localhost:5432/rlm
+      FIELD_ENCRYPTION_KEYS: ${{ vars.CI_FERNET_KEY || 'Q0ktT05MWS1GRVJORVQtS0VZLTAxMjM0NTY3ODlhYmM=' }}
+      BLIND_INDEX_KEY: ci-only-blind-index
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: System packages
+        run: sudo apt-get update && sudo apt-get install -y libmagic1
+      - name: Install (hash-checked)
+        run: |
+          pip install --require-hashes -r requirements/base.txt
+          pip install --require-hashes -r requirements/dev.txt
+      - name: Ruff
+        run: ruff check .
+      - name: Black
+        run: black --check .
+      - name: Bandit
+        run: bandit -c pyproject.toml -r . -q
+      - name: pip-audit
+        run: pip-audit -r requirements/base.txt --require-hashes --disable-pip
+      - name: Detect secrets
+        run: git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+      - name: Migrations are complete
+        run: python manage.py makemigrations --check --dry-run --settings=config.settings.test
+      - name: Tests
+        run: pytest --cov --cov-report=term --cov-fail-under=85
+      - name: Deploy checks
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.prod
+          DJANGO_ALLOWED_HOSTS: example.org
+        run: python manage.py check --deploy --fail-level WARNING

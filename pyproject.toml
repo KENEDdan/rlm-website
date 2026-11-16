@@ -1,0 +1,49 @@
+[project]
+name = "rlm-website"
+version = "1.0.0"
+requires-python = ">=3.12"
+
+[tool.black]
+line-length = 110
+target-version = ["py312"]
+extend-exclude = "migrations"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["*/migrations/*", "staticfiles", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "DJ", "BLE", "C4", "SIM", "RUF"]
+ignore = [
+  "E501",    # black handles line length
+  "RUF012",  # Django Meta/ClassVar noise
+  "DJ001",   # blank CharFields without null are intentional
+  "S308",    # mark_safe audited manually (none on user input)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S311", "S113"]
+"config/settings/*" = ["F405"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --reuse-db --ds=config.settings.test"
+filterwarnings = [
+  "ignore::DeprecationWarning:celery.*",
+  "ignore:No directory at:UserWarning",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["*/migrations/*", "tests/*", "config/wsgi.py", "config/asgi.py", "manage.py", "scripts/*", "docker/*"]
+
+[tool.coverage.report]
+skip_empty = true
+show_missing = false
+
+[tool.bandit]
+exclude_dirs = ["tests", "staticfiles", "data", ".venv"]
+skips = []
