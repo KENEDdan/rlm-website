@@ -198,3 +198,34 @@ def page_text(key: str) -> Any:
     from core.site_text import page_text as lookup
 
     return lookup(key)
+
+
+@register.inclusion_tag("core/_privacy_facts.html", takes_context=True)
+def privacy_facts(context: dict[str, Any]) -> dict[str, Any]:
+    """Cookie list and retention periods generated from the live settings, so the privacy page can never
+    drift from what the site really does."""
+    from django.conf import settings
+
+    site = context.get("site")
+    retention = [
+        ("Prayer requests", getattr(site, "retention_prayer_days", 0)),
+        ("Contact messages", getattr(site, "retention_contact_days", 0)),
+        ("Volunteer applications", getattr(site, "retention_volunteer_days", 0)),
+        ("Event registrations", getattr(site, "retention_event_registration_days", 0)),
+        ("Partnership enquiries", getattr(site, "retention_partnership_days", 0)),
+        ("Unconfirmed newsletter sign-ups", 30),
+    ]
+    cookies = [
+        (
+            settings.CSRF_COOKIE_NAME,
+            "Security: protects forms against forgery",
+            "Until you close the browser",
+        ),
+        ("messages", "Shows a one-off confirmation after you send a form", "Deleted when shown"),
+        (
+            settings.SESSION_COOKIE_NAME,
+            "Staff sign-in only (not set for visitors)",
+            "Until the browser closes; 2 h idle",
+        ),
+    ]
+    return {"site": site, "retention": retention, "cookies": cookies}

@@ -150,6 +150,7 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_NAME = "rlm_sid"
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_AGE = None  # browser-session cookie: the site sets no long-lived cookies at all
 CSRF_FAILURE_VIEW = "core.views.csrf_failure"
 
 # ---------------------------------------------------------------- security headers

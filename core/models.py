@@ -152,6 +152,13 @@ class SiteSettings(SingletonModel):
         return obj
 
     @property
+    def analytics_enabled(self) -> bool:
+        """Analytics only load (after consent) when a provider, script and site id are all set."""
+        return self.analytics_provider != "none" and bool(
+            self.analytics_script_url and self.analytics_site_id
+        )
+
+    @property
     def whatsapp_digits(self) -> str:
         return "".join(ch for ch in self.whatsapp_number if ch.isdigit())
 

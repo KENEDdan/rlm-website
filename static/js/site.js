@@ -74,5 +74,13 @@
       banner.hidden = true;
       if (value === "yes") loadAnalytics();
     });
+    // "Privacy choices" (footer): withdrawing consent must be as easy as giving it.
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest("[data-consent-reset]")) return;
+      try { window.localStorage.removeItem(KEY); } catch (err) { /* private mode */ }
+      banner.hidden = false;
+      var first = banner.querySelector("[data-consent]");
+      if (first) first.focus();
+    });
   }
 })();

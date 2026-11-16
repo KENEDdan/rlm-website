@@ -6,5 +6,6 @@
 <section class="section"><div class="container-rlm">
   {% if page.last_reviewed %}<p class="mb-6 text-sm text-rlm-grey">Last reviewed: {{ page.last_reviewed|date:"j F Y" }}</p>{% endif %}
   <div class="prose-rlm">{{ page.body|paragraphs }}</div>
+  {% if page.slug == "privacy" %}{% privacy_facts %}{% endif %}
 </div></section>
 {% endblock %}

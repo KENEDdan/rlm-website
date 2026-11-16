@@ -1,0 +1,17 @@
+<section class="prose-rlm mt-10 border-t border-rlm-line pt-8" aria-labelledby="privacy-facts">
+  <h2 id="privacy-facts">Cookies and data retention (current settings)</h2>
+  <p>This section is generated automatically from the website's live settings.</p>
+  <h3>Cookies</h3>
+  <p>We set only cookies that are strictly necessary for the site to work. None of them track you, and none
+    last beyond your browser session. We use no advertising or social-media cookies.</p>
+  <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+    <thead><tr><th class="py-2 pr-4">Name</th><th class="py-2 pr-4">Purpose</th><th class="py-2">Kept for</th></tr></thead>
+    <tbody>{% for name, purpose, life in cookies %}<tr class="border-t border-rlm-line"><td class="py-2 pr-4 font-mono">{{ name }}</td><td class="py-2 pr-4">{{ purpose }}</td><td class="py-2">{{ life }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p>Videos are loaded from YouTube's privacy-enhanced domain only when you press play.
+    {% if site.analytics_enabled %}Visitor statistics are cookieless and load only if you agree; your choice is stored in your browser.
+    <button type="button" data-consent-reset class="font-semibold text-rlm-flame-dark underline">Change your privacy choices</button>{% else %}We do not use visitor statistics.{% endif %}</p>
+  <h3>How long we keep your information</h3>
+  <ul>{% for label, days in retention %}<li>{{ label }}: {% if days %}deleted automatically after {{ days }} days{% else %}kept until deleted by the ministry{% endif %}</li>{% endfor %}
+    <li>Gifts: amount, date and receipt number are kept as long as accounting law requires; your name and contact details are removed if you ask us to delete your data.</li></ul>
+</section>
