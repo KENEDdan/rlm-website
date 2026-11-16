@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{% if showing == "past" %}Past events{% else %}Events{% endif %} · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Events" heading="Gather. Worship. Grow." intro="Conferences, outreaches and gatherings across our branches." %}
+<section class="section"><div class="container-rlm">
+  <nav class="flex gap-2" aria-label="Event lists">
+    <a href="{% url 'events:list' %}" class="chip {% if showing == 'upcoming' %}chip-active{% endif %}" {% if showing == 'upcoming' %}aria-current="page"{% endif %}>Upcoming</a>
+    <a href="{% url 'events:past' %}" class="chip {% if showing == 'past' %}chip-active{% endif %}" {% if showing == 'past' %}aria-current="page"{% endif %}>Past events</a>
+  </nav>
+  <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {% for event in events %}{% include "includes/event_card.html" %}{% empty %}<p class="text-rlm-grey sm:col-span-2 lg:col-span-3">{% if showing == "past" %}No past events yet.{% else %}New events will be announced soon.{% endif %}</p>{% endfor %}
+  </div>
+  {% include "includes/pagination.html" %}
+</div></section>
+{% endblock %}

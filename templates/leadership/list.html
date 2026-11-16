@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}Leadership · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Leadership" heading="The people serving the vision" %}
+<section class="section"><div class="container-rlm">
+  {% if leaders %}
+  <ul class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+    {% for leader in leaders %}
+    <li class="card">
+      <div class="relative aspect-[4/5] overflow-hidden bg-rlm-cream">{% responsive_img leader.photo leader.photo_alt|default:leader.name %}{% if not leader.photo %}<span class="placeholder-badge">Placeholder image</span>{% endif %}</div>
+      <div class="card-body"><h2 class="text-xl font-bold">{{ leader.name }}</h2><p class="eyebrow mt-1">{{ leader.role_title }}</p>
+        {% if leader.bio %}<div class="prose-rlm mt-3 text-sm">{{ leader.bio|paragraphs }}</div>{% endif %}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <p class="mt-10 rounded-2xl bg-rlm-cream p-5 text-sm text-rlm-grey">Other members of the leadership team will be introduced here once confirmed by the ministry leadership.</p>
+</div></section>
+{% endblock %}

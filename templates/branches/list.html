@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}Branches · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Branches" heading="Find a branch near you" %}
+<section class="section"><div class="container-rlm space-y-12">
+  {% for country in countries %}
+  <div><h2 class="section-title text-2xl">{{ country.name }}</h2>
+    <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {% for branch in country.live_branches %}
+      <article class="card">
+        <a href="{{ branch.get_absolute_url }}" class="relative block aspect-[16/10] overflow-hidden bg-rlm-cream" tabindex="-1" aria-hidden="true">{% responsive_img branch.image branch.image_alt|default:branch.name %}{% if not branch.image %}<span class="placeholder-badge">Placeholder image</span>{% endif %}</a>
+        <div class="card-body"><h3 class="text-xl font-bold"><a class="hover:text-rlm-flame-dark" href="{{ branch.get_absolute_url }}">{{ branch.name }}</a></h3>
+          <p class="text-sm text-rlm-grey">{{ branch.city }}</p><p class="mt-2 text-sm">{{ branch.summary }}</p></div>
+      </article>
+      {% endfor %}
+    </div></div>
+  {% empty %}<p class="text-rlm-grey">Branch details will be listed here soon.</p>{% endfor %}
+</div></section>
+{% endblock %}

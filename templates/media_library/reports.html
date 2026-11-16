@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}Reports · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Media" heading="Reports" intro="Ministry reports and publications." %}
+<section class="section"><div class="container-rlm">
+  <ul class="divide-y divide-rlm-line rounded-2xl border border-rlm-line">
+    {% for report in reports %}
+    <li class="flex flex-wrap items-center justify-between gap-4 p-5"><div><h2 class="font-bold">{{ report.title }}{% if report.year %} <span class="font-normal text-rlm-grey">({{ report.year }})</span>{% endif %}</h2>{% if report.summary %}<p class="text-sm text-rlm-grey">{{ report.summary }}</p>{% endif %}</div>
+      <a href="{{ report.file.url }}" class="btn-outline btn-sm" download>{% icon "download" "h-4 w-4" %} PDF<span class="sr-only">: {{ report.title }}</span></a></li>
+    {% empty %}<li class="p-5 text-rlm-grey">Reports will be published here.</li>{% endfor %}
+  </ul>
+</div></section>
+{% endblock %}

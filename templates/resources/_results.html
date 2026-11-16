@@ -1,0 +1,14 @@
+{% load rlm %}<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  {% for r in resources %}
+  <article class="card">
+    <a href="{{ r.get_absolute_url }}" class="relative block aspect-video overflow-hidden bg-rlm-cream" tabindex="-1" aria-hidden="true">
+      {% if r.thumbnail %}{% responsive_img r.thumbnail r.title %}{% elif r.youtube_id %}<img src="https://i.ytimg.com/vi_webp/{{ r.youtube_id }}/hqdefault.webp" alt="" loading="lazy" class="h-full w-full object-cover">{% else %}{% responsive_img None r.title %}<span class="placeholder-badge">Placeholder image</span>{% endif %}
+    </a>
+    <div class="card-body"><p class="eyebrow">{{ r.get_kind_display }}{% if r.date %} · {{ r.date|date:"j M Y" }}{% endif %}</p>
+      <h2 class="mt-2 text-lg font-bold leading-snug"><a class="hover:text-rlm-flame-dark" href="{{ r.get_absolute_url }}">{{ r.title }}</a></h2>
+      {% if r.speaker %}<p class="text-sm text-rlm-grey">{{ r.speaker }}{% if r.scripture %} · {{ r.scripture }}{% endif %}</p>{% endif %}
+      {% if r.summary %}<p class="mt-2 text-sm">{{ r.summary }}</p>{% endif %}</div>
+  </article>
+  {% empty %}<p class="text-rlm-grey sm:col-span-2 lg:col-span-3">No resources match your search.</p>{% endfor %}
+</div>
+{% include "includes/pagination.html" %}

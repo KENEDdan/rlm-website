@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{{ event.seo_title|default:event.title }} · {{ site.ministry_name }}{% endblock %}
+{% block description %}{{ event.seo_description|default:event.summary }}{% endblock %}
+{% block og_type %}article{% endblock %}{% block og_title %}{{ event.title }}{% endblock %}{% block og_description %}{{ event.summary }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Event" heading=event.title intro=event.summary %}
+<section class="section"><div class="container-rlm grid gap-10 lg:grid-cols-12">
+  <div class="lg:col-span-7">
+    <dl class="grid gap-4 rounded-2xl bg-rlm-cream p-6 sm:grid-cols-2">
+      <div><dt class="eyebrow">When</dt><dd class="mt-1 font-semibold"><time datetime="{{ event.start|date:'c' }}">{{ event.start|date:"l j F Y, H:i" }}</time> to {{ event.end|date:"H:i" }}{% if event.end|date:"Ymd" != event.start|date:"Ymd" %} ({{ event.end|date:"j F" }}){% endif %}</dd></div>
+      {% if event.venue or event.address %}<div><dt class="eyebrow">Where</dt><dd class="mt-1 font-semibold">{{ event.venue }}{% if event.address %}<br><span class="font-normal">{{ event.address }}</span>{% endif %}</dd></div>{% endif %}
+      {% if event.branch %}<div><dt class="eyebrow">Branch</dt><dd class="mt-1"><a class="font-semibold underline" href="{{ event.branch.get_absolute_url }}">{{ event.branch.name }}</a></dd></div>{% endif %}
+      {% if event.capacity %}<div><dt class="eyebrow">Places</dt><dd class="mt-1 font-semibold">{{ event.spots_left }} of {{ event.capacity }} left</dd></div>{% endif %}
+    </dl>
+    <div class="prose-rlm mt-8">{{ event.description|paragraphs }}</div>
+    <div class="mt-8">
+      {% if event.can_register %}<a href="{% url 'events:register' event.slug %}" class="btn-primary">Register now</a>
+      {% elif event.is_upcoming %}<p class="rounded-2xl border border-rlm-line p-4 text-rlm-grey">{% if event.registration_open %}This event is full or registration has closed.{% else %}Registration is not required, or not yet open.{% endif %}</p>
+      {% else %}<p class="text-rlm-grey">This event has taken place.</p>{% endif %}
+    </div>
+  </div>
+  <div class="relative aspect-[4/5] overflow-hidden rounded-2xl bg-rlm-cream lg:col-span-5">{% responsive_img event.poster event.poster_alt|default:event.title "(min-width: 1024px) 40vw, 100vw" %}{% if not event.poster %}<span class="placeholder-badge">Placeholder image</span>{% endif %}</div>
+</div></section>
+{% endblock %}

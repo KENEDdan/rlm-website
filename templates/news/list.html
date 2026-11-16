@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}News · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="News" heading="News &amp; announcements" %}
+<section class="section"><div class="container-rlm">
+  <nav class="flex flex-wrap gap-2" aria-label="Filter news"><a class="chip {% if not kind %}chip-active{% endif %}" href="{% url 'news:list' %}">All</a>{% for value, label in kinds %}<a class="chip {% if kind == value %}chip-active{% endif %}" href="?kind={{ value }}">{{ label }}</a>{% endfor %}</nav>
+  <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{% for post in posts %}{% include "includes/post_card.html" %}{% empty %}<p class="text-rlm-grey">News will be posted here soon.</p>{% endfor %}</div>
+  {% include "includes/pagination.html" %}
+</div></section>
+{% endblock %}

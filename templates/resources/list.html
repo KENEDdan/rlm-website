@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}Sermons &amp; resources · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Resources" heading="Sermons, devotionals &amp; study materials" %}
+<section class="section"><div class="container-rlm">
+  <form method="get" action="{% url 'resources:list' %}" class="rlm-form grid gap-3 rounded-2xl bg-rlm-cream p-4 sm:grid-cols-5" role="search"
+        hx-get="{% url 'resources:list' %}" hx-target="#results" hx-trigger="change, submit, keyup changed delay:400ms from:#q" hx-push-url="true">
+    <div class="sm:col-span-2"><label for="q">Search</label><input id="q" type="search" name="q" value="{{ filters.q }}" placeholder="Title, speaker or scripture" maxlength="100"></div>
+    <div><label for="kind">Type</label><select id="kind" name="kind"><option value="">All</option>{% for value, label in kinds %}<option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label for="category">Category</label><select id="category" name="category"><option value="">All</option>{% for c in categories %}<option value="{{ c.slug }}" {% if filters.category == c.slug %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div><label for="series">Series</label><select id="series" name="series"><option value="">All</option>{% for s in series_list %}<option value="{{ s.slug }}" {% if filters.series == s.slug %}selected{% endif %}>{{ s.title }}</option>{% endfor %}</select></div>
+    <noscript><button class="btn-dark btn-sm sm:col-span-5" type="submit">Filter</button></noscript>
+  </form>
+  <div id="results" class="mt-8" aria-live="polite">{% include "resources/_results.html" %}</div>
+</div></section>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Register: {{ event.title }} · {{ site.ministry_name }}{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Event registration" heading=event.title intro=event.summary %}
+<section class="section"><div class="container-rlm max-w-2xl">
+  <p class="mb-6 text-sm text-rlm-grey">{{ event.start|date:"l j F Y, H:i" }}{% if event.venue %} · {{ event.venue }}{% endif %}{% if event.spots_left is not None %} · {{ event.spots_left }} place(s) left{% endif %}</p>
+  {% include "events/_register_form.html" %}
+</div></section>
+{% include "includes/turnstile_script.html" %}
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Programmes · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Programmes" heading="How we rebuild lives" intro="Revival, discipleship, evangelism and leadership: each programme helps people grow in faith and serve." %}
+<section class="section"><div class="container-rlm grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  {% for program in programs %}{% include "includes/program_card.html" %}{% empty %}<p class="text-rlm-grey">Programmes will be listed here soon.</p>{% endfor %}
+</div></section>
+{% include "includes/cta_band.html" %}
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Registration closed · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Event registration" heading=event.title %}
+<section class="section"><div class="container-rlm max-w-2xl">
+  <p class="rounded-2xl bg-rlm-cream p-6">Registration for this event is closed or the event is full. <a class="font-semibold underline" href="{% url 'contact:contact' %}">Contact us</a> if you have questions.</p>
+  <a href="{% url 'events:list' %}" class="btn-outline mt-6">See other events</a>
+</div></section>
+{% endblock %}

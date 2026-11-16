@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{{ album.seo_title|default:album.title }} · {{ site.ministry_name }}{% endblock %}
+{% block description %}{{ album.seo_description|default:album.description|truncatechars:155 }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Album" heading=album.title intro=album.description %}
+<section class="section"><div class="container-rlm">
+  <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    {% for photo in photos %}
+    <li><figure><a href="{{ photo.image.url }}" class="block aspect-square overflow-hidden rounded-xl bg-rlm-cream">{% responsive_img photo.image photo.alt_text "(min-width: 1024px) 25vw, 50vw" %}</a>
+      {% if photo.caption %}<figcaption class="mt-1 text-xs text-rlm-grey">{{ photo.caption }}</figcaption>{% endif %}</figure></li>
+    {% empty %}<li class="col-span-full text-rlm-grey">No photos in this album yet.</li>{% endfor %}
+  </ul>
+  {% if videos %}<div class="mt-12 grid gap-6 md:grid-cols-2">{% for video in videos %}<div>{% youtube video.youtube_id video.title %}<p class="mt-2 font-semibold">{{ video.title }}</p></div>{% endfor %}</div>{% endif %}
+  <a href="{% url 'media_library:gallery' %}" class="btn-outline mt-10">Back to gallery</a>
+</div></section>
+{% endblock %}

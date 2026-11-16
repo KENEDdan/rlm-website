@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{{ resource.seo_title|default:resource.title }} · {{ site.ministry_name }}{% endblock %}
+{% block description %}{{ resource.seo_description|default:resource.summary }}{% endblock %}
+{% block og_type %}article{% endblock %}{% block og_title %}{{ resource.title }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow=resource.get_kind_display heading=resource.title intro=resource.summary %}
+<section class="section"><div class="container-rlm grid gap-10 lg:grid-cols-12">
+  <div class="lg:col-span-8">
+    {% if resource.youtube_id %}{% youtube resource.youtube_id resource.title %}{% endif %}
+    {% if resource.audio %}<audio class="mt-6 w-full" controls preload="none" src="{{ resource.audio.url }}">Your browser cannot play audio. <a href="{{ resource.audio.url }}">Download the audio</a>.</audio>{% endif %}
+    <div class="prose-rlm mt-8">{{ resource.body|paragraphs }}</div>
+    {% if resource.pdf %}<a href="{{ resource.pdf.url }}" class="btn-outline mt-6" download>{% icon "download" "h-4 w-4" %} Download PDF</a>{% endif %}
+  </div>
+  <aside class="space-y-4 lg:col-span-4">
+    <dl class="rounded-2xl bg-rlm-cream p-6 text-sm">
+      {% if resource.speaker %}<dt class="eyebrow">Speaker</dt><dd class="mb-3 mt-1 font-semibold">{{ resource.speaker }}</dd>{% endif %}
+      {% if resource.date %}<dt class="eyebrow">Date</dt><dd class="mb-3 mt-1 font-semibold">{{ resource.date|date:"j F Y" }}</dd>{% endif %}
+      {% if resource.scripture %}<dt class="eyebrow">Scripture</dt><dd class="mb-3 mt-1 font-semibold">{{ resource.scripture }}</dd>{% endif %}
+      {% if resource.series %}<dt class="eyebrow">Series</dt><dd class="mt-1 font-semibold"><a class="underline" href="{% url 'resources:list' %}?series={{ resource.series.slug }}">{{ resource.series.title }}</a></dd>{% endif %}
+    </dl>
+    {% if related %}<div><h2 class="font-bold">More in this series</h2><ul class="mt-2 space-y-2 text-sm">{% for r in related %}<li><a class="underline" href="{{ r.get_absolute_url }}">{{ r.title }}</a></li>{% endfor %}</ul></div>{% endif %}
+  </aside>
+</div></section>
+{% endblock %}

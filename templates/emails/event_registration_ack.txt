@@ -1,0 +1,13 @@
+{% autoescape off %}Hello,
+
+You are registered for {{ obj.event.title }}.
+
+When: {{ obj.event.start|date:"l j F Y, H:i" }}
+{% if obj.event.venue %}Where: {{ obj.event.venue }}{% endif %}
+People: {{ obj.attendees }}
+
+Event details: {{ site_url }}{{ obj.event.get_absolute_url }}
+
+If you can no longer attend, please reply or contact us so we can offer your place to someone else.
+
+{{ site.ministry_name }}{% endautoescape %}

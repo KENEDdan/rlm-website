@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{{ branch.seo_title|default:branch.name }} branch · {{ site.ministry_name }}{% endblock %}
+{% block description %}{{ branch.seo_description|default:branch.summary }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow=branch.country.name heading=branch.name intro=branch.summary %}
+<section class="section"><div class="container-rlm grid gap-10 lg:grid-cols-12">
+  <div class="lg:col-span-7">
+    <div class="prose-rlm">{{ branch.description|paragraphs }}</div>
+    {% if branch.activity_list %}<h2 class="mt-8 text-xl font-bold">Activities</h2><ul class="mt-3 space-y-2">{% for a in branch.activity_list %}<li class="flex gap-2">{% icon "check" "h-5 w-5 flex-none text-rlm-flame-dark" %}{{ a }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+  <aside class="space-y-6 lg:col-span-5">
+    <div class="relative aspect-[4/3] overflow-hidden rounded-2xl bg-rlm-cream">{% responsive_img branch.image branch.image_alt|default:branch.name "(min-width: 1024px) 40vw, 100vw" %}{% if not branch.image %}<span class="placeholder-badge">Placeholder image</span>{% endif %}</div>
+    {% if branch.meeting_list %}<div class="rounded-2xl bg-rlm-cream p-6"><h2 class="font-bold">Meeting times</h2><ul class="mt-2 space-y-1 text-sm">{% for m in branch.meeting_list %}<li>{{ m }}</li>{% endfor %}</ul></div>{% endif %}
+    <div class="rounded-2xl bg-rlm-black p-6 text-rlm-white"><h2 class="font-bold">Contact this branch</h2>
+      {% if branch.contact_email or branch.contact_phone or branch.address %}
+      <ul class="mt-3 space-y-2 text-sm">
+        {% if branch.contact_email %}<li><a class="hover:text-rlm-gold" href="mailto:{{ branch.contact_email }}">{{ branch.contact_email }}</a></li>{% endif %}
+        {% if branch.contact_phone %}<li><a class="hover:text-rlm-gold" href="{{ branch.contact_phone|phone_href }}">{{ branch.contact_phone }}</a></li>{% endif %}
+        {% if branch.address %}<li>{{ branch.address|linebreaksbr }}</li>{% endif %}
+        {% if branch.map_url %}<li><a class="underline hover:text-rlm-gold" href="{{ branch.map_url }}" target="_blank" rel="noopener noreferrer">Open map</a></li>{% endif %}
+      </ul>
+      {% else %}<p class="mt-2 text-sm text-rlm-line">Contact details coming soon. Please use our <a class="underline hover:text-rlm-gold" href="{% url 'contact:contact' %}">contact form</a>.</p>{% endif %}
+    </div>
+  </aside>
+</div></section>
+{% if events %}<section class="section bg-rlm-cream"><div class="container-rlm"><h2 class="section-title">Upcoming in {{ branch.name }}</h2>
+  <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{% for event in events %}{% include "includes/event_card.html" %}{% endfor %}</div></div></section>{% endif %}
+{% endblock %}

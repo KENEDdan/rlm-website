@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}Videos · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Media" heading="Videos" %}
+<section class="section"><div class="container-rlm">
+  <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+    {% for video in videos %}<article>{% youtube video.youtube_id video.title %}<h2 class="mt-3 font-bold">{{ video.title }}</h2>{% if video.description %}<p class="mt-1 text-sm text-rlm-grey">{{ video.description|truncatechars:160 }}</p>{% endif %}</article>
+    {% empty %}<p class="text-rlm-grey">Videos will appear here soon.</p>{% endfor %}
+  </div>
+  {% include "includes/pagination.html" %}
+</div></section>
+{% endblock %}
