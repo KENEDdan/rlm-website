@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+from django.db import transaction
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -88,7 +89,10 @@ def webhook(request: HttpRequest, provider: str) -> HttpResponse:
     except WebhookSignatureError:
         logger.warning("Rejected webhook with invalid signature for provider %s", provider)
         return JsonResponse({"error": "invalid signature"}, status=400)
-    event, created = services.record_webhook(provider, outcome, request.body)
-    if created:
-        services.apply_webhook(event, outcome)
+    # Record + apply in ONE transaction: if applying fails, nothing is stored, the gateway's retry is
+    # processed normally instead of being swallowed as a "duplicate".
+    with transaction.atomic():
+        event, created = services.record_webhook(provider, outcome, request.body)
+        if not event.processed:  # also re-applies events stored unprocessed by older code
+            services.apply_webhook(event, outcome)
     return JsonResponse({"received": True, "duplicate": not created})

@@ -8,7 +8,7 @@ class CoreConfig(AppConfig):
     verbose_name = "Site"
 
     def ready(self) -> None:
-        from . import signals  # noqa: F401
+        from . import checks, signals  # noqa: F401
 
 
 class RLMAdminConfig(AdminConfig):

@@ -18,6 +18,9 @@ def verify_turnstile(token: str, remote_ip: str | None = None) -> bool:
     """Return True when Turnstile is disabled or the token is valid. Fails closed on errors."""
     if not settings.TURNSTILE_ENABLED:
         return True
+    if not settings.TURNSTILE_SECRET_KEY:
+        logger.error("Turnstile is enabled but TURNSTILE_SECRET_KEY is empty; rejecting submission")
+        return False
     if not token or len(token) > 2048:
         return False
     payload = {"secret": settings.TURNSTILE_SECRET_KEY, "response": token}

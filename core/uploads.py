@@ -12,6 +12,7 @@ from __future__ import annotations
 import io
 import os
 import uuid
+import warnings
 from collections.abc import Callable
 from typing import Any
 
@@ -64,10 +65,18 @@ def validate_image_upload(file: File) -> None:
         raise ValidationError("The file content is not a valid image.")
     try:
         file.seek(0)
-        with Image.open(file) as img:
-            img.verify()
+        # Pillow only WARNS between 1x and 2x MAX_IMAGE_PIXELS; treat that range as an error too.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(file) as img:
+                img.verify()
         file.seek(0)
-    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+    except (
+        UnidentifiedImageError,
+        OSError,
+        Image.DecompressionBombError,
+        Image.DecompressionBombWarning,
+    ) as exc:
         raise ValidationError("The image could not be read.") from exc
 
 

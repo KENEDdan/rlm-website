@@ -58,6 +58,7 @@ COPY --from=deps /opt/venv /opt/venv
 COPY --chown=root:root . /app
 COPY --from=css --chown=root:root /out/site.css /app/static/css/site.css
 # collectstatic needs settings to import; throwaway values are used ONLY in this build step.
+# pip is then removed: it is not needed at runtime (smaller attack surface, see docs/SECURITY_AUDIT.md).
 RUN DJANGO_SETTINGS_MODULE=config.settings.prod \
     DJANGO_SECRET_KEY=build-only-not-a-secret \
     DATABASE_URL=sqlite:////tmp/build.sqlite3 \
@@ -65,6 +66,8 @@ RUN DJANGO_SETTINGS_MODULE=config.settings.prod \
     BLIND_INDEX_KEY=build-only \
     python manage.py collectstatic --noinput \
     && python -m compileall -q /app \
+    && /opt/venv/bin/python -m pip uninstall -y -q pip \
+    && /usr/local/bin/python -m pip uninstall -y -q pip \
     && mkdir -p /app/data/media \
     && chown -R app:app /app/data \
     && chmod +x /app/docker/entrypoint.sh

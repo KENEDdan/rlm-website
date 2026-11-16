@@ -154,6 +154,23 @@ class AuditedAdminMixin:
             log_event(AuditLog.Action.DELETE, request=request, obj=obj)
         return super().log_deletions(request, queryset)  # type: ignore[misc]
 
+    def changelist_view(self, request: HttpRequest, extra_context: Any = None) -> HttpResponse:
+        """List pages of sensitive models show names too, so viewing a list is logged as well."""
+        response = super().changelist_view(request, extra_context)  # type: ignore[misc]
+        if self.audit_views and request.method == "GET" and response.status_code == 200:
+            cl = (getattr(response, "context_data", None) or {}).get("cl")
+            log_event(
+                AuditLog.Action.VIEW,
+                request=request,
+                model=self.model,  # type: ignore[attr-defined]
+                extra={
+                    "list": True,
+                    "shown": len(cl.result_list) if cl is not None else None,
+                    "query": {k: v for k, v in request.GET.items() if k not in ("q",)},
+                },
+            )
+        return response
+
     def change_view(
         self, request: HttpRequest, object_id: str, form_url: str = "", extra_context: Any = None
     ) -> HttpResponse:

@@ -56,16 +56,37 @@ def record_webhook(provider_code: str, outcome: WebhookOutcome, raw_body: bytes)
     return event, True
 
 
+def is_actionable(outcome: WebhookOutcome) -> bool:
+    return bool(outcome.provider_reference and outcome.new_status)
+
+
+def _mark_processed(event: WebhookEvent) -> None:
+    event.processed = True
+    WebhookEvent.objects.filter(pk=event.pk).update(processed=True)
+
+
 def apply_webhook(event: WebhookEvent, outcome: WebhookOutcome) -> None:
-    """Move the matching donation to the reported status (amount/currency must match)."""
-    if not outcome.provider_reference or not outcome.new_status:
+    """Move the matching donation to the reported status (amount/currency must match).
+
+    Only donations created through the SAME provider can be touched, and a gift is only marked
+    confirmed when the signed event states an amount that matches the donation.
+    """
+    if not is_actionable(outcome):
+        _mark_processed(event)
         return
     with transaction.atomic():
         donation = (
-            Donation.objects.select_for_update().filter(provider_reference=outcome.provider_reference).first()
+            Donation.objects.select_for_update()
+            .filter(provider=event.provider, provider_reference=outcome.provider_reference)
+            .first()
         )
         if donation is None:
             logger.warning("Webhook for unknown provider reference")
+            _mark_processed(event)
+            return
+        if outcome.amount is None and outcome.new_status == Donation.Status.CONFIRMED:
+            logger.error("Webhook confirmation without amount for donation %s", donation.pk)
+            _mark_processed(event)
             return
         if outcome.amount is not None:
             try:
@@ -74,18 +95,20 @@ def apply_webhook(event: WebhookEvent, outcome: WebhookOutcome) -> None:
                     or (outcome.currency or donation.currency) != donation.currency
                 ):
                     logger.error("Webhook amount/currency mismatch for donation %s", donation.pk)
+                    _mark_processed(event)
                     return
             except InvalidOperation:
+                _mark_processed(event)
                 return
         if donation.status == Donation.Status.CONFIRMED and outcome.new_status != Donation.Status.REFUNDED:
+            _mark_processed(event)
             return
         donation.status = outcome.new_status
         if outcome.new_status == Donation.Status.CONFIRMED:
             donation.confirmed_at = timezone.now()
             donation.assign_receipt_number(GivingSettings.load().receipt_prefix)
         donation.save()
-        event.processed = True
-        WebhookEvent.objects.filter(pk=event.pk).update(processed=True)
+        _mark_processed(event)
     log_event(
         AuditLog.Action.CHANGE,
         obj=donation,

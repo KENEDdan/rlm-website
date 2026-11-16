@@ -13,7 +13,7 @@ from django import forms
 from django.core import validators
 from django.db import models
 
-from .crypto import decrypt_str, encrypt_str
+from .crypto import DECRYPTION_FAILED, decrypt_str, encrypt_str
 
 
 class EncryptedTextField(models.TextField):
@@ -23,6 +23,10 @@ class EncryptedTextField(models.TextField):
         value = super().get_prep_value(value)
         if value is None or value == "":
             return value
+        if value == DECRYPTION_FAILED:
+            # A row read while a key was missing must never be written back: that would replace the
+            # real (still recoverable) ciphertext with the placeholder text.
+            raise ValueError("Refusing to save a value that could not be decrypted.")
         return encrypt_str(str(value))
 
     def from_db_value(self, value: Any, expression: Any, connection: Any) -> Any:

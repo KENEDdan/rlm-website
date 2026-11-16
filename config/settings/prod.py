@@ -16,6 +16,9 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_NAME = "__Host-rlm_sid"
 CSRF_COOKIE_NAME = "__Host-csrftoken"
 TRUST_PROXY_IP_HEADER = env.bool("TRUST_PROXY_IP_HEADER", default=True)
+# Bot protection is mandatory in production (rule 7). A missing key fails closed and is flagged by
+# `manage.py check --deploy` (core.checks), instead of silently switching Turnstile off.
+TURNSTILE_ENABLED = env.bool("TURNSTILE_ENABLED", default=True)
 
 LOGGING["root"]["level"] = env("LOG_LEVEL", default="WARNING")
 

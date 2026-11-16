@@ -56,4 +56,6 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: config.settings.prod
           DJANGO_ALLOWED_HOSTS: example.org
+          TURNSTILE_SITE_KEY: ci-only-site-key
+          TURNSTILE_SECRET_KEY: ci-only-placeholder  # pragma: allowlist secret
         run: python manage.py check --deploy --fail-level WARNING
