@@ -107,5 +107,6 @@ into the admin by Finance, never into code.
 | `docs/INCIDENT_RESPONSE.md` | What to do if an account or the computer/server is compromised |
 | `docs/DEPLOYMENT.md` | The later move to a server (plan only) |
 | `docs/GIVING_GATEWAYS.md` | Choosing an online payment gateway |
+| `docs/DEVELOPMENT_AUDIT.md` | Full development audit: compliance, quality, defects found, open items |
 | `docs/SECURITY_AUDIT.md` | Phase I audit results |
 | `docs/PLAN.md`, `docs/DECISIONS.md` | Architecture and decision log |

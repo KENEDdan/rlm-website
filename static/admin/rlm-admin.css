@@ -12,15 +12,15 @@
   --breadcrumbs-link-fg: #F8C124;
   --breadcrumbs-bg: #1C1C1C;
   --link-fg: #C2410C;
-  --link-hover-color: #9A3412;
+  --link-hover-color: #0A0A0A;
   --link-selected-fg: #C2410C;
   --button-fg: #FFFFFF;
   --button-bg: #C2410C;          /* white text on orange needs the darker shade (AA) */
-  --button-hover-bg: #9A3412;
+  --button-hover-bg: #0A0A0A;
   --default-button-bg: #0A0A0A;
   --default-button-hover-bg: #1C1C1C;
   --object-tools-bg: #C2410C;
-  --object-tools-hover-bg: #9A3412;
+  --object-tools-hover-bg: #0A0A0A;
   --selected-row: #FFF8F2;
   --message-success-bg: #FFF8F2;
 }
@@ -33,7 +33,7 @@
     --link-fg: #F3A831;
     --link-hover-color: #F8C124;
     --button-bg: #C2410C;
-    --button-hover-bg: #9A3412;
+    --button-hover-bg: #0A0A0A;
     --object-tools-bg: #C2410C;
   }
 }

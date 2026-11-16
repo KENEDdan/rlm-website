@@ -14,7 +14,10 @@ from branches.models import Branch, Country
 from core.models import SiteSettings
 from events.models import Event
 from leadership.models import Leader
-from media_library.models import Testimony, Video, parse_youtube_id
+from media_library.models import (
+    Testimony as MediaTestimony,
+)  # alias: a name starting with "Test" is collected by pytest
+from media_library.models import Video, parse_youtube_id
 from news.models import Post
 from programs.models import Program
 from resources.models import Resource
@@ -213,7 +216,7 @@ def test_video_uses_nocookie_facade(client: Client) -> None:
 
 
 def test_testimony_requires_consent_to_publish() -> None:
-    t = Testimony(title="Healed", slug="healed", body="...", is_published=True, consent_confirmed=False)
+    t = MediaTestimony(title="Healed", slug="healed", body="...", is_published=True, consent_confirmed=False)
     with pytest.raises(ValidationError):
         t.clean()
 

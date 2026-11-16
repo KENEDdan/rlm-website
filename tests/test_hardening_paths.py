@@ -192,3 +192,70 @@ def test_healthcheck_uses_an_allowed_host_name() -> None:
     assert module.host_header("") == "localhost"
     with mock.patch.object(module.urllib.request, "urlopen", side_effect=OSError):
         assert module.main() == 1
+
+
+# ------------------------------------------------------------------ staff-account admin (found by the dev audit)
+def test_founder_can_reset_someones_two_factor_and_it_is_audited(make_staff, verified_client, admin_prefix) -> None:  # type: ignore[no-untyped-def]
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+
+    from audit.models import AuditLog
+
+    target = make_staff()
+    TOTPDevice.objects.create(user=target, name="lost phone", confirmed=True)
+    founder = verified_client(make_staff(superuser=True))
+    resp = founder.post(
+        f"{admin_prefix}accounts/user/",
+        {"action": "reset_2fa", "_selected_action": [target.pk]},
+        follow=True,
+    )
+    assert resp.status_code == 200
+    assert not TOTPDevice.objects.filter(user=target).exists()
+    assert AuditLog.objects.filter(action=AuditLog.Action.TWO_FACTOR_RESET, object_id=str(target.pk)).exists()
+
+
+def test_scoped_roles_must_have_their_scope(make_staff, verified_client, admin_prefix) -> None:  # type: ignore[no-untyped-def]
+    from django.contrib.auth.models import Group
+
+    from accounts.roles import BRANCH_COORDINATOR, DEPARTMENT_HEAD
+
+    target = make_staff()
+    founder = verified_client(make_staff(superuser=True))
+    data = {
+        "email": target.email,
+        "full_name": "Coordinator",
+        "is_active": "on",
+        "is_staff": "on",
+        "groups": [Group.objects.get(name=BRANCH_COORDINATOR).pk, Group.objects.get(name=DEPARTMENT_HEAD).pk],
+        "branch": "",
+        "department": "",
+    }
+    resp = founder.post(f"{admin_prefix}accounts/user/{target.pk}/change/", data)
+    assert resp.status_code == 200  # re-shown with errors, not saved
+    html = resp.content.decode()
+    assert "must be linked to a branch" in html and "must be linked to a department" in html
+    target.refresh_from_db()
+    assert not target.groups.exists()
+
+
+def test_accounts_created_in_admin_are_staff(make_staff, verified_client, admin_prefix) -> None:  # type: ignore[no-untyped-def]
+    from accounts.models import User
+
+    founder = verified_client(make_staff(superuser=True))
+    resp = founder.post(
+        f"{admin_prefix}accounts/user/add/",
+        {
+            "email": "new.staff@example.test",
+            "full_name": "New Staff",
+            "password1": PASSWORD,
+            "password2": PASSWORD,
+        },
+    )
+    assert resp.status_code == 302
+    assert User.objects.get(email="new.staff@example.test").is_staff
+
+
+def test_non_founder_cannot_open_user_admin(make_staff, verified_client, admin_prefix) -> None:  # type: ignore[no-untyped-def]
+    from accounts.roles import SECRETARY
+
+    client = verified_client(make_staff(SECRETARY))
+    assert client.get(f"{admin_prefix}accounts/user/").status_code == 403
