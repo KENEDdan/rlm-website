@@ -66,7 +66,7 @@ def _expected(role: str, model_label: str, action: str) -> bool:
 MATRIX = [
     (role, label, action)
     for role, label, action in itertools.product(
-        [r for r in ALL_ROLES if r != FOUNDER], _all_model_labels(), ACTIONS + ["export"]
+        [r for r in ALL_ROLES if r != FOUNDER], _all_model_labels(), [*ACTIONS, "export"]
     )
 ]
 
