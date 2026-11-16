@@ -1,0 +1,8 @@
+{% autoescape off %}Hello,
+
+Thank you for offering to serve with {{ site.ministry_name }}. We have received your application and a member of our team will be in touch soon.
+
+{{ site.tagline }}
+{{ site_url }}
+
+You received this email because this address was used on our volunteer form. If that was not you, please ignore this message.{% endautoescape %}

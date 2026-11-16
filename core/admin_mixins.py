@@ -214,6 +214,8 @@ class SubmissionAdminMixin:
     """List/filter/'mark handled' plus email-hash search for encrypted submissions."""
 
     email_hash_field = "email_hash"
+    # Shows the search box; real matching is done in get_search_results (encrypted fields).
+    search_fields: tuple[str, ...] = ("status",)
 
     @admin.action(description="Mark selected as handled", permissions=["change"])
     def mark_handled(self, request: HttpRequest, queryset: QuerySet) -> None:

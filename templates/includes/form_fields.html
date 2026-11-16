@@ -1,0 +1,15 @@
+{% if form.non_field_errors %}
+  <div class="rounded-xl border border-rlm-flame-deep bg-rlm-cream px-4 py-3 text-sm font-semibold text-rlm-ink" role="alert" data-focus tabindex="-1">
+    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+{% endif %}
+{% for field in form %}
+  {% if field.name == "website" %}
+    <div class="hp-field" aria-hidden="true">{{ field.label_tag }}{{ field }}</div>
+  {% elif field.name != "consent" %}
+    {% include "includes/field.html" %}
+  {% endif %}
+{% endfor %}
+{% if turnstile_site_key %}<div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="light"></div>{% endif %}
+{% if form.consent %}{% include "includes/field.html" with field=form.consent %}
+<p class="text-xs text-rlm-grey">We protect your information and never sell it. Read our <a class="underline" href="{% url 'core:privacy' %}">privacy policy</a>.</p>{% endif %}

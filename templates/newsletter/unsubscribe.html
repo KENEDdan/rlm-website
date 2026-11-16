@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Unsubscribe · {{ site.ministry_name }}{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Newsletter" heading="Unsubscribe" %}
+<section class="section"><div class="container-rlm max-w-xl">
+  <form method="post" class="rounded-2xl bg-rlm-cream p-6">{% csrf_token %}<p>Click below to stop receiving emails from us.</p><button type="submit" class="btn-dark mt-4">Unsubscribe</button></form>
+</div></section>
+{% endblock %}

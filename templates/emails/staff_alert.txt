@@ -1,0 +1,6 @@
+{% autoescape off %}A new {{ kind }} ({{ ref }}) has been received on the {{ site.ministry_name }} website.
+
+For privacy, the details are not included in this email. Please sign in to view it:
+{{ url }}
+
+This is an automated message.{% endautoescape %}

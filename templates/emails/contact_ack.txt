@@ -1,0 +1,5 @@
+{% autoescape off %}Hello,
+
+Thank you for contacting {{ site.ministry_name }}. We have received your message and will reply as soon as we can.
+
+{{ site_url }}{% endautoescape %}

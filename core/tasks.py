@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 def _admin_change_url(model_label: str, pk: int) -> str:
-    app_label, model_name = model_label.split(".")
-    return settings.SITE_URL + reverse(f"admin:{app_label}_{model_name}_change", args=[pk])
+    opts = apps.get_model(model_label)._meta
+    return settings.SITE_URL + reverse(f"admin:{opts.app_label}_{opts.model_name}_change", args=[pk])
 
 
 @shared_task(autoretry_for=(OSError,), retry_backoff=True, max_retries=5)

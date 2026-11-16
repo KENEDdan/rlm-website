@@ -1,0 +1,17 @@
+{% if field.is_hidden %}{{ field }}{% else %}
+<div class="{% if field.errors %}field-error{% endif %}{% if field.widget_type == 'checkbox' %} field-checkbox{% endif %}">
+  {% if field.widget_type == "checkbox" %}
+    <label for="{{ field.id_for_label }}">{{ field }} <span>{{ field.label }}{% if field.field.required %} <span class="text-rlm-flame-dark" aria-hidden="true">*</span>{% endif %}</span></label>
+  {% elif field.widget_type == "checkboxselectmultiple" %}
+    <fieldset>
+      <legend class="mb-2 text-sm font-semibold">{{ field.label }}{% if field.field.required %} <span class="text-rlm-flame-dark" aria-hidden="true">*</span>{% endif %}</legend>
+      <div class="checkbox-list">{% for option in field %}<label for="{{ option.id_for_label }}">{{ option.tag }} {{ option.choice_label }}</label>{% endfor %}</div>
+    </fieldset>
+  {% else %}
+    <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="text-rlm-flame-dark" aria-hidden="true">*</span>{% endif %}</label>
+    {{ field }}
+  {% endif %}
+  {% if field.help_text %}<p class="help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>{% endif %}
+  {% for error in field.errors %}<p class="error" role="alert">{{ error }}</p>{% endfor %}
+</div>
+{% endif %}

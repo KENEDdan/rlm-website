@@ -1,0 +1,1 @@
+{% autoescape off %}Thank you for volunteering with {{ site.ministry_name }}{% endautoescape %}

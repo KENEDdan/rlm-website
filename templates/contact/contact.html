@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}Contact · {{ site.ministry_name }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Contact" heading="We would love to hear from you" %}
+<section class="section"><div class="container-rlm grid gap-12 lg:grid-cols-12">
+  <div class="lg:col-span-7">{% include "contact/_form.html" %}</div>
+  <aside class="space-y-4 lg:col-span-5">
+    {% if site.public_email or site.public_phone or site.address %}
+    <div class="rounded-2xl bg-rlm-black p-6 text-rlm-white"><h2 class="font-bold">Reach us directly</h2><ul class="mt-3 space-y-2 text-sm">
+      {% if site.public_email %}<li><a class="hover:text-rlm-gold" href="mailto:{{ site.public_email }}">{{ site.public_email }}</a></li>{% endif %}
+      {% if site.public_phone %}<li><a class="hover:text-rlm-gold" href="{{ site.public_phone|phone_href }}">{{ site.public_phone }}</a></li>{% endif %}
+      {% if site.address %}<li>{{ site.address|linebreaksbr }}</li>{% endif %}</ul></div>
+    {% endif %}
+    <div class="rounded-2xl bg-rlm-cream p-6"><h2 class="font-bold">Branches</h2><p class="mt-2 text-sm">Looking for a local branch? <a class="underline" href="{% url 'branches:list' %}">See all branches</a>.</p></div>
+    <div class="rounded-2xl bg-rlm-cream p-6"><h2 class="font-bold">Prayer</h2><p class="mt-2 text-sm">For prayer, please use our <a class="underline" href="{% url 'prayer:request' %}">confidential prayer form</a>.</p></div>
+  </aside>
+</div></section>
+{% include "includes/turnstile_script.html" %}
+{% endblock %}

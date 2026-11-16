@@ -1,0 +1,11 @@
+{% if site.analytics_provider != "none" and site.analytics_script_url and site.analytics_site_id %}
+<div id="analytics-config" hidden data-provider="{{ site.analytics_provider }}" data-src="{{ site.analytics_script_url }}" data-site="{{ site.analytics_site_id }}"></div>
+<div id="consent-banner" hidden role="dialog" aria-live="polite" aria-label="Privacy choices"
+     class="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-xl rounded-2xl bg-rlm-black p-5 text-sm text-rlm-white shadow-2xl sm:inset-x-auto sm:left-5">
+  <p>We use privacy-friendly, cookieless statistics to understand which pages help people most. May we count your visit anonymously? <a href="{% url 'core:privacy' %}" class="underline hover:text-rlm-gold">Privacy policy</a></p>
+  <div class="mt-4 flex gap-3">
+    <button type="button" class="btn-primary btn-sm" data-consent="yes">Yes, that is fine</button>
+    <button type="button" class="btn-outline-light btn-sm" data-consent="no">No thanks</button>
+  </div>
+</div>
+{% endif %}

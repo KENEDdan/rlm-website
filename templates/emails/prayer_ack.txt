@@ -1,0 +1,9 @@
+{% autoescape off %}Hello,
+
+Thank you for sharing your prayer request with {{ site.ministry_name }}. Our prayer team has received it and is standing with you in prayer.
+
+"{{ site.scripture_text }}" ({{ site.scripture_reference }})
+
+{{ site_url }}
+
+For your privacy, this email does not repeat what you wrote.{% endautoescape %}

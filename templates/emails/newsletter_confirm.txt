@@ -1,0 +1,9 @@
+{% autoescape off %}Hello,
+
+Please confirm that you would like to receive news from {{ site.ministry_name }} by opening this link:
+
+{{ confirm_url }}
+
+If you did not ask for this, simply ignore this email. You will not be subscribed.
+
+Unsubscribe at any time: {{ unsubscribe_url }}{% endautoescape %}
