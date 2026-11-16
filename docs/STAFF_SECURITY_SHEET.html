@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff Security Sheet</title>
+<style>
+  /* Brand tokens (CLAUDE.md). Print on one A4 page: open in a browser, Ctrl+P, "Fit to page" off. */
+  :root {
+    --rlm-black: #0A0A0A;
+    --rlm-flame: #F0652A;
+    --rlm-flame-deep: #EE362C;
+    --rlm-flame-dark: #C2410C;
+    --rlm-amber: #F3A831;
+    --rlm-gold: #F8C124;
+    --rlm-flame-gradient: linear-gradient(135deg, #F8C124 0%, #F0652A 55%, #EE362C 100%);
+    --rlm-white: #FFFFFF;
+    --rlm-cream: #FFF8F2;
+    --rlm-ink: #1C1C1C;
+    --rlm-grey: #6B6B6B;
+    --rlm-line: #E8E8E8;
+    --bg: var(--rlm-white);
+    --card: var(--rlm-cream);
+    --text: var(--rlm-ink);
+    --muted: var(--rlm-grey);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #121212; --card: #1C1C1C; --text: #F2F2F2; --muted: #B5B5B5; --rlm-line: #333; }
+  }
+  :root[data-theme="dark"] { --bg: #121212; --card: #1C1C1C; --text: #F2F2F2; --muted: #B5B5B5; --rlm-line: #333; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  .page { max-width: 820px; margin: 0 auto; padding: 24px 16px 32px; }
+  header { display: flex; align-items: center; gap: 14px; border-bottom: 4px solid transparent;
+    border-image: var(--rlm-flame-gradient) 1; padding-bottom: 12px; }
+  header img { width: 56px; height: auto; }
+  h1 { margin: 0; font-size: 1.55rem; line-height: 1.15; letter-spacing: -0.01em; }
+  .sub { margin: 2px 0 0; color: var(--muted); font-size: 0.92rem; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .card { background: var(--card); border: 1px solid var(--rlm-line); border-radius: 12px; padding: 12px 16px; }
+  .card h2 { margin: 0 0 6px; font-size: 1.02rem; display: flex; align-items: center; gap: 8px; }
+  .tag { display: inline-block; min-width: 54px; text-align: center; border-radius: 999px; padding: 2px 10px;
+    font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; }
+  .do .tag { background: var(--rlm-flame); color: var(--rlm-black); }   /* black on orange: AA contrast */
+  .dont .tag { background: var(--rlm-black); color: var(--rlm-gold); }
+  ul { margin: 0; padding-left: 18px; }
+  li { margin: 3px 0; }
+  .wide { grid-column: 1 / -1; }
+  .alert { border-left: 6px solid var(--rlm-flame-deep); }
+  .alert strong { color: var(--rlm-flame-dark); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .alert strong { color: var(--rlm-amber); } }
+  :root[data-theme="dark"] .alert strong { color: var(--rlm-amber); }
+  .contacts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-top: 6px; }
+  .contacts > div { display: flex; align-items: flex-end; gap: 6px; white-space: nowrap; }
+  .blank { flex: 1; border-bottom: 1px solid var(--muted); min-height: 1.6em; }
+  footer { margin-top: 12px; color: var(--muted); font-size: 0.8rem; text-align: center; }
+  @media (max-width: 640px) { .grid, .contacts { grid-template-columns: 1fr; } }
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    :root { --bg: #fff; --card: #FFF8F2; --text: #1C1C1C; --muted: #555; }
+    body { font-size: 11.5pt; }
+    .page { padding: 0; max-width: none; }
+    .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <img src="../static/brand/logo-transparent-160.webp" alt="Rebuilding Lives Ministry logo">
+    <div>
+      <h1>Staff security sheet</h1>
+      <p class="sub">Rebuilding Lives Ministry website · keep this at your desk · the people who trust us with prayer requests deserve our care</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card do">
+      <h2><span class="tag">DO</span> Your account</h2>
+      <ul>
+        <li>Use a <b>long passphrase</b> (12+ characters) that you use <b>nowhere else</b>.</li>
+        <li>Keep the authenticator app on <b>your own phone</b> with a screen lock.</li>
+        <li>Store your <b>10 backup codes</b> on paper in a safe place.</li>
+        <li><b>Lock your screen</b> every time you step away (Windows + L).</li>
+        <li><b>Sign out</b> on shared or public computers.</li>
+        <li>Keep your computer and phone <b>updated</b>.</li>
+      </ul>
+    </section>
+
+    <section class="card dont">
+      <h2><span class="tag">DON'T</span> Ever</h2>
+      <ul>
+        <li>Share your password, codes or account, <b>not even with the Founder</b>.</li>
+        <li>Write your password on a sticky note or in a chat.</li>
+        <li>Save prayer requests or volunteer lists on personal or shared devices.</li>
+        <li>Forward submissions by <b>email or WhatsApp</b>.</li>
+        <li>Type bank details anywhere except the admin (Finance only).</li>
+        <li>Sign in from an internet café.</li>
+      </ul>
+    </section>
+
+    <section class="card do">
+      <h2><span class="tag">DO</span> Personal data</h2>
+      <ul>
+        <li>Read submissions <b>only inside the admin</b>; it is encrypted and logged.</li>
+        <li>Respect <b>"keep confidential"</b> prayer requests.</li>
+        <li>Export to CSV only when truly needed, then <b>delete the file</b>.</li>
+        <li>Publish photos and testimonies <b>only with consent</b>; extra care with children.</li>
+      </ul>
+    </section>
+
+    <section class="card dont">
+      <h2><span class="tag">DON'T</span> Fall for phishing</h2>
+      <ul>
+        <li>The website <b>never</b> asks for your code or password by email, SMS or phone.</li>
+        <li>Be suspicious of <b>urgency</b>: "account suspended", "sign in now", "urgent transfer".</li>
+        <li>Check the <b>address bar</b> before typing your password.</li>
+        <li>"New bank details" emails are a classic fraud: <b>phone the bank</b>.</li>
+      </ul>
+    </section>
+
+    <section class="card alert wide">
+      <h2>Something looks wrong?</h2>
+      <p style="margin:0 0 6px"><strong>Tell the Founder immediately by phone.</strong> Lost phone, a sign-in you did not make, changes nobody made, a suspicious email you clicked: reporting quickly is never a mistake. Do not delete anything.</p>
+      <div class="contacts">
+        <div>Founder: <span class="blank">&nbsp;</span></div>
+        <div>Deputy: <span class="blank">&nbsp;</span></div>
+        <div>Technical lead: <span class="blank">&nbsp;</span></div>
+        <div>Staff sign-in address: <span class="blank">&nbsp;</span></div>
+      </div>
+    </section>
+  </div>
+
+  <footer>Full guidance: docs/ADMIN_GUIDE.md (how to) · docs/INCIDENT_RESPONSE.md (what to do when something goes wrong)</footer>
+</div>
+</body>
+</html>

@@ -26,8 +26,8 @@ python scripts/generate_env.py > .env        # or copy .env.example and fill eve
 # 2. Build and start: web, worker, Postgres, Redis, Mailpit
 docker compose up -d --build
 
-# 3. Create the first staff account (the Founder)
-docker compose exec web python manage.py createsuperuser
+# 3. Create the first staff account (the Founder): asks for the password, adds the Founder role
+docker compose exec web python manage.py create_founder --email you@example.org --name "Your Name"
 
 # 4. Optional: fake demo content so every page has something to show
 docker compose exec web python manage.py seed_demo
@@ -65,6 +65,8 @@ docker compose exec web python manage.py makemigrations --check --dry-run
 
 | Command | Purpose |
 |---|---|
+| `manage.py create_founder --email … --name …` | Create the Founder account (password rules, Founder role, audit log) |
+| `manage.py launch_check [--all] [--strict]` | What is still a placeholder or unsafe before going public, with where to fix it |
 | `manage.py sync_roles` | Re-create the 7 staff roles and their permissions (idempotent) |
 | `manage.py seed_demo [--reset] [--no-images]` | Fake demo content; refuses to run when `DEBUG` is off |
 | `manage.py personal_data find\|export\|erase --email …` | Answer a person's request to see or delete their data |
@@ -99,6 +101,8 @@ into the admin by Finance, never into code.
 | Document | For |
 |---|---|
 | `docs/ADMIN_GUIDE.md` | Staff: step-by-step tasks per role |
+| `docs/HANDOVER.md` | Ownership transfer, Founder account, launch checklist, training, sign-off |
+| `docs/STAFF_SECURITY_SHEET.html` | One-page do's and don'ts to print for every staff member |
 | `docs/BACKUP_RESTORE.md` | Backups, restore, key safekeeping and rotation |
 | `docs/INCIDENT_RESPONSE.md` | What to do if an account or the computer/server is compromised |
 | `docs/DEPLOYMENT.md` | The later move to a server (plan only) |

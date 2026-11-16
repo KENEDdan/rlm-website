@@ -114,6 +114,12 @@ alerts go), analytics and the **data retention** periods. Social media links are
 
 ### 3.3 Privacy policy, terms and extra pages
 **Pages → Privacy policy / Terms**. Have them reviewed before launch, and update **Last reviewed**.
+The privacy policy is a draft: complete the items in [square brackets] (legal name, minimum age, reply
+time, provider names) and remove the "Draft" heading. Below your text, the page **automatically** lists the
+cookies the site uses and the current retention periods from Site settings, so those facts are always
+true; you do not need to write them yourself. The site uses only strictly necessary, browser-session
+cookies, so no cookie banner is needed. If you switch on visitor statistics (Site settings > Analytics),
+a consent question appears and visitors can change their answer with **Privacy choices** in the footer.
 To add another page (e.g. "Statement of faith"): **Pages → Add page**, tick **Published** and
 **Show in footer**. It appears at `/pages/<slug>/` and in the footer.
 

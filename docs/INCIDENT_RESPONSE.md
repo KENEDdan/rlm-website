@@ -40,7 +40,7 @@ password reused elsewhere that leaked.*
 
 **If the Founder's account is compromised:** the technical lead disables it from the command line:
 `docker compose exec web python manage.py shell -c "from accounts.models import User; User.objects.filter(email='FOUNDER_EMAIL').update(is_active=False)"`
-then follows the same steps and creates a fresh Founder account with `createsuperuser`.
+then follows the same steps and creates a fresh Founder account with `manage.py create_founder` (HANDOVER §2).
 
 ## 2. A phone with the authenticator app is lost or stolen
 

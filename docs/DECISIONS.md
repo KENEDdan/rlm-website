@@ -90,3 +90,20 @@ password even on the private network; backups encrypted with **age** so only the
 server; a dedicated backup image so the server needs nothing but Docker; rollback to the last image that
 passed its health check (`rlm-web:good`). Lighthouse over HTTPS could not run against a self-signed
 `localhost` certificate; the HTTPS checks were verified directly with header tests instead.
+
+## D-013: Handover tooling (phase L)
+(2026-11-16) `manage.py launch_check` turns the launch checklist into an automatic report (BLOCKER /
+WARNING / OK, each with where to fix it; `--strict` fails while blockers remain). `manage.py create_founder`
+replaces `createsuperuser` for the Founder: password validators enforced, Founder role added, audit-logged,
+password only via a hidden prompt. The staff security sheet is a printable one-page HTML (`docs/`), checked
+to print on a single A4 page. Contact lines on it are blank write-in fields: no phone numbers or emails in
+the repository (rule 2).
+
+## D-014: Cookies and privacy policy facts
+(2026-11-16) The CSRF cookie became a browser-session cookie (`CSRF_COOKIE_AGE = None`), so the site sets no
+long-lived cookies; visitors only receive strictly necessary cookies (CSRF on form pages, a one-off messages
+cookie), which need no consent banner. The privacy page appends a generated section (cookie names from
+settings, retention days from Site settings) so the policy cannot drift from reality. A footer "Privacy
+choices" control lets visitors withdraw analytics consent (shown only when analytics is configured). A
+fuller draft policy (third parties, legal basis, children, transfers, complaints) replaced the original
+seed only where it was untouched; it remains a Draft for leadership (launch_check blocks until reviewed).

@@ -96,7 +96,8 @@ set a lifecycle rule (e.g. delete after 90 days) on the bucket itself.
 Deploy and create the Founder account:
 ```bash
 scripts/deploy.sh --no-pull
-docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
+docker compose -f docker-compose.prod.yml exec web python manage.py create_founder --email <founder email> --name "<full name>"
+docker compose -f docker-compose.prod.yml exec web python manage.py launch_check
 ```
 Sign in at `https://example.org/<DJANGO_ADMIN_URL>account/login/` and enrol the authenticator.
 Then run the launch checklist in `docs/HANDOVER.md` (phase L).
