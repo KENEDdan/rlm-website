@@ -1,7 +1,7 @@
 /** Brand tokens: EXACTLY the palette in CLAUDE.md (sampled from the official logo), mirrored as CSS
  * variables in static/css/input.css. Hex values live only here and there; templates use token classes. */
 module.exports = {
-  content: ["./templates/**/*.html", "./*/templates/**/*.html", "./*/forms.py", "./core/templatetags/*.py"],
+  content: ["./templates/**/*.html", "./static/js/slider.js", "./*/templates/**/*.html", "./*/forms.py", "./core/templatetags/*.py"],
   theme: {
     extend: {
       colors: {

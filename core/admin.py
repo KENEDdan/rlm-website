@@ -2,12 +2,35 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.contrib import admin
-from django.http import HttpRequest, HttpResponseRedirect
+from django.contrib import admin, messages
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.urls import reverse
+from django.utils.html import format_html
+from django.utils.safestring import SafeString
 
 from .admin_mixins import AuditedAdminMixin
-from .models import FormOption, Page, PageText, SiteSettings, SocialLink
+from .models import (
+    HERO_SLIDE_LIMIT,
+    FormOption,
+    HeroSlide,
+    Page,
+    PageText,
+    Partner,
+    SiteSettings,
+    SocialLink,
+)
+from .uploads import rendition_name
+
+
+def _thumb_url(field: Any) -> str:
+    return field.storage.url(rendition_name(field.name, 480)) if field else ""
+
+
+def admin_thumb(field: Any, alt: str = "") -> SafeString | str:
+    url = _thumb_url(field)
+    if not url:
+        return "-"
+    return format_html('<img src="{}" alt="{}" class="rlm-thumb" loading="lazy">', url, alt)
 
 
 class SingletonAdmin(AuditedAdminMixin, admin.ModelAdmin):
@@ -119,3 +142,93 @@ class FormOptionAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
     def has_delete_permission(self, request: HttpRequest, obj: Any = None) -> bool:
         return False
+
+
+@admin.register(HeroSlide)
+class HeroSlideAdmin(AuditedAdminMixin, admin.ModelAdmin):
+    """Home page hero slides. Reorder with the Order column (lower first) and press Save."""
+
+    list_display = (
+        "thumb",
+        "title",
+        "button_text",
+        "order",
+        "is_active",
+        "status_label",
+        "start_at",
+        "end_at",
+    )
+    list_display_links = ("thumb", "title")
+    list_editable = ("order", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("title", "subtitle")
+    readonly_fields = ("preview",)
+    fieldsets = (
+        (None, {"fields": ("preview", "title", "subtitle", "image", "image_alt", "show_scripture")}),
+        ("Button", {"fields": ("button_text", "button_link")}),
+        (
+            "When to show it",
+            {
+                "fields": ("order", "is_active", "start_at", "end_at"),
+                "description": f"The home page shows up to {HERO_SLIDE_LIMIT} active slides, lowest order first.",
+            },
+        ),
+    )
+
+    class Media:
+        js = ("admin/rlm-slide-preview.js",)
+
+    @admin.display(description="Preview")
+    def thumb(self, obj: HeroSlide) -> SafeString | str:
+        return admin_thumb(obj.image, obj.image_alt)
+
+    @admin.display(description="Status")
+    def status_label(self, obj: HeroSlide) -> str:
+        return obj.status
+
+    @admin.display(description="Live preview")
+    def preview(self, obj: HeroSlide | None) -> SafeString:
+        """A small mock-up of the slide; static/admin/rlm-slide-preview.js updates it while typing."""
+        obj = obj or HeroSlide()
+        url = _thumb_url(obj.image)
+        return format_html(
+            '<div class="rlm-slide-preview" data-slide-preview>'
+            '<img src="{}" alt="" data-preview-img{}>'
+            '<div class="rlm-slide-preview__text"><strong data-preview-title>{}</strong>'
+            "<span data-preview-subtitle>{}</span>"
+            '<span class="rlm-slide-preview__btn" data-preview-button{}>{}</span></div></div>'
+            '<p class="help">Changes here as you type or choose a new photo. Nothing is saved until you '
+            "press Save.</p>",
+            url,
+            "" if url else SafeString(" hidden"),
+            obj.title or "Slide heading",
+            obj.subtitle,
+            "" if obj.button_text else SafeString(" hidden"),
+            obj.button_text,
+        )
+
+    def changelist_view(self, request: HttpRequest, extra_context: Any = None) -> HttpResponse:
+        if request.method == "GET":
+            live = HeroSlide.objects.live().count()
+            if live > HERO_SLIDE_LIMIT:
+                messages.warning(
+                    request,
+                    f"{live} slides are active, but the home page shows only the first {HERO_SLIDE_LIMIT} "
+                    "(lowest order). Switch some off or change their order.",
+                )
+        return super().changelist_view(request, extra_context)
+
+
+@admin.register(Partner)
+class PartnerAdmin(AuditedAdminMixin, admin.ModelAdmin):
+    """Logo strip on the home page. It only appears when at least one partner is published."""
+
+    list_display = ("thumb", "name", "website", "order", "is_published")
+    list_display_links = ("thumb", "name")
+    list_editable = ("order", "is_published")
+    search_fields = ("name",)
+    fields = ("name", "logo", "website", "order", "is_published")
+
+    @admin.display(description="Logo")
+    def thumb(self, obj: Partner) -> SafeString | str:
+        return admin_thumb(obj.logo, obj.name)

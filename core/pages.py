@@ -8,25 +8,35 @@ from django.shortcuts import render
 from branches.models import Branch
 from events.models import Event
 from leadership.models import Leader
+from media_library.models import Testimony
 from news.models import Post
 from programs.models import Program
-from resources.models import Resource
+
+from .models import HERO_SLIDE_LIMIT, HeroSlide, Partner
+
+# Card carousels: enough to be worth swiping, small enough for slow connections (images are lazy).
+CAROUSEL_LIMIT = 8
 
 
 def home(request: HttpRequest) -> HttpResponse:
+    """Every section is a slider fed only by published/active/approved content; empty sections are hidden."""
     context = {
-        "programs": Program.objects.published().filter(is_featured=True)[:6],
-        "events": Event.objects.upcoming().select_related("branch")[:3],
-        "posts": Post.objects.published()[:3],
-        "branches": Branch.objects.published().select_related("country")[:6],
-        "latest_sermon": Resource.objects.published().filter(kind="sermon").first(),
+        "hero_slides": list(HeroSlide.objects.live()[:HERO_SLIDE_LIMIT]),
+        "programs": list(Program.objects.published().filter(is_featured=True)[:CAROUSEL_LIMIT]),
+        "events": list(Event.objects.upcoming().select_related("branch")[:CAROUSEL_LIMIT]),
+        "posts": list(Post.objects.published()[:CAROUSEL_LIMIT]),
+        "branches": list(Branch.objects.published().select_related("country")),
+        "testimonies": list(Testimony.objects.approved().select_related("branch")[:CAROUSEL_LIMIT]),
+        "partners": list(Partner.objects.published()),
     }
     return render(request, "core/home.html", context)
 
 
 def about(request: HttpRequest) -> HttpResponse:
+    leaders = list(Leader.objects.published().select_related("branch"))
     context = {
-        "founder": Leader.objects.published().filter(role_title__icontains="founder").first(),
+        "founder": next((x for x in leaders if "founder" in x.role_title.lower()), None),
+        "leaders": leaders,
         "programs": Program.objects.published()[:6],
         "branches": Branch.objects.published().select_related("country"),
     }

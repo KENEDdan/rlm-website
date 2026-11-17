@@ -26,6 +26,18 @@
   </div>
 </section>
 {% endif %}
+{% if leaders %}
+<section class="section{% if not founder %} bg-rlm-cream{% endif %}">
+  <div class="container-rlm">
+    {% page_text "about_leadership" as t %}
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>{% if t.eyebrow %}<p class="eyebrow">{{ t.eyebrow }}</p>{% endif %}<h2 class="section-title mt-2">{{ t.heading }}</h2>{% if t.intro %}<p class="mt-2 max-w-2xl text-rlm-grey">{{ t.intro }}</p>{% endif %}</div>
+      <a href="{% url 'leadership:list' %}" class="btn-outline btn-sm">All leaders</a>
+    </div>
+    <div class="mt-10">{% include "includes/slider.html" with id="leaders" label=t.heading items=leaders slide_template="includes/leader_card.html" item_name="leader" per_view="4" %}</div>
+  </div>
+</section>
+{% endif %}
 {% if programs %}
 <section class="section"><div class="container-rlm"><h2 class="section-title">What we do</h2>
   <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{% for program in programs %}{% include "includes/program_card.html" %}{% endfor %}</div></div></section>

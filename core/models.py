@@ -3,11 +3,15 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
+from django.utils import timezone
 
 from .uploads import RandomUploadTo, SafeImageField
+from .validators import SAFE_LINK_HELP, is_safe_link, validate_safe_link
 
 SITE_SETTINGS_CACHE_KEY = "core:site-settings:v1"
 
@@ -338,3 +342,127 @@ class FormOption(TimeStampedModel):
                 raise ValidationError(
                     "At least one option in this list must stay active, or the form cannot be sent."
                 )
+
+
+# ---------------------------------------------------------------- home page sliders
+HERO_SLIDE_LIMIT = 5
+
+
+class HeroSlideQuerySet(models.QuerySet):
+    def live(self, now: Any = None) -> HeroSlideQuerySet:
+        """Switched on, and inside the optional start/end window."""
+        now = now or timezone.now()
+        return self.filter(
+            Q(is_active=True),
+            Q(start_at__isnull=True) | Q(start_at__lte=now),
+            Q(end_at__isnull=True) | Q(end_at__gt=now),
+        )
+
+
+class HeroSlide(TimeStampedModel):
+    """One slide of the home page hero slider (managed by Media & Communications and the Founder)."""
+
+    title = models.CharField(max_length=120, help_text="Large heading. Keep it short (under 60 characters).")
+    subtitle = models.TextField(
+        max_length=300, blank=True, help_text="One or two sentences under the heading (optional)."
+    )
+    image = SafeImageField(
+        upload_to=RandomUploadTo("hero"),
+        blank=True,
+        help_text="Landscape photo, ideally 1920 x 900 pixels (JPG, PNG or WebP, max size as for all "
+        "uploads). A dark shade is added automatically so the text stays readable. Leave empty for the "
+        "dark flame background with the logo.",
+    )
+    image_alt = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Describe the photo for people using screen readers. Leave empty if it is only decoration.",
+    )
+    button_text = models.CharField(
+        max_length=40,
+        blank=True,
+        help_text="e.g. Give, Volunteer, Register, Watch. Leave empty for no button.",
+    )
+    button_link = models.CharField(
+        max_length=300, blank=True, validators=[validate_safe_link], help_text=SAFE_LINK_HELP
+    )
+    show_scripture = models.BooleanField(
+        default=False, help_text="Show the scripture from Site settings (Acts 15:16) under the text."
+    )
+    order = models.PositiveSmallIntegerField(default=0, help_text="Lower numbers show first.")
+    is_active = models.BooleanField(default=True, help_text="Untick to hide the slide without deleting it.")
+    start_at = models.DateTimeField(
+        null=True, blank=True, help_text="Optional: do not show before this date and time."
+    )
+    end_at = models.DateTimeField(
+        null=True, blank=True, help_text="Optional: stop showing after this date and time."
+    )
+
+    objects = HeroSlideQuerySet.as_manager()
+
+    class Meta:
+        ordering: ClassVar = ["order", "pk"]
+        verbose_name = "hero slide"
+
+    def __str__(self) -> str:
+        return self.title
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        if self.start_at and self.end_at and self.end_at <= self.start_at:
+            errors["end_at"] = "The end must be after the start."
+        if self.button_text and not self.button_link:
+            errors["button_link"] = "Add the page the button should open."
+        if self.button_link and not self.button_text:
+            errors["button_text"] = "Add the words shown on the button."
+        if errors:
+            raise ValidationError(errors)
+
+    @property
+    def safe_button_link(self) -> str:
+        """The button link, re-checked at display time (defence in depth against rows saved outside forms)."""
+        return self.button_link if is_safe_link(self.button_link) else ""
+
+    @property
+    def status(self) -> str:
+        now = timezone.now()
+        if not self.is_active:
+            return "Switched off"
+        if self.start_at and self.start_at > now:
+            return "Scheduled"
+        if self.end_at and self.end_at <= now:
+            return "Ended"
+        return "Showing"
+
+
+class Partner(TimeStampedModel):
+    """A partner or supporter shown in the logo strip on the home page (only when published)."""
+
+    name = models.CharField(max_length=120, help_text="Used as the logo's text alternative.")
+    logo = SafeImageField(
+        upload_to=RandomUploadTo("partners"),
+        help_text="PNG with a transparent background works best, at least 400 pixels wide.",
+    )
+    website = models.CharField(
+        max_length=300,
+        blank=True,
+        validators=[validate_safe_link],
+        help_text="Optional. Must start with https://",
+    )
+    order = models.PositiveSmallIntegerField(default=0)
+    is_published = models.BooleanField(
+        default=False, help_text="Only publish with the partner's permission to show their logo."
+    )
+
+    objects = PublishedQuerySet.as_manager()
+
+    class Meta:
+        ordering: ClassVar = ["order", "name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    @property
+    def safe_website(self) -> str:
+        return self.website if is_safe_link(self.website) else ""

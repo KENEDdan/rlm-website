@@ -1,0 +1,4 @@
+{% load rlm %}<figure class="lightbox-slide">
+  <img src="{{ photo.image|rendition:1600 }}" alt="{{ photo.alt_text }}" class="lightbox-img" loading="lazy" decoding="async">
+  {% if photo.caption %}<figcaption class="mt-3 text-center text-sm text-rlm-line">{{ photo.caption }}</figcaption>{% endif %}
+</figure>

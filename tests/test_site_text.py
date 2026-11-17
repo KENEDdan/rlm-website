@@ -64,6 +64,9 @@ def test_page_headings_come_from_the_admin(client: Client, key: str, url: str) -
 
 
 def test_home_hero_sections_cards_cta_and_footer_are_editable(client: Client) -> None:
+    from core.models import HeroSlide
+
+    HeroSlide.objects.update(is_active=False)  # the "home_hero" text is the fallback when no slide is live
     _edit("home_hero", heading="Hope Restored.", highlight="Generations Rising.", intro="Hero intro")
     _edit("home_card_prayer", heading="Pray with us", intro="Card text")
     _edit("cta_band", heading="Join the rebuilding", intro="CTA text")

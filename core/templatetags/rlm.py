@@ -66,6 +66,30 @@ def responsive_img(
 
 
 @register.filter
+def srcset(field: Any) -> str:
+    """``srcset`` value of an uploaded image's WebP renditions (used for ``<link rel=preload>``)."""
+    if not field:
+        return ""
+    return ", ".join(f"{field.storage.url(rendition_name(field.name, w))} {w}w" for w in RENDITION_WIDTHS)
+
+
+@register.simple_tag(takes_context=True)
+def render_slide(
+    context: Any, template_name: str, item_name: str, item: Any, first: bool = False, index: int = 0
+) -> SafeString:
+    """Render one slide of ``includes/slider.html`` with the card template it was given.
+
+    ``{% render_slide "includes/event_card.html" "event" item %}`` renders the card with ``event`` set to
+    the item (like ``{% include ... with event=item %}``, but with the variable name chosen by the caller).
+    ``slide_first`` (bool) and ``slide_index`` (0-based) are also available to the card template.
+    The output is the rendered (auto-escaped) template, exactly as ``{% include %}`` would produce.
+    """
+    template = context.template.engine.get_template(template_name)
+    with context.push(**{item_name: item, "slide_first": first, "slide_index": index}):
+        return template.render(context)
+
+
+@register.filter
 def is_placeholder(field: Any) -> bool:
     return not field
 

@@ -1,0 +1,6 @@
+{% load rlm %}<figure class="gallery-slide">
+  <a href="{{ photo.image|rendition:1600 }}" class="gallery-frame" data-lightbox-open="{{ slide_index }}" aria-label="Open photo {{ slide_index|add:1 }} full screen{% if photo.alt_text %}: {{ photo.alt_text }}{% endif %}">
+    {% responsive_img photo.image photo.alt_text "(min-width: 1152px) 1100px, 100vw" "h-full w-full object-contain" slide_first %}
+  </a>
+  {% if photo.caption %}<figcaption class="mt-3 text-sm text-rlm-grey">{{ photo.caption }}</figcaption>{% endif %}
+</figure>

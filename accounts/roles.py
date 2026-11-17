@@ -64,6 +64,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
     },
     MEDIA: {
         "core.sociallink": "vacd",
+        "core.heroslide": "vacd",
+        "core.partner": "vacd",
         "core.pagetext": "vc",
         "branches.branch": "v",
         "leadership.department": "vac",

@@ -24,9 +24,24 @@ class PageTextDefault(TypedDict, total=False):
 PAGE_TEXT_DEFAULTS: dict[str, PageTextDefault] = {
     # ---- home page
     "home_hero": {
-        "label": "Home: hero",
+        "label": "Home: hero (only shown when no hero slide is active)",
         "heading": "Rebuilding Lives.",
         "highlight": "Reviving Generations.",
+    },
+    "home_testimonies": {
+        "label": "Home: testimonies slider",
+        "eyebrow": "Lives rebuilt",
+        "heading": "Testimonies",
+    },
+    "home_partners": {
+        "label": "Home: partners logo strip",
+        "eyebrow": "Building together",
+        "heading": "Our partners",
+    },
+    "about_leadership": {
+        "label": "About: leadership slider",
+        "eyebrow": "Who leads us",
+        "heading": "Our leadership",
     },
     "home_programmes": {
         "label": "Home: programmes section",

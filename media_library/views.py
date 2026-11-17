@@ -17,7 +17,7 @@ def gallery(request: HttpRequest) -> HttpResponse:
 
 def album_detail(request: HttpRequest, slug: str) -> HttpResponse:
     album = get_object_or_404(Album.objects.published(), slug=slug)
-    photos = album.photos.filter(is_published=True)
+    photos = list(album.photos.filter(is_published=True))
     context = {"album": album, "photos": photos, "videos": album.videos.published()}
     return render(request, "media_library/album.html", context)
 
@@ -32,6 +32,6 @@ def reports(request: HttpRequest) -> HttpResponse:
 
 
 def testimonies(request: HttpRequest) -> HttpResponse:
-    items = Testimony.objects.published().filter(consent_confirmed=True)
+    items = Testimony.objects.approved()
     page = Paginator(items, 10).get_page(request.GET.get("page"))
     return render(request, "media_library/testimonies.html", {"testimonies": page, "page_obj": page})

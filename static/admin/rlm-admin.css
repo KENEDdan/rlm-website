@@ -65,3 +65,18 @@ html[data-theme="dark"] {
 #backup-codes-form button:focus {
   text-decoration: underline;
 }
+
+/* Hero slides / partners: list thumbnails and the live slide preview (no inline styles: strict CSP). */
+.rlm-thumb { display: block; width: 120px; height: 56px; object-fit: cover; border-radius: 6px; background: #1C1C1C; }
+.rlm-slide-preview { position: relative; width: 100%; max-width: 480px; aspect-ratio: 1920 / 900; overflow: hidden;
+  border-radius: 10px; background: radial-gradient(30rem 15rem at 85% -10%, rgba(240, 101, 42, 0.45), transparent 60%), #0A0A0A; }
+.rlm-slide-preview img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rlm-slide-preview::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.8) 45%, rgba(10, 10, 10, 0.35) 100%); }
+.rlm-slide-preview__text { position: absolute; z-index: 1; left: 16px; right: 30%; bottom: 16px; display: flex;
+  flex-direction: column; gap: 6px; color: #FFFFFF; }
+.rlm-slide-preview__text strong { font-size: 18px; line-height: 1.15; }
+.rlm-slide-preview__text span { font-size: 11px; line-height: 1.35; color: #E8E8E8; }
+.rlm-slide-preview__text .rlm-slide-preview__btn { align-self: flex-start; padding: 4px 12px; border-radius: 999px;
+  background: #F0652A; color: #0A0A0A; font-weight: 700; }
+.rlm-slide-preview [hidden] { display: none !important; }

@@ -1,0 +1,11 @@
+{% load rlm %}<article class="card">
+  <a href="{{ branch.get_absolute_url }}" class="relative block aspect-[3/2] overflow-hidden bg-rlm-cream" tabindex="-1" aria-hidden="true">
+    {% responsive_img branch.image branch.image_alt|default:branch.name "(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 85vw" %}
+    {% if not branch.image %}<span class="placeholder-badge">Placeholder image</span>{% endif %}
+  </a>
+  <div class="card-body">
+    <h3 class="text-lg font-bold"><a href="{{ branch.get_absolute_url }}" class="hover:text-rlm-flame-dark">{{ branch.name }}</a></h3>
+    <p class="mt-1 flex items-center gap-2 text-sm text-rlm-grey">{% icon "pin" "h-4 w-4 flex-none" %}{{ branch.city }}{% if branch.city %}, {% endif %}{{ branch.country.name }}</p>
+    {% if branch.summary %}<p class="mt-3 text-sm text-rlm-ink">{{ branch.summary }}</p>{% endif %}
+  </div>
+</article>

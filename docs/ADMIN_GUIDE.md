@@ -169,14 +169,16 @@ email). Mark people as cancelled to free their seats. Export only when needed (2
 ---
 
 ## 5. Media & Communications
-*Gallery, sermons and resources, news, social links, newsletter list.*
+*Gallery, sermons and resources, news, social links, newsletter list, home page hero slides and partner logos.*
 
 ### 5.0 Page headings and wording (Page text)
 **Page text** lists every heading on the site: each page's header (eyebrow, heading, intro), the home page
 hero and section titles, the three home cards, the "Be part of what God is rebuilding" band and the footer
 newsletter blurb. Edit and save; the change appears within a few minutes.
-* **Highlight** is only used by the home hero (the second line in flame colours).
+* **Highlight** is only used by the home hero (the second line in flame colours). The "Home: hero" text
+  only shows when **no hero slide** is switched on (see 5.7).
 * **SEO title / description** change what Google and browser tabs show for that page.
+* The headings above the sliders (Testimonies, Our partners, About page "Our leadership") are here too.
 * The Give and Partner page intros come from **Giving settings** when Finance fills them in; otherwise
   from Page text.
 
@@ -188,6 +190,8 @@ newsletter blurb. Edit and save; the change appears within a few minutes.
 ### 5.2 Photo albums
 **Albums → Add**: title, description, date, branch/event, cover image. Save, then add **Photos** below (each
 with alt text). Only publish photos of people who agreed to it; be especially careful with children.
+On the album page the photos appear as a slider with thumbnails and a full-screen viewer. The **Order**
+number on each photo sets its position (lower first); a **caption** shows under the photo.
 
 ### 5.3 Videos
 Upload the video to the ministry's YouTube channel, then **Videos → Add** and paste the YouTube link. The
@@ -199,13 +203,66 @@ site loads YouTube only when a visitor presses play (faster, more private).
 categories**.
 
 ### 5.5 Testimonies
-**Testimonies → Add**. Tick **Consent confirmed** only when the person agreed in writing. Leave the name blank
-to show "Anonymous".
+**Testimonies → Add**. Tick **Consent confirmed** only when the person agreed in writing.
+* **Name shown**: the website shows **initials** (e.g. "M. K.") by default, or the **first name** if you
+  choose it. The **full name** is only shown when you also tick **Consent to show full name**, which you
+  should only do when the person explicitly agreed to it in writing. Leave the name blank for "Anonymous".
+* **Approved**: a testimony appears on the website (home page slider and Testimonies page) only when it is
+  **Approved** AND **Published** AND consent is confirmed. Read it through before approving.
+* The list shows a column **Shown on the website as**: check it before publishing.
 
 ### 5.6 Newsletter subscribers
 People join with double opt-in (they confirm by email). You cannot add people by hand; that protects the
 ministry from spam complaints and respects privacy. **Export** gives confirmed subscribers only. Every
 newsletter you send must include the unsubscribe link.
+
+### 5.7 Home page hero slides
+The large banner at the top of the home page is a slideshow of **Hero slides** (up to 5). Only Media &
+Communications and the Founder can change them.
+
+**Add a slide**
+1. **Hero slides → Add hero slide**.
+2. **Title**: the big heading, short (under 60 characters). **Subtitle**: one or two sentences.
+3. **Image**: a landscape photo, **1920 x 900 pixels** is ideal (JPG, PNG or WebP). A dark shade is added
+   automatically so white text stays readable; keep the important part of the photo on the **right**,
+   because the text sits on the left. Fill in **Image alt** to describe the photo for blind visitors. No
+   photo? Leave it empty: the slide uses the dark flame background with the logo.
+4. **Button text** (e.g. Give, Volunteer, Register, Watch) and **Button link**. The link must be a page of
+   this website starting with **/** (for example `/give/`, `/get-involved/`, `/events/`, `/resources/`) or
+   a full secure address starting with **https://**. Anything else is refused.
+5. Tick **Show scripture** to add Acts 15:16 (from Site settings) under the text.
+6. The **Live preview** at the top changes as you type or choose a photo. Press **Save**.
+
+**Reorder slides**: in the **Hero slides** list, change the numbers in the **Order** column (lower shows
+first, e.g. 10, 20, 30) and press **Save** at the bottom of the list. Leave gaps (10, 20, 30) so a new slide
+can go in between later.
+
+**Hide or schedule a slide**: untick **Is active** to hide it without deleting it. **Start at** / **End at**
+show a slide only between two dates (e.g. a conference banner that disappears after the event). The
+**Status** column says Showing, Scheduled, Ended or Switched off.
+
+The first slide ("Rebuilding Lives. Reviving Generations." with Acts 15:16) was created for you; edit it
+rather than deleting it. If more than 5 slides are active, only the first 5 show and the list warns you. The
+slideshow moves every 6 seconds, stops when a visitor hovers, touches or uses the keyboard, has a pause
+button, and never moves for visitors who have asked their device to reduce motion.
+
+### 5.8 Other sliders on the website (nothing to set up)
+These fill themselves from what is already published:
+* **Home**: programmes marked "featured", upcoming published events (with a Register button when
+  registration is open), approved testimonies, every published branch (new branches appear
+  automatically), and the latest news.
+* **About**: confirmed and published leaders.
+* **Albums**: the photos of the album (see 5.2).
+
+**Image sizes** for cards in these sliders (events, news, programmes, branches): **1200 x 800 pixels**
+(landscape, 3:2). Larger photos are fine; the website makes smaller copies automatically and removes hidden
+location data from every photo.
+
+### 5.9 Partners and supporters logo strip
+**Partners → Add**: name, logo (PNG with a transparent background, at least 400 pixels wide), optional
+website (must start with https://), order. Tick **Is published** only with the partner's permission to show
+their logo. The strip appears on the home page only when at least one partner is published; it scrolls
+slowly, pauses on hover and has a pause button.
 
 ---
 

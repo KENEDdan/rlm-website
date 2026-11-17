@@ -1,0 +1,6 @@
+{% load rlm %}<figure class="card p-6">
+  <span class="text-rlm-flame-dark">{% icon "flame" "h-7 w-7" %}</span>
+  <p class="mt-4 font-display text-lg font-bold leading-snug text-rlm-black">{{ testimony.title }}</p>
+  <blockquote class="mt-3 text-sm leading-relaxed text-rlm-ink">“{{ testimony.body|truncatewords:45 }}”</blockquote>
+  <figcaption class="mt-auto pt-5 text-xs font-bold uppercase tracking-widest text-rlm-flame-dark">{{ testimony.public_name }}{% if testimony.branch %} · {{ testimony.branch.name }}{% endif %}</figcaption>
+</figure>

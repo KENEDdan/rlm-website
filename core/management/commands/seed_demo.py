@@ -22,6 +22,7 @@ from PIL import Image, ImageDraw
 
 from branches.models import Branch
 from contact.models import ContactMessage
+from core.models import HeroSlide, Partner
 from events.models import Event
 from giving.models import CurrentNeed, Donation, GivingCategory, PartnershipEnquiry
 from media_library.models import Album, Photo, Testimony, Video
@@ -90,6 +91,8 @@ class Command(BaseCommand):
         for model in (Post, Resource, Series, ResourceCategory, Video, Testimony, Album, Event):
             total += model.objects.filter(slug__startswith=DEMO).delete()[0]  # photos cascade with albums
         total += CurrentNeed.objects.filter(title__startswith="DEMO").delete()[0]
+        total += HeroSlide.objects.filter(title__startswith="DEMO").delete()[0]
+        total += Partner.objects.filter(name__startswith="DEMO").delete()[0]
         # Encrypted columns can't be searched; demo rows are found through the blind index of their address.
         hashes = [blind_index(email) for email in DEMO_EMAILS]
         for model in (PrayerRequest, ContactMessage, VolunteerApplication, PartnershipEnquiry, Subscriber):
@@ -232,10 +235,58 @@ class Command(BaseCommand):
             "testimony",
             title="DEMO Testimony",
             body="A demo testimony for layout testing.",
+            person_display_name="Demo Person",
+            name_display=Testimony.NameDisplay.FIRST_NAME,
             consent_confirmed=True,
+            is_approved=True,
             is_published=True,
             branch=yei,
         )
+        get_or_create(
+            Testimony,
+            "testimony-2",
+            title="DEMO Restored family",
+            body="A second demo testimony, shown with initials only.",
+            person_display_name="Demo Second Person",
+            consent_confirmed=True,
+            is_approved=True,
+            is_published=True,
+            branch=juba,
+        )
+
+        # Home hero slides (after the seeded tagline slide) and partner logos
+        for i, (title, button, link) in enumerate(
+            [
+                ("DEMO Serve with us", "Volunteer", "/get-involved/"),
+                ("DEMO Youth Revival Conference", "Register", "/events/"),
+                ("DEMO Watch the latest sermon", "Watch", "/resources/"),
+            ],
+            start=1,
+        ):
+            if not HeroSlide.objects.filter(title=title).exists():
+                slide = HeroSlide(
+                    title=title,
+                    subtitle="Demo slide for local development. Replace it in the admin.",
+                    image_alt="Demo placeholder image",
+                    button_text=button,
+                    button_link=link,
+                    order=i * 10,
+                )
+                if images:
+                    slide.image = demo_image(f"hero-{i}", (1920, 900))
+                slide.save()
+                self.created += 1
+        if images:
+            for i in range(1, 7):
+                if not Partner.objects.filter(name=f"DEMO Partner {i}").exists():
+                    Partner.objects.create(
+                        name=f"DEMO Partner {i}",
+                        logo=demo_image(f"partner-{i}", (400, 160)),
+                        website="https://example.org/",
+                        order=i,
+                        is_published=True,
+                    )
+                    self.created += 1
 
         # Giving: a demo need (categories are seeded by migration)
         if not CurrentNeed.objects.filter(title__startswith="DEMO").exists():

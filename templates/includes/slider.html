@@ -1,0 +1,21 @@
+{% comment %}
+Reusable, accessible slider (carousel). Works without JavaScript: the track is a CSS scroll-snap strip that
+can be swiped, scrolled or moved with the arrow keys. static/js/slider.js adds arrows, dots, keyboard keys,
+mouse drag and (hero only) autoplay. Usage:
+
+  {% include "includes/slider.html" with id="events" label="Upcoming events" items=events slide_template="includes/event_card.html" item_name="event" %}
+
+Class names are written out in full (never built from variables) so Tailwind keeps their styles.
+Options: variant = "cards" (default) | "hero" | "gallery" | "lightbox"; per_view = "4" for smaller cards;
+theme = "light" (default) | "dark"; autoplay = milliseconds per slide (hero only; never with reduced motion).
+`items` must be a list (the view converts querysets). Every slide is a labelled group ("2 of 5").
+{% endcomment %}{% load rlm %}<div class="slider {% if variant == "hero" %}slider-hero{% elif variant == "gallery" %}slider-gallery{% elif variant == "lightbox" %}slider-lightbox{% else %}slider-cards{% endif %}{% if per_view == "4" %} slider-per-4{% endif %} {% if theme == "dark" %}slider-on-dark{% else %}slider-on-light{% endif %}" id="{{ id }}" data-slider{% if autoplay %} data-autoplay="{{ autoplay }}"{% endif %} role="region" aria-roledescription="carousel" aria-label="{{ label }}">
+  {% if autoplay %}{% include "includes/slider/controls.html" %}{% endif %}
+  <div class="slider-track" id="{{ id }}-track" data-slider-track tabindex="0" role="group" aria-label="{{ label }}: slides">
+    {% for item in items %}<div class="slider-slide" id="{{ id }}-slide-{{ forloop.counter }}" role="group" aria-roledescription="slide" aria-label="{{ forloop.counter }} of {{ items|length }}" data-slide>{% render_slide slide_template item_name item forloop.first forloop.counter0 %}</div>
+    {% endfor %}
+  </div>
+  {% if not autoplay %}{% include "includes/slider/controls.html" %}{% endif %}
+  {% if autoplay %}<div class="slider-progress" data-slider-progress aria-hidden="true" hidden><span></span></div>{% endif %}
+  <p class="sr-only" data-slider-status aria-live="{% if autoplay %}off{% else %}polite{% endif %}" aria-atomic="true"></p>
+</div>

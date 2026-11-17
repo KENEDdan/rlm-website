@@ -4,12 +4,16 @@
 {% block content %}
 {% include "includes/page_header.html" with eyebrow="Album" heading=album.title intro=album.description %}
 <section class="section"><div class="container-rlm">
-  <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-    {% for photo in photos %}
-    <li><figure><a href="{{ photo.image.url }}" class="block aspect-square overflow-hidden rounded-xl bg-rlm-cream">{% responsive_img photo.image photo.alt_text "(min-width: 1024px) 25vw, 50vw" %}</a>
-      {% if photo.caption %}<figcaption class="mt-1 text-xs text-rlm-grey">{{ photo.caption }}</figcaption>{% endif %}</figure></li>
-    {% empty %}<li class="col-span-full text-rlm-grey">No photos in this album yet.</li>{% endfor %}
-  </ul>
+  {% if photos %}
+    {% include "includes/slider.html" with id="album-photos" label="Photos: "|add:album.title items=photos slide_template="includes/gallery_slide.html" item_name="photo" variant="gallery" %}
+    {% if photos|length > 1 %}<div class="gallery-thumbs" data-slider-thumbs="album-photos" role="group" aria-label="Photo thumbnails">
+      {% for photo in photos %}<a href="#album-photos-slide-{{ forloop.counter }}" class="gallery-thumb" data-slider-goto="{{ forloop.counter0 }}"{% if forloop.first %} aria-current="true"{% endif %} aria-label="Show photo {{ forloop.counter }}">{% responsive_img photo.image "" "112px" "h-full w-full object-cover" %}</a>{% endfor %}
+    </div>{% endif %}
+    <dialog class="lightbox" data-lightbox aria-label="Photo viewer">
+      <button type="button" class="slider-btn lightbox-close" data-lightbox-close aria-label="Close the photo viewer">{% icon "close" "h-5 w-5" %}</button>
+      {% include "includes/slider.html" with id="album-lightbox" label="Photo viewer" items=photos slide_template="includes/lightbox_slide.html" item_name="photo" variant="lightbox" theme="dark" %}
+    </dialog>
+  {% else %}<p class="text-rlm-grey">No photos in this album yet.</p>{% endif %}
   {% if videos %}<div class="mt-12 grid gap-6 md:grid-cols-2">{% for video in videos %}<div>{% youtube video.youtube_id video.title %}<p class="mt-2 font-semibold">{{ video.title }}</p></div>{% endfor %}</div>{% endif %}
   <a href="{% url 'media_library:gallery' %}" class="btn-outline mt-10">Back to gallery</a>
 </div></section>

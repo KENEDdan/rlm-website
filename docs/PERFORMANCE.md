@@ -22,6 +22,42 @@ redirect HTTP to HTTPS", and one console message that the Cross-Origin-Opener-Po
 non-HTTPS origins. HTTP/2 also needs TLS. All of these clear once production serves HTTPS through Caddy
 (phase K), with HSTS and the HTTPS redirect already configured in `config/settings/prod.py`.
 
+## Sliders / carousels (2026-11-17)
+
+**Setup:** same as above (Lighthouse 12.2.1, mobile, simulated slow 4G + 4x CPU), against the production
+image running in the local rehearsal stack (`docker-compose.prod.yml`, Caddy, gunicorn, WhiteNoise), reached
+over plain HTTP through a throwaway proxy. Medians of repeated runs; Best practices stays 76 only because of
+plain-HTTP testing (see above).
+
+| Page | Before (perf / a11y) | After, same content | After, realistic slider content* |
+|---|---|---|---|
+| Home `/` | 99 / 100 (TBT 80–110 ms, LCP 1.8 s) | 99 / 100 (TBT 0–40 ms, LCP 1.8 s) | 95 / 100 (runs 74–99, LCP 1.9 s) |
+| About `/about/` | 100 / 100 | 100 / 100 | 91 / 100 (one run, noisy period) |
+| Album `/gallery/<album>/` | 99 / 100 | 99 / 100 | 95 / 100 (one run, noisy period) |
+
+CLS is 0 everywhere. \* 4 hero slides (3 with 1920x900 photos), 6 partner logos and 3 testimonies were added
+temporarily to the rehearsal database for these runs and removed afterwards.
+
+**Noise:** this PC runs other projects' containers. During the "realistic" runs the unchanged Events page
+(no sliders) also dropped from 99 to 84 in one of four runs (TBT 610 ms), and the same home page used 1.6 s
+of main-thread time in one run and 4.9 s in another. In quiet runs the slider's only long task is ~60 ms
+(throttled). Re-measure on the real server after launch.
+
+**Slider budget:** `static/js/slider.js` is ~4.3 KB gzipped (limit 10 KB, enforced by a test), no
+dependencies. The first hero photo is preloaded with `fetchpriority="high"`; every other slider image is
+lazy-loaded WebP with `srcset`; slides have fixed aspect ratios / minimum heights.
+
+### Two pitfalls found and fixed while measuring (keep these when changing the slider)
+1. **Lighthouse reported NO_LCP on the home page.** The first snap point of each card track sat 2 px in
+   (the track's horizontal padding), so the browser *snapped* (= scrolled) every track on load, and Chrome
+   discards the page's Largest Contentful Paint after a scroll. Fix: `scroll-padding-inline` equal to the
+   padding (and `overflow-y: hidden`). See the comment on `.slider-track` in `static/css/input.css`.
+2. **One long task of 250–490 ms (throttled) from slider start-up.** Each slider read layout
+   (`offsetLeft`/`scrollWidth`) between DOM writes, forcing a full reflow per slider. Fix: start after the
+   first frame, read all sliders' layout first, then write, autoplay on the next frame, partner strip in
+   its own task. Home TBT went from 130–370 ms to 0–40 ms. The scrollbar is also never shown/hidden when
+   JS starts (that would shift the page on desktop).
+
 ## Fixed in phase J
 
 * Event pages jumped from `h1` to `h3` (heading order): added a section heading for screen readers.

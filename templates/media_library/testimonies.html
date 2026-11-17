@@ -5,7 +5,7 @@
 {% page_text "testimonies" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
 <section class="section"><div class="container-rlm grid gap-8 md:grid-cols-2">
   {% for t in testimonies %}
-  <article class="card p-6"><h2 class="text-xl font-bold">{{ t.title }}</h2><p class="eyebrow mt-1">{{ t.person_display_name|default:"Anonymous" }}</p><div class="prose-rlm mt-4 text-sm">{{ t.body|paragraphs }}</div></article>
+  <article class="card p-6"><h2 class="text-xl font-bold">{{ t.title }}</h2><p class="eyebrow mt-1">{{ t.public_name }}</p><div class="prose-rlm mt-4 text-sm">{{ t.body|paragraphs }}</div></article>
   {% empty %}<p class="text-rlm-grey">Testimonies will be shared here.</p>{% endfor %}
 </div>
 <div class="container-rlm">{% include "includes/pagination.html" %}</div></section>

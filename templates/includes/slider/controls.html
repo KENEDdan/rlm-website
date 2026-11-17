@@ -1,0 +1,8 @@
+{% load rlm %}<div class="slider-controls" data-slider-controls hidden>
+  <div class="slider-dots" data-slider-dots role="group" aria-label="Choose a slide"></div>
+  <div class="slider-buttons">
+    {% if autoplay %}<button type="button" class="slider-btn" data-slider-play aria-label="Pause the slideshow" hidden><span data-icon-pause><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></span><span data-icon-play hidden>{% icon "play" "h-5 w-5" %}</span></button>{% endif %}
+    <button type="button" class="slider-btn" data-slider-prev aria-controls="{{ id }}-track" aria-label="Previous slide">{% icon "arrow" "h-5 w-5 rotate-180" %}</button>
+    <button type="button" class="slider-btn" data-slider-next aria-controls="{{ id }}-track" aria-label="Next slide">{% icon "arrow" "h-5 w-5" %}</button>
+  </div>
+</div>

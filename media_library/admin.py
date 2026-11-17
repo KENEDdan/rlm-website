@@ -74,19 +74,30 @@ class ReportAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 @admin.register(Testimony)
 class TestimonyAdmin(AuditedAdminMixin, admin.ModelAdmin):
-    list_display = ("title", "person_display_name", "consent_confirmed", "is_published")
-    list_filter = ("is_published", "consent_confirmed")
+    list_display = ("title", "shown_as", "consent_confirmed", "is_approved", "is_published")
+    list_filter = ("is_published", "is_approved", "consent_confirmed")
     prepopulated_fields = {"slug": ("title",)}
-    fields = (
-        "title",
-        "slug",
-        "person_display_name",
-        "body",
-        "photo",
-        "photo_alt",
-        "branch",
-        "consent_confirmed",
-        "is_published",
-        "seo_title",
-        "seo_description",
+    fieldsets = (
+        (None, {"fields": ("title", "slug", "body", "photo", "photo_alt", "branch")}),
+        (
+            "Name and consent",
+            {
+                "fields": ("person_display_name", "name_display", "full_name_consent", "consent_confirmed"),
+                "description": "Visitors only ever see initials or a first name, unless the person gave "
+                "explicit consent to show their full name.",
+            },
+        ),
+        (
+            "Approval and publishing",
+            {
+                "fields": ("is_approved", "is_published"),
+                "description": "Only testimonies that are approved AND published (with consent) appear on "
+                "the website, including the home page slider.",
+            },
+        ),
+        ("Search engines", {"fields": ("seo_title", "seo_description"), "classes": ("collapse",)}),
     )
+
+    @admin.display(description="Shown on the website as")
+    def shown_as(self, obj: Testimony) -> str:
+        return obj.public_name

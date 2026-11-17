@@ -107,3 +107,18 @@ settings, retention days from Site settings) so the policy cannot drift from rea
 choices" control lets visitors withdraw analytics consent (shown only when analytics is configured). A
 fuller draft policy (third parties, legal basis, children, transfers, complaints) replaced the original
 seed only where it was untouched; it remains a Draft for leadership (launch_check blocks until reviewed).
+
+## D-015: Sliders without a slider library
+(2026-11-17) One reusable component (`templates/includes/slider.html` + `static/js/slider.js`) serves the home
+hero, the card carousels (programmes, events, testimonies, branches, news, leaders), the album gallery and
+its lightbox. CSS scroll-snap does the core work, so every slider works without JavaScript (swipe, scroll,
+keyboard on the focusable track) and no third-party code was added; the ~4 KB vanilla module only adds
+arrows, dots, keys, mouse drag, the hero autoplay (6 s, paused on hover/focus/touch, pause button, never with
+reduced motion) and a `<dialog>` lightbox. Embla Carousel was considered and not needed. The hero is a
+scroll-snap strip (slide transition) rather than a fade, so it degrades to a swipeable strip.
+`HeroSlide` and `Partner` live in `core` (managed by Founder + Media & Communications only); button/partner
+links accept only site-relative paths or `https://` (`core.validators.validate_safe_link`) and are
+re-checked at render time. Testimonies gained an explicit **approved** flag and a name-display choice:
+initials (default) or first name, full name only with recorded explicit consent. Existing published,
+consented testimonies were migrated to approved; names were not carried over as full names.
+

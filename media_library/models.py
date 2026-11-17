@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 
-from core.models import PublishableModel, TimeStampedModel
+from core.models import PublishableModel, PublishedQuerySet, TimeStampedModel
 from core.uploads import RandomUploadTo, SafeFileField, SafeImageField
 
 YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
@@ -135,15 +135,44 @@ class Report(PublishableModel):
         return self.title
 
 
+class TestimonyQuerySet(PublishedQuerySet):
+    def approved(self) -> TestimonyQuerySet:
+        """What the public may see: published, consent recorded AND approved by staff."""
+        return self.filter(is_published=True, consent_confirmed=True, is_approved=True)
+
+
 class Testimony(PublishableModel):
+    class NameDisplay(models.TextChoices):
+        ANONYMOUS = "anonymous", "Anonymous (no name)"
+        INITIALS = "initials", "Initials only, e.g. M. K."
+        FIRST_NAME = "first", "First name only"
+        FULL_NAME = "full", "Full name (needs the person's explicit consent below)"
+
     title = models.CharField(max_length=160)
     person_display_name = models.CharField(
         max_length=120,
         blank=True,
-        help_text="Only publish a name with the person's written consent. Leave blank for 'Anonymous'.",
+        help_text="The person's name. The website only shows what 'Name shown' allows.",
+    )
+    name_display = models.CharField(
+        "name shown",
+        max_length=10,
+        choices=NameDisplay.choices,
+        default=NameDisplay.INITIALS,
+        help_text="Without explicit consent only initials or the first name are ever shown.",
+    )
+    full_name_consent = models.BooleanField(
+        "consent to show full name",
+        default=False,
+        help_text="Tick only when the person has explicitly agreed (in writing) to their full name being shown.",
     )
     consent_confirmed = models.BooleanField(
         default=False, help_text="Tick only when the person has agreed to their testimony being published."
+    )
+    is_approved = models.BooleanField(
+        "approved",
+        default=False,
+        help_text="Reviewed and approved for the website (home page slider and Testimonies page).",
     )
     body = models.TextField()
     photo = SafeImageField(upload_to=RandomUploadTo("testimonies"), blank=True)
@@ -151,6 +180,8 @@ class Testimony(PublishableModel):
     branch = models.ForeignKey(
         "branches.Branch", null=True, blank=True, on_delete=models.SET_NULL, related_name="testimonies"
     )
+
+    objects = TestimonyQuerySet.as_manager()
 
     class Meta:
         ordering: ClassVar = ["-created_at"]
@@ -160,5 +191,28 @@ class Testimony(PublishableModel):
         return self.title
 
     def clean(self) -> None:
+        errors: dict[str, str] = {}
         if self.is_published and not self.consent_confirmed:
-            raise ValidationError({"consent_confirmed": "Confirm consent before publishing a testimony."})
+            errors["consent_confirmed"] = "Confirm consent before publishing a testimony."
+        if self.is_approved and not self.consent_confirmed:
+            errors["is_approved"] = "A testimony can only be approved once consent is confirmed."
+        if self.name_display == self.NameDisplay.FULL_NAME and not self.full_name_consent:
+            errors["full_name_consent"] = (
+                "The full name can only be shown with the person's explicit consent. "
+                "Choose first name or initials instead."
+            )
+        if errors:
+            raise ValidationError(errors)
+
+    @property
+    def public_name(self) -> str:
+        """The only form of the name that may appear on the website."""
+        parts = self.person_display_name.split()
+        mode = self.name_display
+        if not parts or mode == self.NameDisplay.ANONYMOUS:
+            return "Anonymous"
+        if mode == self.NameDisplay.FULL_NAME and self.full_name_consent:
+            return " ".join(parts)
+        if mode == self.NameDisplay.INITIALS:
+            return " ".join(f"{p[0].upper()}." for p in parts[:3])
+        return parts[0]  # first name only (also the fallback when full-name consent is missing)

@@ -115,6 +115,89 @@
   .progress-rlm::-webkit-progress-value { background: var(--rlm-flame-gradient); border-radius: 9999px; }
   .progress-rlm::-moz-progress-bar { background: var(--rlm-flame-gradient); border-radius: 9999px; }
 
+  /* ---------------------------------------------------------- slider (templates/includes/slider.html)
+     Base = CSS scroll-snap strip (works without JS). static/js/slider.js adds .is-ready and the controls. */
+  .slider { position: relative; }
+  /* scroll-padding MUST equal the horizontal padding: otherwise the first snap point sits 2px in, the browser
+     snaps (= scrolls) every track on load, and Chrome discards the page's Largest Contentful Paint (Lighthouse
+     reported NO_LCP on the home page). overflow-y: hidden stops the strip from also scrolling vertically. */
+  .slider-track { position: relative; display: flex; gap: 1.5rem; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scroll-padding-inline: 0.125rem; scroll-behavior: smooth; scrollbar-width: thin;
+    scrollbar-color: var(--rlm-flame-dark) var(--rlm-line); padding: 0.25rem 0.125rem 1rem; }
+  .slider-track:focus-visible { outline: 3px solid var(--rlm-gold); outline-offset: 2px; }
+  .slider-slide { display: flex; flex: 0 0 85%; min-width: 0; scroll-snap-align: start; }
+  .slider-slide > * { flex: 1 1 auto; min-width: 0; }
+  /* The scrollbar never appears or disappears when JS starts (that would shift the page on desktop). Card
+     carousels always show a thin one; full-width sliders never do (swipe, keys, thumbnails and JS controls). */
+  .slider-hero .slider-track, .slider-gallery .slider-track, .slider-lightbox .slider-track { scrollbar-width: none; }
+  .slider-hero .slider-track::-webkit-scrollbar, .slider-gallery .slider-track::-webkit-scrollbar,
+  .slider-lightbox .slider-track::-webkit-scrollbar { display: none; }
+  .slider.is-dragging .slider-track { scroll-snap-type: none; scroll-behavior: auto; cursor: grabbing; user-select: none; }
+  .slider.is-ready:not(.is-static) .slider-track { cursor: grab; }
+  @media (min-width: 640px) { .slider-cards .slider-slide { flex-basis: calc((100% - 1.5rem) / 2); } }
+  @media (min-width: 1024px) {
+    .slider-cards .slider-slide { flex-basis: calc((100% - 3rem) / 3); }
+    .slider-cards.slider-per-4 .slider-slide { flex-basis: calc((100% - 4.5rem) / 4); }
+  }
+
+  .slider-controls { @apply mt-4 flex items-center justify-between gap-4; }
+  .slider-dots { @apply flex flex-wrap items-center; }
+  .slider-buttons { @apply flex items-center gap-2; }
+  /* Arrows/dots: black on light backgrounds, flame orange (with black icons) on dark ones. */
+  .slider-btn { @apply inline-flex h-11 w-11 items-center justify-center rounded-full bg-rlm-black text-rlm-white transition-colors hover:bg-rlm-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rlm-gold; }
+  .slider-btn[aria-disabled="true"] { @apply cursor-not-allowed opacity-40; }
+  .slider-on-dark .slider-btn { @apply bg-rlm-flame text-rlm-black hover:bg-rlm-flame-deep; }
+  .slider-dot { @apply relative inline-flex h-6 w-6 items-center justify-center rounded-full; }
+  .slider-dot::before { content: ""; @apply block h-2.5 w-2.5 rounded-full bg-rlm-black transition-all; }
+  .slider-dot[aria-current="true"] { @apply w-9; }
+  .slider-dot[aria-current="true"]::before { @apply w-7; background: var(--rlm-flame-gradient); box-shadow: 0 0 0 1px var(--rlm-black); }
+  .slider-on-dark .slider-dot::before { @apply bg-rlm-flame; }
+  .slider-on-dark .slider-dot[aria-current="true"]::before { box-shadow: 0 0 0 1px var(--rlm-gold); }
+  .slider-dot:focus-visible { outline: 3px solid var(--rlm-gold); outline-offset: 0; }
+
+  /* Hero: full width, fixed minimum height (no layout shift), dark shade over photos for legible text. */
+  .slider-hero { @apply bg-rlm-black text-rlm-white; }
+  .slider-hero .slider-track { gap: 0; padding: 0; }
+  .slider-hero .slider-slide { flex-basis: 100%; }
+  .hero-slide { @apply relative isolate flex min-h-[34rem] w-full items-end overflow-hidden pb-28 pt-16 sm:min-h-[38rem] lg:items-center lg:pb-24; }
+  .hero-slide-img { @apply absolute inset-0 -z-20 h-full w-full object-cover; }
+  .hero-shade { @apply absolute inset-0 -z-10;
+    background: linear-gradient(to top, rgba(10, 10, 10, 0.94) 0%, rgba(10, 10, 10, 0.8) 55%, rgba(10, 10, 10, 0.6) 100%); }
+  @media (min-width: 1024px) {
+    .hero-shade { background: linear-gradient(90deg, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.8) 50%, rgba(10, 10, 10, 0.35) 100%); }
+  }
+  .hero-title { @apply mt-4 max-w-3xl font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl; }
+  .slider-hero .slider-controls { @apply absolute inset-x-0 bottom-0 z-10 mx-auto mt-0 max-w-6xl px-4 pb-6 sm:px-6 lg:px-8; }
+  .slider-progress { @apply absolute inset-x-0 bottom-0 z-10 h-1 overflow-hidden bg-rlm-white/10; }
+  .slider-progress span { display: block; height: 100%; transform: scaleX(0); transform-origin: left; background: var(--rlm-flame-gradient); }
+  .slider-progress.is-running span { animation: rlm-progress linear forwards; }
+  @keyframes rlm-progress { to { transform: scaleX(1); } }
+
+  /* Album photos and the full-screen lightbox. */
+  .slider-gallery .slider-slide, .slider-lightbox .slider-slide { flex-basis: 100%; }
+  .gallery-frame { @apply block aspect-[3/2] overflow-hidden rounded-2xl bg-rlm-black; }
+  .gallery-thumbs { @apply mt-4 flex gap-2 overflow-x-auto pb-2; }
+  .gallery-thumb { @apply block h-16 w-24 flex-none overflow-hidden rounded-lg border-2 border-transparent opacity-70 transition hover:opacity-100 sm:h-20 sm:w-28; }
+  .gallery-thumb[aria-current="true"] { @apply border-rlm-flame opacity-100; }
+  .lightbox { @apply m-auto h-full max-h-none w-full max-w-none bg-rlm-black/95 p-4 text-rlm-white sm:p-8; }
+  .lightbox::backdrop { background: rgba(10, 10, 10, 0.85); }
+  .lightbox[open] { @apply flex flex-col justify-center; }
+  .lightbox-close { @apply absolute right-4 top-4 z-10; }
+  .lightbox-slide { @apply flex h-full w-full flex-col items-center justify-center; }
+  .lightbox-img { @apply max-h-[78vh] w-auto max-w-full object-contain; }
+
+  /* Partner logos: a static, scrollable row; JS turns it into a slow strip with a pause button. */
+  .marquee { @apply overflow-x-auto; }
+  .marquee-track { display: flex; width: max-content; }
+  .marquee-list { @apply flex items-center gap-10 pr-10; }
+  .marquee.is-animated { @apply overflow-hidden; }
+  .marquee.is-animated .marquee-track { animation: rlm-marquee 45s linear infinite; }
+  .marquee.is-animated:hover .marquee-track, .marquee.is-animated:focus-within .marquee-track,
+  .marquee.is-paused .marquee-track { animation-play-state: paused; }
+  @keyframes rlm-marquee { to { transform: translateX(-50%); } }
+  .partner-logo { @apply flex h-16 w-40 flex-none items-center justify-center rounded-xl bg-white p-2 grayscale transition hover:grayscale-0 focus-visible:grayscale-0; }
+  .partner-logo img { @apply max-h-full max-w-full object-contain; }
+
   .htmx-request .htmx-indicator { display: inline-block; }
   .htmx-indicator { display: none; }
 }
