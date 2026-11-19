@@ -1,9 +1,14 @@
-"""Single source of truth for staff roles (Django Groups) and their least-privilege permissions.
+"""Single source of truth for staff roles (Django Groups) and their least-privilege WEBSITE permissions.
+
+There are seven ministry departments (docs/responsibilities.md). Each has a Django Group of the same name
+that grants the Django-admin permissions its people need for PUBLIC WEBSITE content (news, events, gallery…).
+Department membership itself lives in ``portal.DepartmentMembership`` (user, department, is_head); the
+group is derived from it by ``accounts.services`` so the two can never disagree. The operational records
+(members, ledger, procurement…) are NOT in the Django admin for staff: they live in the staff portal, where
+``portal.access`` scopes every view, export and number by department, head flag and branch.
 
 Letters: v=view a=add c=change d=delete x=export (custom ``export_<model>``) k=confirm donation.
-"Own" scoping (Branch Coordinator -> their branch, Departmental Head -> their department) is enforced in the
-admin by ``core.admin_mixins.ScopedAdminMixin``. ``sync_roles`` is idempotent: it sets each group's
-permissions to exactly this matrix.
+``sync_roles`` is idempotent: it sets each group's permissions to exactly this matrix.
 """
 
 from __future__ import annotations
@@ -11,15 +16,38 @@ from __future__ import annotations
 from typing import Any
 
 FOUNDER = "Founder / Super Admin"
-SECRETARY = "Secretary"
-FINANCE = "Finance & Admin"
-PROGRAMS = "Programs & Events"
-MEDIA = "Media & Communications"
 BRANCH_COORDINATOR = "Branch Coordinator"
-DEPARTMENT_HEAD = "Departmental Heads"
+EXECUTIVE = "Executive Leadership"
 
-ALL_ROLES = [FOUNDER, SECRETARY, FINANCE, PROGRAMS, MEDIA, BRANCH_COORDINATOR, DEPARTMENT_HEAD]
-SCOPED_ROLES = {BRANCH_COORDINATOR, DEPARTMENT_HEAD}
+# The seven departments. (code, group name) - the code is used in URLs and in code, the name everywhere else.
+MEMBERSHIP = "Membership Administration"
+FINANCE = "Finance & Resource Mobilization"
+LOGISTICS = "Logistics & Procurement"
+MEDIA = "Media & Communications"
+MISSIONS = "Missions & Outreach"
+DISCIPLESHIP = "Discipleship"
+DEVELOPMENT = "Development & Infrastructure"
+
+DEPARTMENTS: list[tuple[str, str]] = [
+    ("membership", MEMBERSHIP),
+    ("finance", FINANCE),
+    ("logistics", LOGISTICS),
+    ("media", MEDIA),
+    ("missions", MISSIONS),
+    ("discipleship", DISCIPLESHIP),
+    ("development", DEVELOPMENT),
+]
+DEPARTMENT_GROUPS = [name for _, name in DEPARTMENTS]
+GROUP_FOR_CODE = dict(DEPARTMENTS)
+
+ALL_ROLES = [FOUNDER, *DEPARTMENT_GROUPS, BRANCH_COORDINATOR, EXECUTIVE]
+SCOPED_ROLES = {BRANCH_COORDINATOR}
+
+# Permissions the Founder group must never carry: account and role administration belongs to the
+# superuser flag (Super Admin) alone, so a non-superuser who somehow ends up in the Founder group still
+# cannot manage accounts.
+ACCOUNT_ADMIN_APPS = {"auth", "accounts", "otp_totp", "otp_static", "axes", "sessions", "contenttypes"}
+ACCOUNT_ADMIN_MODELS = {("portal", "department"), ("portal", "departmentmembership")}
 
 MEDIA_MODELS = [
     "media_library.album",
@@ -31,7 +59,8 @@ MEDIA_MODELS = [
 RESOURCE_MODELS = ["resources.resourcecategory", "resources.series", "resources.resource"]
 
 ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
-    SECRETARY: {
+    # Was "Secretary": contacts, prayer requests, general volunteers, events and news.
+    MEMBERSHIP: {
         "branches.country": "v",
         "branches.branch": "v",
         "programs.program": "v",
@@ -47,6 +76,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
         "news.post": "vacd",
         "core.formoption": "vac",
     },
+    # Was "Finance & Admin".
     FINANCE: {
         "giving.givingsettings": "vc",
         "giving.givingcategory": "vacd",
@@ -55,12 +85,9 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
         "giving.partnershipenquiry": "vcdx",
         "giving.webhookevent": "v",
     },
-    PROGRAMS: {
-        "branches.country": "v",
+    LOGISTICS: {
         "branches.branch": "v",
-        "programs.program": "vacd",
-        "events.event": "vacd",
-        "registrations.eventregistration": "vcx",
+        "events.event": "v",
     },
     MEDIA: {
         "core.sociallink": "vacd",
@@ -75,6 +102,22 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
         "news.post": "vacd",
         "newsletter.subscriber": "vx",
     },
+    # Was "Programs & Events": programmes, events and event registrations.
+    MISSIONS: {
+        "branches.country": "v",
+        "branches.branch": "v",
+        "programs.program": "vacd",
+        "events.event": "vacd",
+        "registrations.eventregistration": "vcx",
+    },
+    DISCIPLESHIP: {
+        "programs.program": "v",
+        "events.event": "v",
+        **dict.fromkeys(RESOURCE_MODELS, "v"),
+    },
+    DEVELOPMENT: {
+        "branches.branch": "v",
+    },
     BRANCH_COORDINATOR: {
         "branches.branch": "vc",
         "programs.program": "v",
@@ -85,14 +128,16 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
         "media_library.photo": "vacd",
         "news.post": "vac",
     },
-    DEPARTMENT_HEAD: {
-        "branches.branch": "v",
-        "programs.program": "vc",
-        "events.event": "vac",
-        "registrations.eventregistration": "v",
-        "news.post": "vac",
-    },
+    EXECUTIVE: {},
 }
+
+# Groups renamed when the seven departments replaced the original roles (migration accounts 0005).
+RENAMED_ROLES = {
+    "Secretary": MEMBERSHIP,
+    "Finance & Admin": FINANCE,
+    "Programs & Events": MISSIONS,
+}
+RETIRED_ROLES = ["Departmental Heads"]
 
 LETTER_TO_ACTION = {"v": "view", "a": "add", "c": "change", "d": "delete"}
 
@@ -108,11 +153,19 @@ def codenames_for(model_label: str, letters: str) -> list[tuple[str, str]]:
     return result
 
 
+def founder_permissions(Permission: Any) -> Any:
+    """Everything except account/role administration (that is the superuser flag's job)."""
+    qs = Permission.objects.exclude(content_type__app_label__in=ACCOUNT_ADMIN_APPS)
+    for app_label, model in ACCOUNT_ADMIN_MODELS:
+        qs = qs.exclude(content_type__app_label=app_label, content_type__model=model)
+    return qs
+
+
 def sync_roles(apps: Any = None, *, strict: bool = True) -> dict[str, int]:
     """Create/refresh every role group. Safe to run any number of times.
 
-    ``strict=False`` skips permissions of models that do not exist yet; the early roles migration uses it,
-    because later migrations add models (and their own sync step) after it.
+    ``strict=False`` skips permissions of models that do not exist yet; early migrations use it,
+    because later migrations add models (and their own sync step) after them.
     """
     if apps is None:
         from django.apps import apps as global_apps
@@ -122,8 +175,12 @@ def sync_roles(apps: Any = None, *, strict: bool = True) -> dict[str, int]:
     Permission = apps.get_model("auth", "Permission")
     summary: dict[str, int] = {}
 
+    for old, new in RENAMED_ROLES.items():
+        if Group.objects.filter(name=old).exists() and not Group.objects.filter(name=new).exists():
+            Group.objects.filter(name=old).update(name=new)
+
     founder, _ = Group.objects.get_or_create(name=FOUNDER)
-    founder.permissions.set(Permission.objects.all())
+    founder.permissions.set(founder_permissions(Permission))
     summary[FOUNDER] = founder.permissions.count()
 
     for role, matrix in ROLE_PERMISSIONS.items():

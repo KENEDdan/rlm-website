@@ -1,0 +1,45 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"allowScriptTags":false,"selfRequestsOnly":true,"historyCacheSize":0}'>
+  <title>{% block title %}Staff portal{% endblock %} · {{ site.short_name|default:"RLM" }}</title>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="icon" href="{% static 'brand/favicon.ico' %}" sizes="any">
+</head>
+<body class="portal-body">
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="flame-bar" aria-hidden="true"></div>
+  <header class="portal-top">
+    <div class="flex items-center gap-3">
+      <details class="portal-menu lg:hidden" id="portal-menu">
+        <summary class="portal-menu-btn" aria-label="Open menu"><span aria-hidden="true">☰</span> Menu</summary>
+        <div class="portal-menu-panel">{% include "portal/_nav.html" %}</div>
+      </details>
+      <a href="{% url 'portal:home' %}" class="flex items-center gap-2 font-display font-extrabold text-rlm-white">
+        <img src="{% static 'brand/mark-dark-64.webp' %}" alt="" width="32" height="32" class="h-8 w-8">
+        <span>{{ site.short_name|default:"RLM" }} <span class="font-sans text-sm font-semibold text-rlm-gold">Staff portal</span></span>
+      </a>
+    </div>
+    <div class="flex items-center gap-3 text-sm">
+      <span class="hidden text-rlm-white/80 sm:inline">{{ request.user.get_short_name }}</span>
+      <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit" class="portal-top-btn">Sign out</button></form>
+    </div>
+  </header>
+  <div class="portal-shell">
+    <aside class="portal-sidebar hidden lg:block" aria-label="Portal navigation">{% include "portal/_nav.html" %}</aside>
+    <main id="main" class="portal-main" tabindex="-1">
+      {% if messages %}
+        <ul class="mb-4 space-y-2" role="status">
+          {% for message in messages %}<li class="portal-message {% if message.tags == 'error' %}portal-message-error{% endif %}">{% if message.tags == 'error' %}<span aria-hidden="true">✕ </span>{% else %}<span aria-hidden="true">✓ </span>{% endif %}{{ message }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script src="{% static 'js/htmx.min.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+  <script src="{% static 'js/portal.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+</body>
+</html>

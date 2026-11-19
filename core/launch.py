@@ -209,7 +209,7 @@ def staff_security() -> list[Check]:
             founders >= 1,
             "Founder account",
             "There is no active Founder (superuser) account.",
-            "manage.py create_founder --email <founder email> (docs/HANDOVER.md section 2).",
+            "manage.py create_super_admin (docs/HANDOVER.md section 2).",
             BLOCKER,
         )
         + _one(

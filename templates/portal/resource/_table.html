@@ -1,0 +1,28 @@
+<p class="sr-only" data-focus tabindex="-1">{{ page.paginator.count }} result{{ page.paginator.count|pluralize }}.</p>
+{% if rows %}
+<div class="table-wrap panel p-0">
+  <table class="table-rlm">
+    <caption class="sr-only">{{ resource.label }}</caption>
+    <thead><tr>{% for name, label in columns %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for obj, values in rows %}
+      <tr>
+        {% for value in values %}
+          {% if forloop.first %}<th scope="row"><a class="portal-link" href="{% url 'portal:resource_detail' department resource.slug obj.pk %}">{{ value }}</a></th>
+          {% else %}<td>{{ value }}</td>{% endif %}
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.has_other_pages %}
+<nav class="mt-4 flex items-center justify-between text-sm" aria-label="Pages">
+  {% if page.has_previous %}<a class="btn-outline btn-sm" href="?{{ query }}{% if query %}&amp;{% endif %}page={{ page.previous_page_number }}">Previous</a>{% else %}<span></span>{% endif %}
+  <span>Page {{ page.number }} of {{ page.paginator.num_pages }} ({{ page.paginator.count }} records)</span>
+  {% if page.has_next %}<a class="btn-outline btn-sm" href="?{{ query }}{% if query %}&amp;{% endif %}page={{ page.next_page_number }}">Next</a>{% else %}<span></span>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<div class="panel"><p class="text-sm text-rlm-grey">Nothing here yet{% if params %} for these filters{% endif %}.</p></div>
+{% endif %}

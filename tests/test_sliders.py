@@ -18,7 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from accounts.roles import ALL_ROLES, FOUNDER, MEDIA, SECRETARY
+from accounts.roles import ALL_ROLES, FOUNDER, MEDIA, MEMBERSHIP
 from audit.models import AuditLog
 from branches.models import Branch, Country
 from core.models import HERO_SLIDE_LIMIT, HeroSlide, Partner
@@ -388,12 +388,12 @@ def test_only_founder_and_media_manage_slides(make_staff, role: str, model: str)
 
 def test_media_can_approve_testimonies_secretary_only_views(make_staff) -> None:  # type: ignore[no-untyped-def]
     assert make_staff(MEDIA).has_perm("media_library.change_testimony")
-    secretary = make_staff(SECRETARY)
+    secretary = make_staff(MEMBERSHIP)
     assert secretary.has_perm("media_library.view_testimony")
     assert not secretary.has_perm("media_library.change_testimony")
 
 
-@pytest.mark.parametrize(("role", "expected"), [(MEDIA, 200), (FOUNDER, 200), (SECRETARY, 403)])
+@pytest.mark.parametrize(("role", "expected"), [(MEDIA, 200), (FOUNDER, 200), (MEMBERSHIP, 403)])
 def test_hero_slide_admin_access(make_staff, verified_client, role: str, expected: int) -> None:  # type: ignore[no-untyped-def]
     client = verified_client(make_staff(role))
     assert client.get(reverse("admin:core_heroslide_changelist")).status_code == expected
@@ -446,7 +446,7 @@ def test_admin_rejects_javascript_link(make_staff, verified_client) -> None:  # 
 
 
 def test_secretary_cannot_post_slides(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
-    client = verified_client(make_staff(SECRETARY))
+    client = verified_client(make_staff(MEMBERSHIP))
     assert client.post(reverse("admin:core_heroslide_add"), _slide_post()).status_code == 403
     assert not HeroSlide.objects.filter(title="Join the conference").exists()
 

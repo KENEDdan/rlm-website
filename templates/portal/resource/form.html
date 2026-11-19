@@ -1,0 +1,18 @@
+{% extends "portal/base.html" %}
+{% block title %}{% if obj %}Edit {{ obj }}{% else %}Add {{ resource.label_singular|lower }}{% endif %}{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow"><a href="{% url 'portal:resource_list' department resource.slug %}" class="hover:underline">{{ resource.label }}</a></p>
+    <h1 class="portal-title">{% if obj %}Edit {{ obj }}{% else %}Add {{ resource.label_singular|lower }}{% endif %}</h1>
+  </div>
+</div>
+<form method="post" enctype="multipart/form-data" class="panel rlm-form portal-form" novalidate>
+  {% csrf_token %}
+  {% include "includes/form_fields.html" %}
+  <div class="flex flex-wrap gap-3">
+    <button type="submit" class="btn-primary">Save</button>
+    <a class="btn-outline" href="{% if obj %}{% url 'portal:resource_detail' department resource.slug obj.pk %}{% else %}{% url 'portal:resource_list' department resource.slug %}{% endif %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

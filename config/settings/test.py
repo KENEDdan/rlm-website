@@ -14,4 +14,5 @@ STORAGES = {
 }
 TURNSTILE_ENABLED = False
 ADMIN_URL = "test-portal/"
+PORTAL_URL = "test-staff/"
 ALLOWED_HOSTS = ["testserver", "localhost"]

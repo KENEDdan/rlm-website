@@ -1,0 +1,73 @@
+<div data-focus tabindex="-1" class="sr-only">Dashboard updated for {{ filters.start|date:"j M Y" }} to {{ filters.end|date:"j M Y" }}{% if filters.branch_name %}, {{ filters.branch_name }}{% endif %}.</div>
+{% if board.kpis %}
+<section aria-label="Key figures" class="kpi-grid">
+  {% for kpi in board.kpis %}
+    {% include "portal/_kpi.html" %}
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="mt-6 grid gap-6 xl:grid-cols-3">
+  <div class="space-y-6 xl:col-span-2">
+    {% if board.charts %}
+    <div class="grid gap-6 lg:grid-cols-2">
+      {% for chart in board.charts %}{% include "portal/charts/chart.html" %}{% endfor %}
+    </div>
+    {% endif %}
+    {% for section in board.sections %}
+    <section class="panel">
+      <h2 class="panel-title">{{ section.title }}</h2>
+      {% if section.rows %}
+      <div class="table-wrap"><table class="table-rlm">
+        <thead><tr>{% for c in section.columns %}<th scope="col">{{ c }}</th>{% endfor %}</tr></thead>
+        <tbody>{% for row in section.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+      </table></div>
+      {% else %}<p class="text-sm text-rlm-grey">{{ section.empty|default:"Nothing to show for this period." }}</p>{% endif %}
+    </section>
+    {% endfor %}
+  </div>
+  <div class="space-y-6">
+    <section class="panel">
+      <h2 class="panel-title">Needs attention</h2>
+      {% include "portal/_items.html" with items=board.attention empty="Nothing needs attention right now." %}
+    </section>
+    <section class="panel">
+      <h2 class="panel-title">Recent activity</h2>
+      {% include "portal/_items.html" with items=board.activity empty="No recent activity." %}
+    </section>
+    <section class="panel">
+      <h2 class="panel-title">Targets (M&amp;E)</h2>
+      {% for row in indicators %}
+        <div class="mb-3">
+          <div class="flex justify-between gap-2 text-sm"><span class="font-semibold">{{ row.indicator.name }}</span><span>{% if row.value is not None %}{{ row.value|floatformat:"-2" }} / {{ row.indicator.target|floatformat:"-2" }}{% else %}No value yet{% endif %}</span></div>
+          {% if row.progress is not None %}<progress class="progress-rlm mt-1" max="100" value="{{ row.progress }}" aria-label="{{ row.indicator.name }}: {{ row.progress }}% of target">{{ row.progress }}%</progress>{% endif %}
+        </div>
+      {% empty %}<p class="text-sm text-rlm-grey">No targets set yet.</p>{% endfor %}
+      <a class="portal-link text-sm" href="{% url 'portal:resource_list' department 'indicators' %}">Targets and values</a>
+    </section>
+    <section class="panel">
+      <h2 class="panel-title">Reports</h2>
+      <ul class="space-y-1 text-sm">
+        {% for report in reports %}<li><a class="portal-link" href="{% url 'portal:resource_detail' department 'reports' report.pk %}">{{ report.period_label }}</a> · {% include "portal/_status.html" with value=report.status label=report.get_status_display %}</li>
+        {% empty %}<li class="text-rlm-grey">No reports yet.</li>{% endfor %}
+      </ul>
+      {% if can_export %}
+      <form method="post" action="{% url 'portal:report_generate' department %}" class="rlm-form mt-3 flex flex-wrap items-end gap-2">{% csrf_token %}
+        <div><label for="r-month">Month</label><input type="month" id="r-month" name="month" value="{{ filters.end|date:'Y-m' }}"></div>
+        <div><label for="r-period">Period</label><select id="r-period" name="period"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div>
+        <button type="submit" class="btn-dark btn-sm">Generate report</button>
+      </form>
+      {% endif %}
+    </section>
+    {% if can_export %}
+    <section class="panel">
+      <h2 class="panel-title">Export</h2>
+      <p class="mb-3 text-xs text-rlm-grey">Exports are recorded in the audit log.</p>
+      <div class="flex flex-wrap gap-2">
+        <a class="btn-outline btn-sm" href="{% url 'portal:dashboard_export' department 'csv' %}?{% for k, v in filters.as_query.items %}{{ k }}={{ v|urlencode }}&amp;{% endfor %}">CSV</a>
+        <a class="btn-outline btn-sm" href="{% url 'portal:dashboard_export' department 'print' %}?{% for k, v in filters.as_query.items %}{{ k }}={{ v|urlencode }}&amp;{% endfor %}">Printable / PDF</a>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</div>

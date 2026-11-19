@@ -1,0 +1,19 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ board.title }}{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Department dashboard</p>
+    <h1 class="portal-title">{{ board.title }}</h1>
+    {% if board.purpose %}<p class="mt-1 max-w-3xl text-sm text-rlm-grey">{{ board.purpose }}</p>{% endif %}
+  </div>
+  {% if board.actions %}
+  <div class="flex flex-wrap gap-2">
+    {% for action in board.actions %}<a href="{{ action.url }}" class="{% if action.primary %}btn-primary{% else %}btn-outline{% endif %} btn-sm">{{ action.label }}</a>{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% url 'portal:dashboard' department as filter_url %}
+{% include "portal/_filters.html" with target="#dashboard-body" %}
+<div id="dashboard-body">{% include "portal/_dashboard_body.html" %}</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "portal/base.html" %}
+{% block title %}Account audit trail{% endblock %}
+{% block content %}
+<div class="portal-head"><div><p class="eyebrow">Super Admin only</p><h1 class="portal-title">Account audit trail</h1>
+<p class="mt-1 text-sm text-rlm-grey">Append-only. Entries marked "changed OUTSIDE the portal" need investigating.</p></div>
+<div class="flex gap-2"><a class="btn-outline btn-sm" href="?">All</a><a class="btn-dark btn-sm" href="?only=alerts">Alerts only</a></div></div>
+<div class="table-wrap panel p-0"><table class="table-rlm"><thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">What</th><th scope="col">Account</th><th scope="col">IP</th><th scope="col">Details</th></tr></thead>
+<tbody>{% for e in page.object_list %}<tr><td>{{ e.timestamp|date:"j M Y H:i" }}</td><td>{{ e.actor_email|default:"system" }}</td><td>{% if e.action == "account_out_of_band" or e.action == "account_integrity" %}{% include "portal/_status.html" with value="bad" label=e.get_action_display %}{% else %}{{ e.get_action_display }}{% endif %}</td><td>{% if e.model == "user" and e.object_id %}<a class="portal-link" href="{% url 'portal:user_detail' e.object_id %}">#{{ e.object_id }}</a>{% else %}—{% endif %}</td><td>{{ e.ip_address|default:"—" }}</td><td class="text-xs">{{ e.extra.changes|default:"" }}</td></tr>{% empty %}<tr><td colspan="6">No entries.</td></tr>{% endfor %}</tbody></table></div>
+{% if page.has_other_pages %}<nav class="mt-4 flex justify-between text-sm" aria-label="Pages">{% if page.has_previous %}<a class="btn-outline btn-sm" href="?only={{ only }}&amp;page={{ page.previous_page_number }}">Previous</a>{% else %}<span></span>{% endif %}<span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a class="btn-outline btn-sm" href="?only={{ only }}&amp;page={{ page.next_page_number }}">Next</a>{% else %}<span></span>{% endif %}</nav>{% endif %}
+{% endblock %}

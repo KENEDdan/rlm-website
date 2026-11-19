@@ -21,6 +21,8 @@ SITE_URL: str = env("SITE_URL", default="http://localhost:8010").rstrip("/")
 
 # Obscure admin path, e.g. "manage-x7k2/". "/admin/" is intentionally not routed.
 ADMIN_URL: str = env("DJANGO_ADMIN_URL", default="staff-portal/").strip("/") + "/"
+# Staff portal (department dashboards). Separate from the Django admin, same 2FA/lockout/audit rules.
+PORTAL_URL: str = env("PORTAL_URL", default="portal/").strip("/") + "/"
 
 INSTALLED_APPS = [
     "core.apps.RLMAdminConfig",
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
     "resources",
     "news",
     "giving",
+    "portal",
 ]
 
 MIDDLEWARE = [
@@ -88,6 +91,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "csp.context_processors.nonce",
                 "core.context_processors.site",
+                "portal.context_processors.portal",
             ],
         },
     },
@@ -127,7 +131,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "accounts.validators.ComplexityValidator"},
 ]
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "admin:index"
+LOGIN_REDIRECT_URL = "portal:home"
 
 # django-axes: lock a username+IP pair after 5 failures for 1 hour.
 AXES_FAILURE_LIMIT = env.int("AXES_FAILURE_LIMIT", default=5)
@@ -215,6 +219,20 @@ UPLOAD_LIMITS = {
     "audio": env.int("UPLOAD_MAX_AUDIO_MB", default=60) * 1024 * 1024,
 }
 
+# Private uploads (receipts, permits, member documents...): never under MEDIA_ROOT, never served directly.
+PRIVATE_MEDIA_ROOT = Path(env("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "data" / "private")))
+
+# ---------------------------------------------------------------- staff accounts & portal rules
+SUPER_ADMIN_LIMIT = env.int("SUPER_ADMIN_LIMIT", default=2)  # at most this many active Super Admins
+INVITE_TTL_HOURS = env.int("INVITE_TTL_HOURS", default=48)
+INVITE_RATE = env("INVITE_RATE", default="20/h")  # invitations a Super Admin may send per hour
+REAUTH_WINDOW_SECONDS = env.int(
+    "REAUTH_WINDOW_SECONDS", default=300
+)  # password + 2FA again before sensitive steps
+DORMANT_FLAG_DAYS = env.int("DORMANT_FLAG_DAYS", default=60)
+DORMANT_DISABLE_DAYS = env.int("DORMANT_DISABLE_DAYS", default=90)
+REPORT_DUE_DAY = env.int("REPORT_DUE_DAY", default=10)  # monthly reports due by this day of the next month
+
 # ---------------------------------------------------------------- encryption
 # Comma separated Fernet keys. The FIRST key encrypts; all keys decrypt (rotation).
 FIELD_ENCRYPTION_KEYS: list[str] = env.list("FIELD_ENCRYPTION_KEYS")
@@ -243,6 +261,14 @@ CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_BEAT_SCHEDULE = {
     "purge-expired-submissions": {
         "task": "core.tasks.purge_expired_submissions",
+        "schedule": 60 * 60 * 24,
+    },
+    "account-integrity-check": {
+        "task": "accounts.tasks.account_integrity_check",
+        "schedule": 60 * 15,
+    },
+    "dormant-accounts": {
+        "task": "accounts.tasks.dormant_accounts",
         "schedule": 60 * 60 * 24,
     },
 }

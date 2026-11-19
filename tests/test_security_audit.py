@@ -16,7 +16,7 @@ from django.core.management import CommandError, call_command
 from django.test import Client, override_settings
 from PIL import Image
 
-from accounts.roles import SECRETARY
+from accounts.roles import MEMBERSHIP
 from audit.models import AuditLog
 from contact.models import ContactMessage
 from core import checks, privacy
@@ -217,7 +217,7 @@ def test_personal_data_command_export(person_records: dict) -> None:
 # ------------------------------------------------------------------ I-5 list views are audited
 def test_viewing_a_sensitive_list_is_audit_logged_without_search_term(make_staff, verified_client, admin_prefix) -> None:  # type: ignore[no-untyped-def]
     PrayerRequest.objects.create(request_text="x", consent=True)
-    client = verified_client(make_staff(SECRETARY))
+    client = verified_client(make_staff(MEMBERSHIP))
     resp = client.get(f"{admin_prefix}prayer/prayerrequest/", {"q": PERSON, "status": "new"})
     assert resp.status_code == 200
     log = AuditLog.objects.filter(action=AuditLog.Action.VIEW, model="prayerrequest").latest("timestamp")

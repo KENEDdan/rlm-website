@@ -7,7 +7,6 @@ from .models import Program
 
 @admin.register(Program)
 class ProgramAdmin(ScopedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
-    department_lookup = "department"
     list_display = ("title", "department", "is_published", "is_featured", "order")
     list_editable = ("order",)
     list_filter = ("is_published", "is_featured", "department")

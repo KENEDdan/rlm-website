@@ -1,0 +1,32 @@
+{% extends "portal/base.html" %}{% load portal_tags %}
+{% block title %}{{ resource.label }}{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow"><a href="{% url 'portal:dashboard' department %}" class="hover:underline">{{ department|department_name }}</a></p>
+    <h1 class="portal-title">{{ resource.label }}</h1>
+    {% if resource.description %}<p class="mt-1 max-w-3xl text-sm text-rlm-grey">{{ resource.description }}</p>{% endif %}
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% if can_add %}<a class="btn-primary btn-sm" href="{% url 'portal:resource_create' department resource.slug %}">Add {{ resource.label_singular|lower }}</a>{% endif %}
+    {% if can_export %}<a class="btn-outline btn-sm" href="{% url 'portal:resource_export' department resource.slug %}?{{ query }}" title="The export is recorded in the audit log">Export CSV</a>{% endif %}
+  </div>
+</div>
+{% if filter_specs or resource.search_fields or resource.date_field %}
+<form method="get" class="portal-filters rlm-form" hx-get="{{ request.path }}" hx-target="#resource-table" hx-push-url="true" hx-trigger="change, submit">
+  {% if resource.search_fields %}<div><label for="q">Search</label><input type="search" id="q" name="q" value="{{ params.q }}" maxlength="100"></div>{% endif %}
+  {% for spec in filter_specs %}
+  <div><label for="f-{{ spec.name }}">{{ spec.label }}</label>
+    <select id="f-{{ spec.name }}" name="{{ spec.name }}"><option value="">All</option>
+      {% for value, label in spec.options %}<option value="{{ value }}" {% if value == params|get_param:spec.name %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></div>
+  {% endfor %}
+  {% if resource.date_field %}
+  <div><label for="f-from">From</label><input type="date" id="f-from" name="from" value="{{ params.from }}"></div>
+  <div><label for="f-to">To</label><input type="date" id="f-to" name="to" value="{{ params.to }}"></div>
+  {% endif %}
+  <div class="flex items-end"><button type="submit" class="btn-dark btn-sm">Filter</button></div>
+</form>
+{% endif %}
+<div id="resource-table">{% include "portal/resource/_table.html" %}</div>
+{% endblock %}

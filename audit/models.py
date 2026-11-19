@@ -36,6 +36,23 @@ class AuditLog(models.Model):
         PRIVACY_ERASE = "privacy_erase", "Personal data erased"
         PURGE = "purge", "Retention purge"
         KEY_ROTATION = "key_rotation", "Encryption key rotation"
+        ACCOUNT_CHANGE = "account_change", "Account or role changed"
+        ACCOUNT_OUT_OF_BAND = "account_out_of_band", "Account changed OUTSIDE the portal"
+        ACCOUNT_INTEGRITY = "account_integrity", "Account integrity check failed"
+        INVITE_SENT = "invite_sent", "Invitation sent"
+        INVITE_ACCEPTED = "invite_accepted", "Invitation accepted"
+        INVITE_REVOKED = "invite_revoked", "Invitation revoked"
+        INVITE_REJECTED = "invite_rejected", "Invalid invitation link used"
+        REAUTH = "reauth", "Re-authenticated"
+        REAUTH_FAILED = "reauth_failed", "Re-authentication failed"
+        SESSIONS_KILLED = "sessions_killed", "Sessions ended"
+        ACCOUNT_UNLOCKED = "account_unlocked", "Sign-in lockout cleared"
+        APPROVE = "approve", "Approved"
+        REJECT = "reject", "Rejected"
+        SUBMIT = "submit", "Submitted"
+        POST = "post", "Posted"
+        REVERSE = "reverse", "Reversed"
+        HANDOFF = "handoff", "Handed to another department"
 
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     actor_id = models.BigIntegerField(null=True, blank=True, db_index=True)

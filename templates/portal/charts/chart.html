@@ -1,0 +1,56 @@
+{# Single-series SVG chart. Every mark has a <title> tooltip; the data table follows for screen readers and print. #}
+<figure class="panel chart">
+  <figcaption class="panel-title">{{ chart.title }}</figcaption>
+  {% if chart.is_empty %}
+    <p class="text-sm text-rlm-grey">No data for this period.</p>
+  {% else %}
+  {% with g=chart.geometry %}
+  {% if chart.kind == "hbar" %}
+    <ul class="hbar" aria-hidden="true">
+      {% for row in g.rows %}
+      <li class="hbar-row">
+        <span class="hbar-label">{{ row.label }}</span>
+        <svg class="hbar-track" viewBox="0 0 100 10" preserveAspectRatio="none" role="presentation">
+          <title>{{ row.label }}: {{ row.value }}</title>
+          <rect x="0" y="0" width="100" height="10" rx="2" class="chart-track"></rect>
+          <rect x="0" y="0" width="{{ row.pct }}" height="10" rx="2" class="chart-mark"></rect>
+        </svg>
+        <span class="hbar-value">{{ row.value }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <svg viewBox="0 0 {{ g.w }} {{ g.h }}" class="chart-svg" role="img" aria-label="{{ chart.title }} (data table below)">
+      {% for t in g.ticks %}
+        <line x1="{{ g.x0 }}" x2="{{ g.x1 }}" y1="{{ t.y }}" y2="{{ t.y }}" class="chart-grid"></line>
+        <text x="{{ g.x0|add:'-6' }}" y="{{ t.y }}" class="chart-tick" text-anchor="end" dominant-baseline="middle">{{ t.label }}</text>
+      {% endfor %}
+      {% if chart.kind == "line" %}
+        <path d="{{ g.path }}" class="chart-line"></path>
+        {% for d in g.dots %}
+          <g class="chart-hit"><title>{{ d.label }}: {{ d.value }}</title>
+            <circle cx="{{ d.x }}" cy="{{ d.y }}" r="12" class="chart-hitarea"></circle>
+            <circle cx="{{ d.x }}" cy="{{ d.y }}" r="4" class="chart-dot"></circle>
+          </g>
+        {% endfor %}
+      {% else %}
+        {% for b in g.bars %}
+          <g class="chart-hit"><title>{{ b.label }}: {{ b.value }}</title>
+            <rect x="{{ b.hit_x }}" y="{{ g.plot_top }}" width="{{ b.hit_w }}" height="{{ g.plot_h }}" class="chart-hitarea"></rect>
+            <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="3" class="chart-mark"></rect>
+          </g>
+        {% endfor %}
+      {% endif %}
+      {% for b in g.bars %}{% if b.show_label %}<text x="{{ b.cx }}" y="{{ g.label_y }}" class="chart-tick" text-anchor="middle">{{ b.label|truncatechars:10 }}</text>{% endif %}{% endfor %}
+      <line x1="{{ g.x0 }}" x2="{{ g.x1 }}" y1="{{ g.base_y }}" y2="{{ g.base_y }}" class="chart-axis"></line>
+    </svg>
+  {% endif %}
+  {% endwith %}
+  <details class="mt-2 text-sm">
+    <summary class="cursor-pointer text-rlm-grey">Show data table</summary>
+    <table class="table-rlm mt-2"><thead><tr><th scope="col">Item</th><th scope="col">{{ chart.unit|default:"Value" }}</th></tr></thead>
+      <tbody>{% for label, value in chart.rows %}<tr><td>{{ label }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody></table>
+  </details>
+  {% endif %}
+  {% if chart.note %}<p class="mt-2 text-xs text-rlm-grey">{{ chart.note }}</p>{% endif %}
+</figure>

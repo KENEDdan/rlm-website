@@ -17,6 +17,7 @@ urlpatterns = [
     # Staff area: obscure, env-configured prefix. "/admin/" is deliberately NOT routed (404).
     path(f"{settings.ADMIN_URL}account/", include("accounts.urls")),
     path(settings.ADMIN_URL, admin.site.urls),
+    path(settings.PORTAL_URL, include("portal.urls")),
     # Infrastructure
     path("healthz/", core_views.healthz, name="healthz"),
     path("robots.txt", core_views.robots_txt, name="robots_txt"),

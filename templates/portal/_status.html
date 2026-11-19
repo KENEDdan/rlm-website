@@ -1,0 +1,10 @@
+{# Status is never colour alone: icon + word. value = good|warn|bad|<model status code>; label optional. #}
+{% if value == "good" or value == "approved" or value == "active" or value == "reviewed" or value == "posted" or value == "completed" or value == "received" or value == "done" or value == "published" or value == "closed" or value == "enrolled" %}
+<span class="status status-good"><span aria-hidden="true">✓</span> {{ label|default:"On track" }}</span>
+{% elif value == "bad" or value == "rejected" or value == "overdue" or value == "returned" or value == "cancelled" or value == "lost" or value == "declined" %}
+<span class="status status-bad"><span aria-hidden="true">✕</span> {{ label|default:"Behind" }}</span>
+{% elif value == "warn" or value == "submitted" or value == "pending" or value == "draft" %}
+<span class="status status-warn"><span aria-hidden="true">!</span> {{ label|default:"Needs attention" }}</span>
+{% else %}
+<span class="status"><span aria-hidden="true">•</span> {{ label|default:value }}</span>
+{% endif %}

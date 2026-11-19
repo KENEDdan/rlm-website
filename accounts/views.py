@@ -24,14 +24,15 @@ from audit.services import log_event
 from core.ratelimit import login_ratelimit
 
 from . import twofactor
-from .forms import OTPForm, StaffLoginForm
+from .forms import ChoosePasswordForm, OTPForm, StaffLoginForm
 
 NEXT_KEY = "2fa_next"
 BACKUP_CODES_KEY = "backup_codes_once"
 
 
 def admin_home() -> str:
-    return "/" + settings.ADMIN_URL
+    """Where staff land after signing in: the staff portal (it sends each person to their own dashboard)."""
+    return "/" + settings.PORTAL_URL
 
 
 def safe_next(request: HttpRequest, candidate: str | None) -> str:
@@ -165,3 +166,42 @@ def logout_view(request: HttpRequest) -> HttpResponse:
         log_event(AuditLog.Action.LOGOUT, request=request)
     logout(request)
     return redirect("accounts:login")
+
+
+INVALID_INVITE = (
+    "This link is not valid. It may have expired, been replaced by a newer one or already been used. "
+    "Ask the Super Admin to send a new one."
+)
+
+
+@sensitive_post_parameters("password1", "password2")
+@never_cache
+@csrf_protect
+@login_ratelimit
+@require_http_methods(["GET", "POST"])
+def accept_invite_view(request: HttpRequest, token: str) -> HttpResponse:
+    """Single-use, expiring link: choose a password, then 2FA enrolment is forced before anything else.
+
+    Every failure (unknown, expired, used, revoked) gets the same response, so links cannot be probed.
+    """
+    from .services import AccountError, accept_invitation, find_invitation
+
+    invitation = find_invitation(token)
+    if invitation is None:
+        log_event(AuditLog.Action.INVITE_REJECTED, request=request)
+        return render(request, "accounts/invite_invalid.html", {"message": INVALID_INVITE}, status=404)
+    form = ChoosePasswordForm(request.POST or None, user=invitation.user)
+    if request.method == "POST" and form.is_valid():
+        try:
+            user = accept_invitation(request, invitation, form.cleaned_data["password1"])
+        except AccountError:
+            return render(request, "accounts/invite_invalid.html", {"message": INVALID_INVITE}, status=404)
+        if request.user.is_authenticated:
+            logout(request)
+        twofactor.start_pending(request, user, "django.contrib.auth.backends.ModelBackend")
+        request.session[NEXT_KEY] = admin_home()
+        messages.success(request, "Password saved. Now set up two-step sign-in.")
+        if twofactor.confirmed_totp(user):
+            return redirect("accounts:verify")
+        return redirect("accounts:setup")
+    return render(request, "accounts/invite_accept.html", {"form": form, "invitation": invitation})

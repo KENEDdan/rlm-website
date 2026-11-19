@@ -104,32 +104,40 @@ def test_strict_mode_fails_with_blockers() -> None:
     assert "[BLOCKER]" in out.getvalue() and "fix:" in out.getvalue()
 
 
-# ------------------------------------------------------------------ create_founder
-def _run_founder(*passwords: str, email: str = "Founder@Example.org") -> str:
+# ------------------------------------------------------------------ create_super_admin (bootstrap)
+def _run_bootstrap(*passwords: str, email: str = "Founder@Example.org") -> str:
     out = io.StringIO()
     with mock.patch("getpass.getpass", side_effect=list(passwords)):
-        call_command("create_founder", "--email", email, "--name", "Justine Founder", stdout=out, stderr=out)
+        call_command(
+            "create_super_admin", "--email", email, "--name", "Justine Founder", stdout=out, stderr=out
+        )
     return out.getvalue()
 
 
-def test_create_founder_makes_superuser_in_founder_role_and_audits() -> None:
-    output = _run_founder(STRONG, STRONG)
+def test_create_super_admin_makes_superuser_in_founder_role_and_audits() -> None:
+    output = _run_bootstrap(STRONG, STRONG)
     user = User.objects.get(email="founder@example.org")
     assert user.is_superuser and user.is_staff and user.check_password(STRONG)
     assert user.groups.filter(name=FOUNDER).exists()
-    assert AuditLog.objects.filter(action=AuditLog.Action.ADD, actor_email="system:create_founder").exists()
-    assert "scan the QR code" in output
+    entry = AuditLog.objects.filter(
+        action=AuditLog.Action.ACCOUNT_CHANGE, actor_email="system:create_super_admin", extra__kind="user"
+    ).first()
+    assert entry is not None and entry.extra["changes"]["created"]["new"] is True
+    assert not AuditLog.objects.filter(action=AuditLog.Action.ACCOUNT_OUT_OF_BAND).exists()
+    assert "authenticator" in output
 
 
-def test_create_founder_enforces_password_rules_and_creates_nothing_on_failure() -> None:
+def test_create_super_admin_enforces_password_rules_and_creates_nothing_on_failure() -> None:
     with pytest.raises(CommandError, match="No valid password"):
-        _run_founder("short", "short", "password1234", "password1234", "Mismatch-Pass-1!", "Other-Pass-2!")
+        _run_bootstrap("short", "short", "password1234", "password1234", "Mismatch-Pass-1!", "Other-Pass-2!")
     assert not User.objects.exists()
 
 
-def test_create_founder_refuses_existing_or_invalid_email() -> None:
-    User.objects.create_user(email="founder@example.org", password=STRONG)
+def test_create_super_admin_refuses_when_a_super_admin_exists_or_bad_email() -> None:
+    _run_bootstrap(STRONG, STRONG)
     with pytest.raises(CommandError, match="already exists"):
-        _run_founder(STRONG, STRONG)
+        _run_bootstrap(STRONG, STRONG, email="second@example.org")
+    assert User.objects.filter(is_superuser=True).count() == 1
+    User.objects.all().delete()
     with pytest.raises(CommandError, match="not a valid email"):
-        _run_founder(STRONG, STRONG, email="not-an-email")
+        _run_bootstrap(STRONG, STRONG, email="not-an-email")

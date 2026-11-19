@@ -1,0 +1,6 @@
+<div class="kpi">
+  <p class="kpi-label">{{ kpi.label }}</p>
+  <p class="kpi-value">{% if kpi.url %}<a href="{{ kpi.url }}">{{ kpi.value }}</a>{% else %}{{ kpi.value }}{% endif %}</p>
+  {% if kpi.status %}<p class="mt-1">{% include "portal/_status.html" with value=kpi.status %}</p>{% endif %}
+  {% if kpi.hint %}<p class="kpi-hint">{{ kpi.hint }}</p>{% endif %}
+</div>

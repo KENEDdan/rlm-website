@@ -33,20 +33,36 @@ def format_token(token: int) -> str:
 
 @pytest.fixture
 def make_staff(db: Any, django_user_model: Any):  # type: ignore[no-untyped-def]
+    """Create a staff user the way the Super Admin would (a sanctioned account change).
+
+    Department groups also create the matching department membership; pass ``heads={"finance"}`` to make
+    the user head of those departments, or ``members={"media"}`` for a membership without the group.
+    """
+    from accounts.guard import sanctioned
+    from accounts.roles import DEPARTMENTS
+    from portal.models import Department, DepartmentMembership
+
+    code_for = {name: code for code, name in DEPARTMENTS}
     counter = {"n": 0}
 
-    def _make(*groups: str, superuser: bool = False, branch: Any = None, department: Any = None, **kw: Any):  # type: ignore[no-untyped-def]
+    def _make(*groups: str, superuser: bool = False, branch: Any = None, heads: Any = (), members: Any = (), **kw: Any):  # type: ignore[no-untyped-def]
         counter["n"] += 1
         email = kw.pop("email", f"staff{counter['n']}@example.test")
         factory = (
             django_user_model.objects.create_superuser if superuser else django_user_model.objects.create_user
         )
-        user = factory(email=email, password=PASSWORD, full_name="Test Staff", is_staff=True, **kw)
-        if branch or department:
-            user.branch, user.department = branch, department
-            user.save()
-        for name in groups:
-            user.groups.add(Group.objects.get(name=name))
+        with sanctioned("test:fixture"):
+            user = factory(email=email, password=PASSWORD, full_name="Test Staff", is_staff=True, **kw)
+            if branch:
+                user.branch = branch
+                user.save()
+            codes = {code_for[g] for g in groups if g in code_for} | set(heads) | set(members)
+            for name in groups:
+                user.groups.add(Group.objects.get(name=name))
+            for code in codes:
+                DepartmentMembership.objects.create(
+                    user=user, department=Department.objects.get(code=code), is_head=code in set(heads)
+                )
         return user
 
     return _make

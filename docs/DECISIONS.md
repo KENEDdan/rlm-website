@@ -122,3 +122,65 @@ re-checked at render time. Testimonies gained an explicit **approved** flag and 
 initials (default) or first name, full name only with recorded explicit consent. Existing published,
 consented testimonies were migrated to approved; names were not carried over as full names.
 
+
+## D-016: Staff portal with one dashboard per department (replaces the admin index as the landing page)
+(2026-11-19) There was no M&E dashboard in the code; staff landed on the Django admin index. A new `portal`
+app at `PORTAL_URL` (default `portal/`) is now where every staff member lands after the same password + TOTP
+sign-in (2FA middleware, axes lockout, session timeout and audit log all apply to it). The Django admin stays
+for website content (news, events, gallery, page text) and configuration.
+* **Roles = the seven departments** from `docs/responsibilities.md`, plus Founder / Super Admin, Branch
+  Coordinator and a new view-only **Executive Leadership** role. Groups were renamed (Secretary -> Membership
+  Administration, Finance & Admin -> Finance & Resource Mobilization, Programs & Events -> Missions &
+  Outreach); existing holders became department *members* (not heads). "Departmental Heads" and
+  `User.department` were retired: a head is now `DepartmentMembership.is_head`. Former Departmental Heads
+  keep their other roles and need a department from the Super Admin.
+* **Department membership is the source of truth**; the Django group is derived from it by
+  `accounts.services`, so the admin website-content permissions follow automatically.
+* **Branch Coordinators** get branch-level access to Membership, Missions and Discipleship only, always
+  limited to their branch; a coordinator without a branch sees nothing tied to a branch. The Branch
+  Coordinator role restricts every department the person belongs to (simplest safe rule).
+* **One declarative `Resource` registry** (`portal/resources.py`) drives every list/detail/form/delete/CSV
+  screen. Scoping is written once: department level -> branch -> per-resource rule; out-of-scope objects are a
+  404 (no IDOR); form dropdowns are limited to records the user may see and unknown related models get no
+  choices at all; after saving, the record must still be inside the user's scope or the save is rolled back.
+* **Charts are server-rendered SVG**, single-series in the brand hue with `<title>` tooltips and a data table.
+  No Chart.js: nothing new to pin, no CSP change, works without JavaScript.
+* **PDF = print-optimised report page** + the browser's "Save as PDF". No PDF library was added (it would be
+  a new dependency with native libraries). Open question: whether the ministry needs server-generated PDFs.
+* **Executive Overview** shows aggregate figures only. Executive Leadership sees totals for all departments
+  but drill-down links appear only for departments they belong to.
+* **M&E layer** (`Indicator`, `IndicatorValue`, `DepartmentReport`) was built with the shell (the overview
+  needs it). Heads set targets; members record values; heads generate a monthly/quarterly/annual report from
+  the dashboard (figures snapshot + indicator auto-fill via `auto_source`), add the narrative and submit; only
+  the Super Admin reviews or returns it. Reports are due on `REPORT_DUE_DAY` (10th) of the next month.
+* **Private uploads** (`core.private_files`) live in `PRIVATE_MEDIA_ROOT`, outside `MEDIA_ROOT`, and are only
+  downloadable through a permission-checked, audit-logged portal view.
+
+## D-017: Only the Super Admin manages accounts; invite-only onboarding
+(2026-11-19) There was never public self-registration; a test now walks every URL pattern anonymously (GET
+and POST with account-like data) and proves no user is created, and that no signup/social-login/API routes
+exist.
+* **Super Admin = active superuser.** Only `accounts.services` changes accounts or roles, and every function
+  re-checks that the actor is an active Super Admin (not just the view). The Founder group no longer carries
+  any account/role permission, so group membership alone can never manage accounts.
+* **Django admin user screens are read-only for everyone, superusers included** (stricter than asked): the
+  admin would bypass re-authentication, the Super Admin limit and last-Super-Admin protection. The admin's
+  "set another user's password" screen was removed; users change their own password (logged as sanctioned).
+* **Invites**: account created inactive with an unusable password; a single-use 256-bit token (only its
+  SHA-256 is stored) is emailed to the address the Super Admin typed; valid `INVITE_TTL_HOURS` (48); resending
+  revokes older links. The invitee chooses a password (validators apply) and is then forced through TOTP
+  enrolment and backup codes before any page. Every invalid/expired/used/revoked link gets the same 404 page.
+  Forced password reset uses the same mechanism; no password is ever emailed or displayed.
+* **Re-authentication** (password + fresh TOTP) is required for every account screen that changes something,
+  valid for `REAUTH_WINDOW_SECONDS` (5 minutes) in that session.
+* **Safeguards**: `SUPER_ADMIN_LIMIT` (2); nobody edits their own account; the last active Super Admin cannot
+  be demoted/deactivated/deleted; deactivation, deletion, 2FA reset and forced reset end all sessions at once;
+  deletion is a soft delete (row and audit history kept, roles/2FA/password removed).
+* **Detection, not just prevention**: a model-layer guard diffs every account/role change and writes it to the
+  audit log with old and new values, actor and IP. A change made outside the services (e.g. a Django shell)
+  is logged as "changed OUTSIDE the portal" and emails all Super Admins immediately. A 15-minute HMAC
+  fingerprint check (keyed with SECRET_KEY, which is not in the database) also catches raw SQL edits.
+* **Dormant accounts**: flagged after `DORMANT_FLAG_DAYS` (60), disabled after `DORMANT_DISABLE_DAYS` (90).
+  Super Admins are flagged but never auto-disabled, so the ministry cannot be locked out.
+* **Bootstrap**: `manage.py create_super_admin` (interactive, hidden password prompt) replaces
+  `create_founder` and refuses to run once an active Super Admin exists.

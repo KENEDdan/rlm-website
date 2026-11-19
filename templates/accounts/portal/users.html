@@ -1,0 +1,26 @@
+{% extends "portal/base.html" %}
+{% block title %}Staff accounts{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Super Admin only</p>
+    <h1 class="portal-title">Staff accounts</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Only a Super Admin can create, change, deactivate or delete accounts. Nobody can register themselves.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="btn-primary btn-sm" href="{% url 'portal:user_invite' %}">Invite a staff member</a>
+    <a class="btn-outline btn-sm" href="{% url 'portal:account_review' %}">Access review</a>
+  </div>
+</div>
+<form method="get" class="portal-filters rlm-form">
+  <div><label for="q">Name or email</label><input type="search" id="q" name="q" value="{{ q }}" maxlength="100"></div>
+  <div><label for="status">Status</label><select id="status" name="status">
+    <option value="">All</option>
+    <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+    <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Not active</option>
+    <option value="deleted" {% if status == "deleted" %}selected{% endif %}>Deleted</option>
+  </select></div>
+  <div class="flex items-end"><button class="btn-dark btn-sm" type="submit">Filter</button></div>
+</form>
+{% include "accounts/portal/_table.html" %}
+{% endblock %}

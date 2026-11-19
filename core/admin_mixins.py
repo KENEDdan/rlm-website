@@ -12,7 +12,7 @@ from django.db.models import Model, Q, QuerySet
 from django.http import HttpRequest, HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 
-from accounts.roles import BRANCH_COORDINATOR, DEPARTMENT_HEAD, SCOPED_ROLES
+from accounts.roles import BRANCH_COORDINATOR, SCOPED_ROLES
 from audit.models import AuditLog
 from audit.services import log_event
 from core.crypto import blind_index
@@ -57,14 +57,14 @@ def has_unscoped_view(request: HttpRequest, model: type[Model]) -> bool:
 
 
 class ScopedAdminMixin:
-    """Restrict Branch Coordinators to their branch and Departmental Heads to their department.
+    """Restrict Branch Coordinators to their branch (website content in the Django admin).
 
-    Set ``branch_lookup`` (e.g. ``"branch"`` or ``"event__branch"``) and/or ``department_lookup``.
+    Set ``branch_lookup`` (e.g. ``"branch"`` or ``"event__branch"``). Department scoping of operational
+    records lives in the staff portal (``portal.access``), not here.
     Applies to list views, object views (IDOR), change/delete permission, FK choices and new objects.
     """
 
     branch_lookup: str | None = None
-    department_lookup: str | None = None
 
     def scope(self, request: HttpRequest, qs: QuerySet) -> QuerySet:
         if has_unscoped_view(request, self.model):  # type: ignore[attr-defined]
@@ -74,8 +74,6 @@ class ScopedAdminMixin:
         condition = Q(pk__in=[])
         if self.branch_lookup and BRANCH_COORDINATOR in groups and user.branch_id:
             condition |= Q(**{self.branch_lookup: user.branch_id})
-        if self.department_lookup and DEPARTMENT_HEAD in groups and user.department_id:
-            condition |= Q(**{self.department_lookup: user.department_id})
         return qs.filter(condition)
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
@@ -104,8 +102,6 @@ class ScopedAdminMixin:
             groups = user_group_names(request)
             if db_field.name == "branch" and BRANCH_COORDINATOR in groups:
                 kwargs["queryset"] = db_field.related_model.objects.filter(pk=user.branch_id)
-            elif db_field.name == "department" and DEPARTMENT_HEAD in groups:
-                kwargs["queryset"] = db_field.related_model.objects.filter(pk=user.department_id)
             elif db_field.name == "event":
                 from events.models import Event
 
@@ -113,8 +109,6 @@ class ScopedAdminMixin:
                 cond = Q(pk__in=[])
                 if BRANCH_COORDINATOR in groups:
                     cond |= Q(branch_id=user.branch_id)
-                if DEPARTMENT_HEAD in groups:
-                    cond |= Q(department_id=user.department_id)
                 kwargs["queryset"] = qs.filter(cond)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)  # type: ignore[misc]
 
@@ -127,12 +121,6 @@ class ScopedAdminMixin:
                 and not getattr(obj, "branch_id", None)
             ):
                 obj.branch_id = request.user.branch_id  # type: ignore[attr-defined]
-            if (
-                self.department_lookup == "department"
-                and DEPARTMENT_HEAD in groups
-                and not getattr(obj, "department_id", None)
-            ):
-                obj.department_id = request.user.department_id  # type: ignore[attr-defined]
         super().save_model(request, obj, form, change)  # type: ignore[misc]
 
 

@@ -1,0 +1,17 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="portal-head"><div><p class="eyebrow"><a class="hover:underline" href="{% url 'portal:users' %}">Staff accounts</a></p><h1 class="portal-title">{{ title }}</h1></div></div>
+<form method="post" class="panel rlm-form portal-form" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="rounded-xl border border-rlm-flame-deep bg-rlm-cream px-4 py-3 text-sm font-semibold" role="alert" data-focus tabindex="-1">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+  {% if form.email %}{% include "includes/field.html" with field=form.full_name %}{% include "includes/field.html" with field=form.email %}
+  <p class="text-xs text-rlm-grey">The person receives a single-use link (valid {{ invite_hours|default:"48" }} hours) to choose their own password and set up two-step sign-in. No password is ever emailed or shown.</p>{% endif %}
+  <fieldset class="space-y-3"><legend class="text-sm font-bold">Departments</legend>
+    <div class="grid gap-3 sm:grid-cols-2">{% for field in form.department_fields %}{% include "includes/field.html" %}{% endfor %}</div>
+  </fieldset>
+  <fieldset class="space-y-3"><legend class="text-sm font-bold">Other roles</legend>
+    {% for field in form.other_fields %}{% include "includes/field.html" %}{% endfor %}
+  </fieldset>
+  <div class="flex gap-3"><button type="submit" class="btn-primary">{% if form.email %}Send invitation{% else %}Save roles{% endif %}</button><a class="btn-outline" href="{% if target %}{% url 'portal:user_detail' target.pk %}{% else %}{% url 'portal:users' %}{% endif %}">Cancel</a></div>
+</form>
+{% endblock %}

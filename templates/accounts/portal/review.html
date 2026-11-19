@@ -1,0 +1,10 @@
+{% extends "portal/base.html" %}
+{% block title %}Access review{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div><p class="eyebrow">Super Admin only</p><h1 class="portal-title">Access review</h1>
+  <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Every account with its roles, last sign-in and two-step sign-in status. Check this at least every quarter: remove roles people no longer need and deactivate accounts of people who left.</p></div>
+  <a class="btn-outline btn-sm" href="?format=csv" title="The export is recorded in the audit log">Export CSV</a>
+</div>
+{% include "accounts/portal/_table.html" %}
+{% endblock %}

@@ -99,7 +99,7 @@ def pledge(client: Client, **kw: object):  # type: ignore[no-untyped-def]
 
 
 def test_manual_pledge_flow_and_finance_confirmation(client: Client, make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
-    from accounts.roles import FINANCE, SECRETARY
+    from accounts.roles import FINANCE, MEMBERSHIP
 
     assert pledge(client).status_code == 302
     d = Donation.objects.get()
@@ -108,7 +108,7 @@ def test_manual_pledge_flow_and_finance_confirmation(client: Client, make_staff,
         assert is_encrypted_token(raw_value(Donation, d.pk, column))
     assert any(m.to == ["donor@example.test"] for m in mail.outbox)
 
-    secretary = verified_client(make_staff(SECRETARY))
+    secretary = verified_client(make_staff(MEMBERSHIP))
     assert (
         secretary.post(
             "/test-portal/giving/donation/", {"action": "confirm_received", "_selected_action": [d.pk]}

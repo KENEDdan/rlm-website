@@ -8,7 +8,6 @@ from .models import Event
 @admin.register(Event)
 class EventAdmin(ScopedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     branch_lookup = "branch"
-    department_lookup = "department"
     list_display = ("title", "start", "branch", "is_published", "registration_open", "capacity", "seats")
     list_filter = ("is_published", "registration_open", "branch", "program")
     search_fields = ("title", "summary", "venue")

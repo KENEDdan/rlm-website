@@ -1,0 +1,22 @@
+<form method="get" action="{{ filter_url }}" class="portal-filters rlm-form" hx-get="{{ filter_url }}" hx-target="{{ target }}" hx-push-url="true" hx-trigger="change, submit">
+  <div>
+    <label for="f-from">From</label>
+    <input type="date" id="f-from" name="from" value="{{ filters.start|date:'Y-m-d' }}">
+  </div>
+  <div>
+    <label for="f-to">To</label>
+    <input type="date" id="f-to" name="to" value="{{ filters.end|date:'Y-m-d' }}">
+  </div>
+  <div>
+    <label for="f-branch">Branch</label>
+    {% if access_branch_fixed or portal_nav.access.branch_restricted %}
+      <p class="py-3 text-sm font-semibold">{{ filters.branch_name|default:"No branch assigned" }}</p>
+    {% else %}
+    <select id="f-branch" name="branch">
+      <option value="">All branches</option>
+      {% for b in branches %}<option value="{{ b.pk }}" {% if filters.branch_id == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+    </select>
+    {% endif %}
+  </div>
+  <div class="flex items-end"><button type="submit" class="btn-dark btn-sm">Apply</button></div>
+</form>

@@ -109,7 +109,7 @@ def test_open_redirect_is_blocked(client: Client, make_staff, admin_prefix: str)
     device = TOTPDevice.objects.create(user=user, name="x", confirmed=True)
     client.post(LOGIN + "?next=https://evil.example/phish", {"username": user.email, "password": PASSWORD})
     resp = client.post(VERIFY, {"code": format_token(totp_now(device))})
-    assert resp["Location"] == admin_prefix
+    assert resp["Location"] == "/" + settings.PORTAL_URL  # staff land on the portal, never off-site
 
 
 @override_settings(AXES_FAILURE_LIMIT=3)

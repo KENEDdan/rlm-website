@@ -1,0 +1,14 @@
+{% extends "portal/base.html" %}
+{% block title %}Executive overview{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Founder &amp; leadership</p>
+    <h1 class="portal-title">Executive overview</h1>
+    <p class="mt-1 text-sm text-rlm-grey">All departments at a glance. Figures are totals only; open a department for the records.</p>
+  </div>
+</div>
+{% url 'portal:executive' as filter_url %}
+{% include "portal/_filters.html" with target="#executive-body" %}
+<div id="executive-body">{% include "portal/_executive_body.html" %}</div>
+{% endblock %}

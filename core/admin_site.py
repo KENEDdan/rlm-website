@@ -26,6 +26,15 @@ class RLMAdminSite(admin.AdminSite):
         nxt = request.GET.get("next")
         return redirect(f"{url}?{urlencode({'next': nxt})}" if nxt else url)
 
+    def password_change(
+        self, request: HttpRequest, extra_context: dict[str, Any] | None = None
+    ) -> HttpResponse:
+        """A person changing THEIR OWN password is a sanctioned account change (logged, no alert)."""
+        from accounts.guard import sanctioned
+
+        with sanctioned("self:password_change", actor=request.user, request=request):
+            return super().password_change(request, extra_context)
+
     def logout(self, request: HttpRequest, extra_context: dict[str, Any] | None = None) -> HttpResponse:
         from accounts.views import logout_view
 

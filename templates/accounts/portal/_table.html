@@ -1,0 +1,19 @@
+<div class="table-wrap panel p-0">
+<table class="table-rlm">
+  <caption class="sr-only">Staff accounts</caption>
+  <thead><tr><th scope="col">Name</th><th scope="col">Status</th><th scope="col">Departments</th><th scope="col">Other roles</th><th scope="col">Branch</th><th scope="col">2FA</th><th scope="col">Last sign-in</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <th scope="row"><a class="portal-link" href="{% url 'portal:user_detail' r.user.pk %}">{{ r.user.full_name|default:r.user.email }}</a><span class="block text-xs font-normal text-rlm-grey">{{ r.user.email }}</span>{% if r.super_admin %}<span class="portal-badge">Super Admin</span>{% endif %}</th>
+      <td>{% if r.status == "Active" %}{% include "portal/_status.html" with value="active" label="Active" %}{% elif r.status == "Deleted" or r.status == "Deactivated" %}{% include "portal/_status.html" with value="bad" label=r.status %}{% else %}{% include "portal/_status.html" with value="pending" label=r.status %}{% endif %}{% if r.dormant %} {% include "portal/_status.html" with value="warn" label="Dormant" %}{% endif %}</td>
+      <td>{{ r.departments|join:", "|default:"—" }}</td>
+      <td>{{ r.roles|join:", "|default:"—" }}</td>
+      <td>{{ r.branch|default:"—" }}</td>
+      <td>{% if r.two_factor %}{% include "portal/_status.html" with value="good" label="Set up" %}{% else %}{% include "portal/_status.html" with value="warn" label="Not yet" %}{% endif %}</td>
+      <td>{{ r.last_login|date:"j M Y"|default:"Never" }}</td>
+    </tr>
+  {% empty %}<tr><td colspan="7">No accounts match.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>

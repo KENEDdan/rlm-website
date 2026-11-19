@@ -1,0 +1,46 @@
+{% extends "portal/base.html" %}{% load portal_tags %}
+{% block title %}{{ obj }} · {{ resource.label }}{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow"><a href="{% url 'portal:resource_list' department resource.slug %}" class="hover:underline">{{ resource.label }}</a></p>
+    <h1 class="portal-title">{{ obj }}</h1>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% for action in actions %}
+      {% if action.method == "get" %}<a class="{% if action.style == 'primary' %}btn-primary{% else %}btn-outline{% endif %} btn-sm" href="{{ action.url }}">{{ action.label }}</a>
+      {% else %}
+      <form method="post" action="{{ action.url }}">{% csrf_token %}
+        {% for name, value in action.fields.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+        <button type="submit" class="{% if action.style == 'primary' %}btn-primary{% elif action.style == 'danger' %}btn-danger{% else %}btn-outline{% endif %} btn-sm" {% if action.confirm %}data-confirm="{{ action.confirm }}"{% endif %}>{{ action.label }}</button>
+      </form>
+      {% endif %}
+    {% endfor %}
+    {% if can_change %}<a class="btn-dark btn-sm" href="{% url 'portal:resource_edit' department resource.slug obj.pk %}">Edit</a>{% endif %}
+    {% if can_delete %}<a class="btn-outline btn-sm" href="{% url 'portal:resource_delete' department resource.slug obj.pk %}">Delete</a>{% endif %}
+  </div>
+</div>
+{% block detail_extra_top %}{% endblock %}
+<section class="panel">
+  <dl class="detail-list">
+    {% for label, value, kind in rows %}
+      <div class="{% if kind == 'long' %}sm:col-span-2{% endif %}">
+        <dt>{{ label }}</dt>
+        <dd>{% if kind == "text" %}{{ value }}{% elif kind == "long" %}{{ value|linebreaksbr }}{% elif value == "Attached" %}<a class="portal-link" href="{% url 'portal:resource_file' department resource.slug obj.pk kind %}">Download (recorded in the audit log)</a>{% else %}—{% endif %}</dd>
+      </div>
+    {% endfor %}
+  </dl>
+</section>
+{% block detail_extra %}{% endblock %}
+{% for child in children %}
+<section class="panel mt-6">
+  <h2 class="panel-title flex items-center justify-between gap-2"><span>{{ child.title }}</span>{% if child.add_url %}<a class="btn-outline btn-sm" href="{{ child.add_url }}">Add</a>{% endif %}</h2>
+  {% if child.rows %}
+  <div class="table-wrap"><table class="table-rlm">
+    <thead><tr>{% for name, label in child.columns %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for c, values in child.rows %}<tr>{% for value in values %}{% if forloop.first %}<th scope="row"><a class="portal-link" href="{% url 'portal:resource_detail' department child.resource.slug c.pk %}">{{ value }}</a></th>{% else %}<td>{{ value }}</td>{% endif %}{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="text-sm text-rlm-grey">None yet.</p>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

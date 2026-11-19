@@ -1,0 +1,12 @@
+{% extends "portal/base.html" %}
+{% block title %}Confirm it is you{% endblock %}
+{% block content %}
+<div class="panel max-w-md">
+  <h1 class="portal-title">Confirm it is you</h1>
+  <p class="mt-2 text-sm">Account changes need your password and a fresh code from your authenticator app. This lasts a few minutes.</p>
+  <form method="post" class="staff-form rlm-form mt-4 space-y-4" novalidate>{% csrf_token %}
+    {% include "accounts/_form.html" %}
+    <button type="submit" class="btn-primary w-full">Confirm</button>
+  </form>
+</div>
+{% endblock %}

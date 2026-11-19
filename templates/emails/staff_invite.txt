@@ -1,0 +1,12 @@
+{% autoescape off %}Hello {{ name }},
+
+{% if kind == "reset" %}A Super Admin asked you to choose a new password for the ministry staff portal. Your old password no longer works.{% else %}You have been invited to the ministry staff portal.{% endif %}
+
+Open this link within {{ hours }} hours. It works only once:
+{{ link }}
+
+You will choose your own password and then set up two-step sign-in with an authenticator app on your phone. Nobody from the ministry will ever ask you for your password or your codes.
+
+If you did not expect this email, ignore it; nothing happens unless the link is used.
+
+This is an automated message.{% endautoescape %}

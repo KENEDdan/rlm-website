@@ -11,4 +11,5 @@ urlpatterns = [
     path("2fa/backup-codes/", views.backup_codes_view, name="backup_codes"),
     path("2fa/backup-codes/regenerate/", views.regenerate_backup_codes_view, name="regenerate_backup_codes"),
     path("logout/", views.logout_view, name="logout"),
+    path("invite/<str:token>/", views.accept_invite_view, name="accept_invite"),
 ]

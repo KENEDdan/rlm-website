@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 
-from accounts.roles import MEDIA, PROGRAMS, SECRETARY
+from accounts.roles import MEDIA, MEMBERSHIP, MISSIONS
 from contact.models import ContactMessage
 from core.models import FormOption, PageText
 from core.page_texts import FORM_OPTION_DEFAULTS, PAGE_TEXT_DEFAULTS
@@ -195,7 +195,7 @@ def test_media_edits_page_text_but_cannot_add_or_delete(make_staff, verified_cli
 
 
 def test_secretary_manages_form_options_but_cannot_change_codes(make_staff, verified_client, admin_prefix) -> None:  # type: ignore[no-untyped-def]
-    client = verified_client(make_staff(SECRETARY))
+    client = verified_client(make_staff(MEMBERSHIP))
     resp = client.post(
         f"{admin_prefix}core/formoption/add/",
         {
@@ -227,7 +227,7 @@ def test_secretary_manages_form_options_but_cannot_change_codes(make_staff, veri
     assert client.get(f"{admin_prefix}core/formoption/{option.pk}/delete/").status_code == 403
 
 
-@pytest.mark.parametrize("role", [PROGRAMS])
+@pytest.mark.parametrize("role", [MISSIONS])
 def test_other_roles_cannot_edit_site_text(make_staff, verified_client, admin_prefix, role) -> None:  # type: ignore[no-untyped-def]
     client = verified_client(make_staff(role))
     obj = PageText.objects.get(key="events")
@@ -239,7 +239,7 @@ def test_admin_submission_forms_use_option_dropdowns(make_staff, verified_client
     message = ContactMessage.objects.create(
         name="A", email="a@example.test", subject="S", message="M", topic="events", consent=True
     )
-    client = verified_client(make_staff(SECRETARY))
+    client = verified_client(make_staff(MEMBERSHIP))
     html = client.get(f"{admin_prefix}contact/contactmessage/{message.pk}/change/").content.decode()
     assert '<select name="topic"' in html and "General enquiry" in html
     listing = client.get(f"{admin_prefix}contact/contactmessage/").content.decode()

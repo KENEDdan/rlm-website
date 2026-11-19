@@ -1,0 +1,12 @@
+{% extends "portal/base.html" %}
+{% block title %}Delete {{ obj }}{% endblock %}
+{% block content %}
+<div class="panel max-w-xl">
+  <h1 class="portal-title">Delete {{ resource.label_singular|lower }}?</h1>
+  <p class="mt-2">“{{ obj }}” will be removed. This cannot be undone. The deletion is recorded in the audit log.</p>
+  <form method="post" class="mt-4 flex gap-3">{% csrf_token %}
+    <button type="submit" class="btn-danger">Yes, delete</button>
+    <a class="btn-outline" href="{% url 'portal:resource_detail' department resource.slug obj.pk %}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

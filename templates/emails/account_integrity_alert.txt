@@ -1,0 +1,13 @@
+{% autoescape off %}SECURITY ALERT
+
+{{ summary }}
+
+Every legitimate account or role change is made by a Super Admin in the staff portal. This one was not, so
+please check it now:
+
+1. Sign in to the staff portal and open Accounts > Audit trail (look for "changed OUTSIDE the portal").
+2. If you did not expect this change, follow "Suspected compromised account" in the incident response guide.
+
+{{ site_url }}
+
+This is an automated message. It deliberately contains no names or account details.{% endautoescape %}

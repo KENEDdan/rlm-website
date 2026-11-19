@@ -96,7 +96,6 @@ class EventRegistrationAdmin(
 ):
     audit_views = True
     branch_lookup = "event__branch"
-    department_lookup = "event__department"
     list_display = (
         "audit_label",
         "full_name",

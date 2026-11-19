@@ -275,11 +275,11 @@ def test_newsletter_no_enumeration_and_bad_tokens(client: Client) -> None:
 
 # ------------------------------------------------------------------ admin: export, handled, retention
 def test_csv_export_permission_gated_and_audited(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
-    from accounts.roles import MEDIA, SECRETARY
+    from accounts.roles import MEDIA, MEMBERSHIP
 
     PrayerRequest.objects.create(request_text='=HYPERLINK("http://evil")', consent=True)
     pr = PrayerRequest.objects.get()
-    secretary = verified_client(make_staff(SECRETARY))
+    secretary = verified_client(make_staff(MEMBERSHIP))
     resp = secretary.post(
         "/test-portal/prayer/prayerrequest/", {"action": "export_csv", "_selected_action": [pr.pk]}
     )
@@ -297,19 +297,19 @@ def test_csv_export_permission_gated_and_audited(make_staff, verified_client) ->
 
 
 def test_viewing_sensitive_record_is_audited(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
-    from accounts.roles import SECRETARY
+    from accounts.roles import MEMBERSHIP
 
     pr = PrayerRequest.objects.create(request_text="secret", consent=True)
-    client = verified_client(make_staff(SECRETARY))
+    client = verified_client(make_staff(MEMBERSHIP))
     assert client.get(f"/test-portal/prayer/prayerrequest/{pr.pk}/change/").status_code == 200
     entry = AuditLog.objects.get(action="view", model="prayerrequest")
     assert entry.object_id == str(pr.pk) and "secret" not in entry.object_repr
 
 
 def test_mark_handled_action(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
-    from accounts.roles import SECRETARY
+    from accounts.roles import MEMBERSHIP
 
-    user = make_staff(SECRETARY)
+    user = make_staff(MEMBERSHIP)
     pr = PrayerRequest.objects.create(request_text="x", consent=True)
     client = verified_client(user)
     client.post("/test-portal/prayer/prayerrequest/", {"action": "mark_handled", "_selected_action": [pr.pk]})
@@ -318,11 +318,11 @@ def test_mark_handled_action(make_staff, verified_client) -> None:  # type: igno
 
 
 def test_admin_email_search_uses_blind_index(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
-    from accounts.roles import SECRETARY
+    from accounts.roles import MEMBERSHIP
 
     PrayerRequest.objects.create(request_text="a", email="find.me@example.test", consent=True)
     PrayerRequest.objects.create(request_text="b", email="other@example.test", consent=True)
-    client = verified_client(make_staff(SECRETARY))
+    client = verified_client(make_staff(MEMBERSHIP))
     resp = client.get("/test-portal/prayer/prayerrequest/", {"q": "Find.Me@example.test"})
     assert b"1 result" in resp.content
 

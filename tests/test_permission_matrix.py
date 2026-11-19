@@ -14,19 +14,21 @@ from django.utils import timezone
 from accounts.roles import (
     ALL_ROLES,
     BRANCH_COORDINATOR,
-    DEPARTMENT_HEAD,
+    DEVELOPMENT,
+    DISCIPLESHIP,
+    EXECUTIVE,
     FINANCE,
     FOUNDER,
+    LOGISTICS,
     MEDIA,
-    PROGRAMS,
+    MEMBERSHIP,
+    MISSIONS,
     ROLE_PERMISSIONS,
-    SECRETARY,
     codenames_for,
     sync_roles,
 )
 from branches.models import Branch
 from events.models import Event
-from leadership.models import Department
 from prayer.models import PrayerRequest
 from registrations.models import VolunteerApplication
 
@@ -48,6 +50,7 @@ PROJECT_APPS = [
     "resources",
     "news",
     "giving",
+    "portal",
 ]
 ACTIONS = ["view", "add", "change", "delete"]
 
@@ -86,11 +89,20 @@ def test_permission_matrix(make_staff, role: str, model_label: str, action: str)
     assert has == _expected(role, model_label, action), f"{role} {action} {model_label}"
 
 
-def test_founder_group_has_every_permission(make_staff) -> None:  # type: ignore[no-untyped-def]
+def test_founder_group_has_content_permissions_but_not_account_admin(make_staff) -> None:  # type: ignore[no-untyped-def]
     user = make_staff(FOUNDER)
     assert user.has_perm("prayer.view_prayerrequest")
     assert user.has_perm("giving.change_givingsettings")
-    assert user.has_perm("accounts.add_user")
+    # Account and role administration comes from the superuser flag (Super Admin) only, never from a group.
+    for perm in (
+        "accounts.add_user",
+        "accounts.change_user",
+        "auth.change_group",
+        "auth.add_permission",
+        "portal.add_departmentmembership",
+        "portal.change_departmentmembership",
+    ):
+        assert not user.has_perm(perm), perm
 
 
 @pytest.mark.parametrize(
@@ -105,17 +117,20 @@ def test_founder_group_has_every_permission(make_staff) -> None:  # type: ignore
             ],
         ),
         (MEDIA, ["prayer.view_prayerrequest", "giving.view_donation", "giving.view_givingsettings"]),
-        (SECRETARY, ["giving.view_donation", "giving.view_givingsettings", "core.change_sitesettings"]),
+        (MEMBERSHIP, ["giving.view_donation", "giving.view_givingsettings", "core.change_sitesettings"]),
         (
-            PROGRAMS,
+            MISSIONS,
             ["prayer.view_prayerrequest", "giving.view_donation", "registrations.view_volunteerapplication"],
         ),
+        (LOGISTICS, ["prayer.view_prayerrequest", "giving.view_donation", "contact.view_contactmessage"]),
+        (DEVELOPMENT, ["prayer.view_prayerrequest", "giving.view_donation", "contact.view_contactmessage"]),
+        (EXECUTIVE, ["prayer.view_prayerrequest", "giving.view_donation", "contact.view_contactmessage"]),
         (
             BRANCH_COORDINATOR,
             ["prayer.view_prayerrequest", "giving.view_donation", "contact.view_contactmessage"],
         ),
         (
-            DEPARTMENT_HEAD,
+            DISCIPLESHIP,
             ["prayer.view_prayerrequest", "giving.view_donation", "registrations.view_volunteerapplication"],
         ),
     ],
@@ -143,12 +158,12 @@ def _url(name: str, *args: object) -> str:
     [
         (FINANCE, "prayer_prayerrequest_changelist", 403),
         (FINANCE, "giving_donation_changelist", 200),
-        (SECRETARY, "prayer_prayerrequest_changelist", 200),
-        (SECRETARY, "giving_donation_changelist", 403),
+        (MEMBERSHIP, "prayer_prayerrequest_changelist", 200),
+        (MEMBERSHIP, "giving_donation_changelist", 403),
         (MEDIA, "resources_resource_changelist", 200),
         (MEDIA, "audit_auditlog_changelist", 403),
-        (PROGRAMS, "events_event_changelist", 200),
-        (PROGRAMS, "accounts_user_changelist", 403),
+        (MISSIONS, "events_event_changelist", 200),
+        (MISSIONS, "accounts_user_changelist", 403),
     ],
 )
 def test_admin_sections_respect_roles(make_staff, verified_client, role, url_name, expected) -> None:  # type: ignore[no-untyped-def]
@@ -169,7 +184,7 @@ def two_branches():  # type: ignore[no-untyped-def]
     return juba, yei
 
 
-def _event(title: str, branch: Branch | None = None, department: Department | None = None) -> Event:
+def _event(title: str, branch: Branch | None = None) -> Event:
     start = timezone.now() + timedelta(days=7)
     return Event.objects.create(
         title=title,
@@ -178,7 +193,6 @@ def _event(title: str, branch: Branch | None = None, department: Department | No
         start=start,
         end=start + timedelta(hours=2),
         branch=branch,
-        department=department,
         is_published=True,
     )
 
@@ -253,21 +267,10 @@ def test_coordinator_without_branch_sees_nothing(make_staff, verified_client, tw
     assert b"Juba rally" not in client.get(_url("events_event_changelist")).content
 
 
-def test_department_head_scoped_to_department(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
-    youth = Department.objects.get(slug="youth")
-    media = Department.objects.get(slug="media-communications")
-    mine, theirs = _event("Youth night", department=youth), _event("Media day", department=media)
-    client = verified_client(make_staff(DEPARTMENT_HEAD, department=youth))
-    page = client.get(_url("events_event_changelist"))
-    assert b"Youth night" in page.content and b"Media day" not in page.content
-    assert client.get(_url("events_event_change", theirs.pk)).status_code in (302, 403, 404)
-    assert client.get(_url("events_event_change", mine.pk)).status_code == 200
-
-
 def test_user_with_global_and_scoped_role_is_not_restricted(make_staff, verified_client, two_branches) -> None:  # type: ignore[no-untyped-def]
     juba, yei = two_branches
     _event("Yei rally", yei)
-    client = verified_client(make_staff(PROGRAMS, BRANCH_COORDINATOR, branch=juba))
+    client = verified_client(make_staff(MISSIONS, BRANCH_COORDINATOR, branch=juba))
     assert b"Yei rally" in client.get(_url("events_event_changelist")).content
 
 

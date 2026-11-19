@@ -1,0 +1,11 @@
+<ul class="portal-items">
+  {% for item in items %}
+  <li>
+    {% if item.status %}{% include "portal/_status.html" with value=item.status label=" " %}{% endif %}
+    {% if item.url %}<a class="portal-link" href="{{ item.url }}">{{ item.text }}</a>{% else %}<span>{{ item.text }}</span>{% endif %}
+    {% if item.meta %}<span class="block text-xs text-rlm-grey">{{ item.meta }}</span>{% endif %}
+  </li>
+  {% empty %}
+  <li class="text-sm text-rlm-grey">{{ empty }}</li>
+  {% endfor %}
+</ul>

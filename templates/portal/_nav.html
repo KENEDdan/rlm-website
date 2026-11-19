@@ -1,0 +1,27 @@
+<nav class="portal-nav">
+  {% with nav=portal_nav %}
+  {% if nav.show_executive %}<a href="{% url 'portal:executive' %}" class="portal-nav-top{% if request.resolver_match.url_name == 'executive' %} is-current{% endif %}" {% if request.resolver_match.url_name == 'executive' %}aria-current="page"{% endif %}>Executive overview</a>{% endif %}
+  {% for dept in nav.departments %}
+    <details class="portal-nav-dept" {% if department == dept.code %}open{% endif %}>
+      <summary>{{ dept.name }}{% if dept.is_head %} <span class="portal-badge">Head</span>{% elif dept.level == 1 %} <span class="portal-badge">Branch</span>{% endif %}</summary>
+      <a href="{{ dept.url }}" class="portal-nav-link{% if department == dept.code and request.resolver_match.url_name == 'dashboard' %} is-current{% endif %}">Dashboard</a>
+      {% for group, items in dept.groups.items %}
+        <p class="portal-nav-group">{{ group }}</p>
+        {% for item in items %}<a href="{{ item.url }}" class="portal-nav-link{% if request.path|slice:':200' == item.url %} is-current{% endif %}">{{ item.label }}</a>{% endfor %}
+      {% endfor %}
+    </details>
+  {% empty %}
+    {% if not nav.show_executive %}<p class="px-3 py-2 text-sm text-rlm-grey">No department has been assigned to your account yet. Ask the Super Admin.</p>{% endif %}
+  {% endfor %}
+  {% if nav.show_accounts %}
+    <details class="portal-nav-dept" {% if '/accounts/' in request.path %}open{% endif %}>
+      <summary>Accounts &amp; security</summary>
+      <a href="{% url 'portal:users' %}" class="portal-nav-link">Staff accounts</a>
+      <a href="{% url 'portal:user_invite' %}" class="portal-nav-link">Invite a staff member</a>
+      <a href="{% url 'portal:account_review' %}" class="portal-nav-link">Access review</a>
+      <a href="{% url 'portal:audit_trail' %}" class="portal-nav-link">Account audit trail</a>
+    </details>
+  {% endif %}
+  {% if nav.show_admin %}<a href="{{ nav.admin_url }}" class="portal-nav-top">Website content (admin)</a>{% endif %}
+  {% endwith %}
+</nav>

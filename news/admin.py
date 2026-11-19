@@ -8,7 +8,6 @@ from .models import Post
 @admin.register(Post)
 class PostAdmin(ScopedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     branch_lookup = "branch"
-    department_lookup = "department"
     list_display = ("title", "kind", "status", "publish_at", "branch", "author")
     list_filter = ("status", "kind", "branch")
     search_fields = ("title", "summary")

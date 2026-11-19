@@ -1,0 +1,8 @@
+{% extends "portal/base.html" %}{% load portal_tags %}
+{% block title %}{{ department|department_name }} screens{% endblock %}
+{% block content %}
+<h1 class="portal-title">{{ department|department_name }}</h1>
+<ul class="mt-4 grid gap-3 sm:grid-cols-2">
+  {% for r in items %}<li><a class="panel block hover:border-rlm-flame" href="{% url 'portal:resource_list' department r.slug %}"><span class="font-bold">{{ r.label }}</span>{% if r.description %}<span class="block text-sm text-rlm-grey">{{ r.description }}</span>{% endif %}</a></li>{% endfor %}
+</ul>
+{% endblock %}

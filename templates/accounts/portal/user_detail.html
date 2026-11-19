@@ -1,0 +1,63 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ target }}{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow"><a class="hover:underline" href="{% url 'portal:users' %}">Staff accounts</a></p>
+    <h1 class="portal-title">{{ target.full_name|default:target.email }}</h1>
+    <p class="text-sm text-rlm-grey">{{ target.email }}</p>
+  </div>
+</div>
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="panel lg:col-span-2">
+    <h2 class="panel-title">Access</h2>
+    <dl class="detail-list">
+      <div><dt>Status</dt><dd>{{ row.status }}{% if row.dormant %} (dormant){% endif %}</dd></div>
+      <div><dt>Super Admin</dt><dd>{{ row.super_admin|yesno:"Yes,No" }}</dd></div>
+      <div><dt>Departments</dt><dd>{{ row.departments|join:", "|default:"None" }}</dd></div>
+      <div><dt>Roles (groups)</dt><dd>{{ row.roles|join:", "|default:"None" }}</dd></div>
+      <div><dt>Branch</dt><dd>{{ row.branch|default:"—" }}</dd></div>
+      <div><dt>Two-step sign-in</dt><dd>{{ row.two_factor|yesno:"Set up,Not set up yet" }}</dd></div>
+      <div><dt>Last sign-in</dt><dd>{{ row.last_login|date:"j M Y H:i"|default:"Never" }}</dd></div>
+      <div><dt>Created</dt><dd>{{ target.date_joined|date:"j M Y" }}</dd></div>
+    </dl>
+  </section>
+  <section class="panel">
+    <h2 class="panel-title">Actions</h2>
+    {% if is_self %}
+      <p class="text-sm">You cannot change your own account or roles. Another Super Admin must do it.</p>
+    {% elif target.deleted_at %}
+      <p class="text-sm">This account was deleted on {{ target.deleted_at|date:"j M Y" }}. It is kept only for the audit history.</p>
+    {% else %}
+      <p class="mb-3 text-xs text-rlm-grey">You will be asked for your password and a 2FA code first.</p>
+      <div class="flex flex-col gap-2">
+        <a class="btn-dark btn-sm" href="{% url 'portal:user_roles' target.pk %}">Change roles and departments</a>
+        {% if target.is_active %}
+          {% include "accounts/portal/_action.html" with action="force_password_reset" label="Force password reset" confirm="Their current password stops working now and a single-use link is emailed to them." %}
+          {% include "accounts/portal/_action.html" with action="reset_2fa" label="Reset two-step sign-in (lost phone)" confirm="Their authenticator and backup codes are removed and they are signed out. Continue?" %}
+          {% include "accounts/portal/_action.html" with action="unlock" label="Clear sign-in lockout" %}
+          {% include "accounts/portal/_action.html" with action="deactivate" label="Deactivate (signs them out everywhere)" confirm="Deactivate this account and end all of its sessions now?" danger=True %}
+        {% else %}
+          {% if row.status == "Invited (not accepted)" %}
+            {% include "accounts/portal/_action.html" with action="resend_invite" label="Send a new invitation" %}
+            {% include "accounts/portal/_action.html" with action="revoke_invites" label="Revoke the invitation" %}
+          {% else %}
+            {% include "accounts/portal/_action.html" with action="reactivate" label="Reactivate" %}
+          {% endif %}
+        {% endif %}
+        {% include "accounts/portal/_action.html" with action="delete" label="Delete account" confirm="Delete this account? It can never sign in again. The audit history is kept." danger=True %}
+      </div>
+    {% endif %}
+  </section>
+</div>
+<section class="panel mt-6">
+  <h2 class="panel-title">Invitations</h2>
+  <div class="table-wrap"><table class="table-rlm"><thead><tr><th scope="col">Type</th><th scope="col">Sent</th><th scope="col">Expires</th><th scope="col">State</th></tr></thead>
+  <tbody>{% for inv in invitations %}<tr><td>{{ inv.get_kind_display }}</td><td>{{ inv.created_at|date:"j M Y H:i" }}</td><td>{{ inv.expires_at|date:"j M Y H:i" }}</td><td>{{ inv.state|capfirst }}</td></tr>{% empty %}<tr><td colspan="4">None.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+<section class="panel mt-6">
+  <h2 class="panel-title">Account history (audit log)</h2>
+  <div class="table-wrap"><table class="table-rlm"><thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">What</th><th scope="col">IP</th><th scope="col">Details</th></tr></thead>
+  <tbody>{% for e in history %}<tr><td>{{ e.timestamp|date:"j M Y H:i" }}</td><td>{{ e.actor_email|default:"system" }}</td><td>{{ e.get_action_display }}</td><td>{{ e.ip_address|default:"—" }}</td><td class="text-xs">{{ e.extra.changes|default:e.extra }}</td></tr>{% empty %}<tr><td colspan="5">No entries.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}
