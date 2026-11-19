@@ -1,0 +1,6 @@
+{% load rlm %}{% page_text page_key as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
+<section class="section"><div class="container-rlm max-w-3xl">
+  <p class="mb-6 text-sm text-rlm-grey">Short and simple: it takes about 5 minutes on a phone. Fields marked <span class="text-rlm-flame-dark">*</span> are required.</p>
+  {% include partial %}
+</div></section>
+{% include "includes/turnstile_script.html" %}

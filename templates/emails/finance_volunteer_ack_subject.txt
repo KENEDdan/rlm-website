@@ -1,0 +1,1 @@
+{% autoescape off %}Thank you for offering to serve with {{ site.ministry_name }}{% endautoescape %}

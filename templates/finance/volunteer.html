@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{% page_text "finance_volunteer" as pt %}{{ pt.seo_title|default:"Finance & accountability volunteers" }} · {{ site.ministry_name }}{% endblock %}
+{% block description %}{% page_text "finance_volunteer" as pt %}{{ pt.seo_description|default:pt.intro|truncatechars:158 }}{% endblock %}
+{% block content %}{% include "includes/questionnaire_page.html" with page_key="finance_volunteer" partial="finance/_volunteer_form.html" %}{% endblock %}

@@ -1,0 +1,8 @@
+{% autoescape off %}Hello,
+
+Thank you for offering to serve in the Finance and Accountability Department of {{ site.ministry_name }}. We have received your application. Our team will check references and contact you; serving in finance always follows this careful process.
+
+{{ site.tagline }}
+{{ site_url }}
+
+You received this email because this address was used on our finance volunteer form. If that was not you, please ignore this message.{% endautoescape %}

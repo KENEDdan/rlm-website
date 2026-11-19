@@ -194,13 +194,18 @@ class PartnershipEnquiry(SubmissionModel):
     email_hash = models.CharField(max_length=64, db_index=True, editable=False)
     phone = EncryptedCharField(max_length=30, blank=True)
     country = models.CharField(max_length=100)
+    city = models.CharField(max_length=120, blank=True)
+    # Admin-managed lists "partner_area" and "partnership_type" (several choices each).
+    areas = models.JSONField(default=list, blank=True)
+    other_area = models.CharField(max_length=200, blank=True)
+    partnership_types = models.JSONField(default=list, blank=True)
     message = EncryptedTextField(blank=True)
     consent = models.BooleanField(default=False)
     internal_notes = EncryptedTextField(blank=True)
 
     class Meta(SubmissionModel.Meta):
-        verbose_name = "partnership enquiry"
-        verbose_name_plural = "partnership enquiries"
+        verbose_name = "partnership registration"
+        verbose_name_plural = "partnership registrations"
         permissions: ClassVar = [("export_partnershipenquiry", "Can export partnership enquiries")]
 
     def get_partner_type_display(self) -> str:
@@ -208,6 +213,12 @@ class PartnershipEnquiry(SubmissionModel):
 
     def get_interest_display(self) -> str:
         return option_label("partner_interest", self.interest)
+
+    def get_areas_display(self) -> str:
+        return ", ".join(option_label("partner_area", v) for v in self.areas or [])
+
+    def get_partnership_types_display(self) -> str:
+        return ", ".join(option_label("partnership_type", v) for v in self.partnership_types or [])
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.email_hash = blind_index(self.email)

@@ -27,8 +27,22 @@ PERSON_SOURCES: list[tuple[str, str]] = [
     ("giving.PartnershipEnquiry", "email_hash"),
     ("newsletter.Subscriber", "email_hash"),
     ("giving.Donation", "donor_email_hash"),
+    ("membership.Member", "email_hash"),
+    ("discipleship.Registration", "email_hash"),
+    ("discipleship.Disciple", "email_hash"),
+    ("finance.FinanceVolunteer", "email_hash"),
+    ("finance.Donor", "email_hash"),
 ]
 ANONYMISE_INSTEAD_OF_DELETE: dict[str, dict[str, Any]] = {
+    # Donors: pledges and proposals are financial records, so the relationship row stays without the person.
+    "finance.Donor": {
+        "name": "[erased on request]",
+        "contact_person": "",
+        "email": "",
+        "phone": "",
+        "notes": "",
+        "city": "",
+    },
     "giving.Donation": {
         "donor_name": "",
         "donor_email": "",

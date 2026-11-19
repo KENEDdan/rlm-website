@@ -1,0 +1,17 @@
+{# Public questionnaire forms: fields grouped into the sections of the printed questionnaire (form.sections). #}
+{% if form.non_field_errors %}
+  <div class="rounded-xl border border-rlm-flame-deep bg-rlm-cream px-4 py-3 text-sm font-semibold text-rlm-ink" role="alert" data-focus tabindex="-1">
+    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+{% endif %}
+{% for section in form.grouped_sections %}
+<fieldset class="space-y-5 rounded-2xl border border-rlm-line p-4 sm:p-5">
+  <legend class="px-1 font-display text-base font-extrabold text-rlm-black">{{ section.title }}</legend>
+  {% if section.help %}<p class="text-sm text-rlm-grey">{{ section.help }}</p>{% endif %}
+  {% for field in section.fields %}{% include "includes/field.html" %}{% endfor %}
+</fieldset>
+{% endfor %}
+<div class="hp-field" aria-hidden="true">{{ form.website.label_tag }}{{ form.website }}</div>
+{% if turnstile_site_key %}<div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="light"></div>{% endif %}
+{% include "includes/field.html" with field=form.consent %}
+<p class="text-xs text-rlm-grey">Your details are encrypted and seen only by the ministry staff who handle this form. We never sell or share them. Read our <a class="underline" href="{% url 'core:privacy' %}">privacy policy</a> to see how long we keep them and how to ask for a copy or for them to be deleted.</p>

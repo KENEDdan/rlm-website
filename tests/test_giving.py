@@ -138,17 +138,20 @@ def test_pledge_validation(client: Client) -> None:
 def test_partnership_enquiry(client: Client) -> None:
     data = {
         "partner_type": "church",
-        "interest": "missions",
-        "name": "Pastor Example",
-        "organisation": "Example Church",
+        "name": "Example Church",
         "email": "church@example.test",
+        "phone": "+254 700 000 001",
         "country": "Kenya",
+        "city": "Nairobi",
+        "areas": ["evangelism"],
+        "partnership_types": ["prayer"],
         "message": "We want to partner",
         "consent": "on",
     }
     assert client.post("/partner/", data).status_code == 302
     e = PartnershipEnquiry.objects.get()
-    assert is_encrypted_token(raw_value(PartnershipEnquiry, e.pk, "organisation"))
+    for field in ("name", "email", "phone", "message"):
+        assert is_encrypted_token(raw_value(PartnershipEnquiry, e.pk, field))
 
 
 def test_provider_registry() -> None:

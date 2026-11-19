@@ -46,3 +46,19 @@ class ConsentMixin(forms.Form):
         required=True,
         label="I agree that the ministry may store and use these details to respond to me, as described in the privacy policy.",
     )
+
+
+class SectionedFormMixin:
+    """``sections = [("A. Personal information", ["full_name", ...], "optional help"), ...]``."""
+
+    sections: list[tuple[str, list[str], str]] = []
+
+    def grouped_sections(self) -> list[dict[str, Any]]:
+        return [
+            {"title": title, "help": help_text, "fields": [self[name] for name in names if name in self.fields]}  # type: ignore[attr-defined,index]
+            for title, names, help_text in self.sections
+        ]
+
+
+MINOR_HELP = "Only if you are under 18: a parent or guardian must agree."
+GUARDIAN_REQUIRED = "You are under 18, so we need your parent or guardian's name, contact and consent."

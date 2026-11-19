@@ -26,7 +26,16 @@ logger = logging.getLogger(__name__)
 
 
 def _admin_change_url(model_label: str, pk: int) -> str:
-    opts = apps.get_model(model_label)._meta
+    """Where staff open the new submission: its staff-portal screen if it has one, else the admin."""
+    from portal.resources import BY_MODEL
+
+    model = apps.get_model(model_label)
+    resource = BY_MODEL.get(model)
+    if resource is not None:
+        return settings.SITE_URL + reverse(
+            "portal:resource_detail", args=[resource.department, resource.slug, pk]
+        )
+    opts = model._meta
     return settings.SITE_URL + reverse(f"admin:{opts.app_label}_{opts.model_name}_change", args=[pk])
 
 
@@ -79,6 +88,14 @@ RETENTION = {
 }
 
 
+# Applications that were not taken forward: (model, status field, status value), kept retention_unsuccessful_days.
+UNSUCCESSFUL = [
+    ("membership.Member", "status", "rejected"),
+    ("discipleship.Registration", "status", "declined"),
+    ("finance.FinanceVolunteer", "status", "declined"),
+]
+
+
 @shared_task
 def purge_expired_submissions() -> dict[str, int]:
     """Delete submissions older than the retention periods set in SiteSettings (0 = keep)."""
@@ -92,6 +109,13 @@ def purge_expired_submissions() -> dict[str, int]:
         model = apps.get_model(label)
         deleted, _ = model.objects.filter(created_at__lt=now - timedelta(days=days)).delete()
         result[label] = deleted
+    unsuccessful_days = site.retention_unsuccessful_days
+    if unsuccessful_days:
+        cutoff = now - timedelta(days=unsuccessful_days)
+        for label, field, status in UNSUCCESSFUL:
+            model = apps.get_model(label)
+            deleted, _ = model.objects.filter(**{field: status, "updated_at__lt": cutoff}).delete()
+            result[f"{label}({status})"] = deleted
     # Unconfirmed newsletter sign-ups older than 30 days are removed too.
     subscriber = apps.get_model("newsletter.Subscriber")
     deleted, _ = subscriber.objects.filter(status="pending", created_at__lt=now - timedelta(days=30)).delete()

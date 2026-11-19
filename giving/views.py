@@ -13,7 +13,7 @@ from core.ratelimit import form_ratelimit
 
 from . import services
 from .forms import PartnershipForm, PledgeForm
-from .models import CurrentNeed, Donation, GivingCategory, GivingSettings
+from .models import CurrentNeed, Donation, GivingCategory, GivingSettings, PartnershipEnquiry
 from .providers import get_provider
 from .providers.base import WebhookSignatureError
 from .providers.manual import ManualBankTransfer
@@ -60,14 +60,24 @@ def pledge(request: HttpRequest) -> HttpResponse:
     )
 
 
+def _save_partner(form: PartnershipForm) -> PartnershipEnquiry:
+    """Save the registration and put it straight into Finance's donor/partner pipeline as a prospect."""
+    from finance.services import donor_from_enquiry
+
+    enquiry = form.save()
+    donor_from_enquiry(enquiry)
+    return enquiry
+
+
 @form_ratelimit
 def partner(request: HttpRequest) -> HttpResponse:
     return handle_public_form(
         request,
         form_class=PartnershipForm,
+        save=_save_partner,
         template="giving/partner.html",
         partial="giving/_partner_form.html",
-        success_message="Thank you for your interest in partnering with us. We will be in touch soon.",
+        success_message="Thank you for registering as a partner. Our team will be in touch soon.",
         ack_template="partnership_ack",
         context=_giving_context(),
     )

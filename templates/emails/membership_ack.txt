@@ -1,0 +1,8 @@
+{% autoescape off %}Hello,
+
+Thank you for registering as a member of {{ site.ministry_name }}. We have received your registration and our membership team will review it and contact you about the next steps (review, orientation and welcome).
+
+{{ site.tagline }}
+{{ site_url }}
+
+You received this email because this address was used on our membership form. If that was not you, please ignore this message.{% endautoescape %}

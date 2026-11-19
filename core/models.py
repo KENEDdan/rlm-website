@@ -135,6 +135,11 @@ class SiteSettings(SingletonModel):
     retention_volunteer_days = models.PositiveIntegerField(default=730)
     retention_event_registration_days = models.PositiveIntegerField(default=365)
     retention_partnership_days = models.PositiveIntegerField(default=1095)
+    retention_unsuccessful_days = models.PositiveIntegerField(
+        default=365,
+        help_text="Delete membership, discipleship and finance-volunteer applications that were NOT taken forward "
+        "this many days after the decision (0 = keep forever).",
+    )
 
     class Meta:
         verbose_name = "Site settings"
@@ -305,8 +310,10 @@ class FormOption(TimeStampedModel):
         VOLUNTEER_INTEREST = "volunteer_interest", "Volunteer form: where would you like to serve?"
         VOLUNTEER_AVAILABILITY = "volunteer_availability", "Volunteer form: availability"
         CONTACT_TOPIC = "contact_topic", "Contact form: topic"
-        PARTNER_TYPE = "partner_type", "Partnership form: I am partnering as"
-        PARTNER_INTEREST = "partner_interest", "Partnership form: main interest"
+        PARTNER_TYPE = "partner_type", "Partnership form: partnership category"
+        PARTNER_INTEREST = "partner_interest", "Partnership form (old): main interest"
+        PARTNER_AREA = "partner_area", "Partnership form: areas to partner in"
+        PARTNERSHIP_TYPE = "partnership_type", "Partnership form: preferred type of partnership"
 
     list = models.CharField(max_length=40, choices=List.choices, db_index=True)
     value = models.SlugField(

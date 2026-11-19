@@ -149,6 +149,27 @@ PAGE_TEXT_DEFAULTS: dict[str, PageTextDefault] = {
         "heading": "Partner with us",
         "intro": "Churches, organisations and individuals partnering in prayer, missions, resources and finance.",
     },
+    "membership_register": {
+        "label": "Membership registration page",
+        "eyebrow": "Membership",
+        "heading": "Become a member",
+        "intro": "Thank you for your interest in becoming a member of Rebuilding Lives Ministry. Please complete "
+        "the following information to help us understand you and your commitment to the ministry.",
+    },
+    "discipleship_register": {
+        "label": "Discipleship registration page",
+        "eyebrow": "Discipleship",
+        "heading": "Grow as a disciple",
+        "intro": "Our discipleship program is designed to help believers grow spiritually, understand God's Word, "
+        "develop Christian character, and become effective servants of Christ.",
+    },
+    "finance_volunteer": {
+        "label": "Finance & accountability volunteer page",
+        "eyebrow": "Serve",
+        "heading": "Finance & Accountability volunteers",
+        "intro": "Rebuilding Lives Ministry welcomes responsible and trustworthy individuals with financial, "
+        "accounting, bookkeeping, and administrative skills to serve in our Finance and Accountability Department.",
+    },
     "pledge": {"label": "Give: pledge form page", "eyebrow": "Give", "heading": "Tell us about your gift"},
     "give_thanks": {"label": "Give: thank-you page", "heading": "Thank you for giving"},
     "prayer": {
@@ -204,7 +225,27 @@ FORM_OPTION_DEFAULTS: dict[str, list[tuple[str, str]]] = {
     "partner_type": [
         ("individual", "Individual"),
         ("church", "Church"),
+        ("ministry", "Ministry"),
         ("organisation", "Organisation"),
+        ("institution", "Institution"),
+    ],
+    "partner_area": [
+        ("evangelism", "Evangelism and outreach"),
+        ("youth-revival", "Youth revival conferences"),
+        ("discipleship", "Discipleship programs"),
+        ("prayer", "Prayer and intercession"),
+        ("financial", "Financial support"),
+        ("missionary", "Missionary support"),
+        ("resources", "Ministry resources and equipment"),
+        ("leadership", "Leadership development"),
+        ("other", "Other"),
+    ],
+    "partnership_type": [
+        ("financial", "Financial"),
+        ("prayer", "Prayer"),
+        ("material", "Material support"),
+        ("professional", "Professional/technical support"),
+        ("collaboration", "Ministry collaboration"),
     ],
     "partner_interest": [
         ("financial", "Financial partnership"),
