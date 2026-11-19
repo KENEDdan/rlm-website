@@ -548,10 +548,9 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         )
         for i in due_maintenance[:5]
     ]
-    overdue_loans = [
-        loan
-        for loan in AssetLoan.objects.filter(returned_on__isnull=True, due_back__lt=timezone.localdate())[:5]
-    ]
+    overdue_loans = list(
+        AssetLoan.objects.filter(returned_on__isnull=True, due_back__lt=timezone.localdate())[:5]
+    )
     attention += [
         Item(
             f"Not returned: {loan}", f"Due {loan.due_back:%d %b}", LoanResource().url("detail", loan), "warn"

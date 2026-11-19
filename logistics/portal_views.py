@@ -92,7 +92,7 @@ class BudgetForm(forms.Form):
 @portal_view("finance", level=MEMBER)
 @require_http_methods(["GET", "POST"])
 def confirm_budget(request: HttpRequest, pk: int) -> HttpResponse:
-    resource, pr = post_action(request, "finance", "procurement", pk, "view")
+    _resource, pr = post_action(request, "finance", "procurement", pk, "view")
     form = BudgetForm(request.POST or None)
     form.fields["budget_line"].queryset = BudgetLine.objects.filter(
         department=pr.requesting_department, year=timezone.localdate().year
