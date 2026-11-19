@@ -9,7 +9,7 @@ from django.http import HttpRequest
 from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
-from .access import get_access, is_verified_staff
+from .access import MEMBER, get_access, is_verified_staff
 
 
 def _nav(request: HttpRequest) -> dict[str, Any]:
@@ -34,6 +34,11 @@ def _nav(request: HttpRequest) -> dict[str, Any]:
                 "level": access.level(code),
                 "is_head": access.is_head(code),
                 "groups": groups,
+                "budget_url": (
+                    reverse("portal:finance:department_budget", args=[code])
+                    if access.level(code) >= MEMBER and code != "finance"
+                    else ""
+                ),
             }
         )
     return {

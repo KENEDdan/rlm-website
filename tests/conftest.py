@@ -77,6 +77,12 @@ def verified_client(db: Any):  # type: ignore[no-untyped-def]
         device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
         if device is None:
             device = TOTPDevice.objects.create(user=user, name="test", confirmed=True)
+        # A second sign-in by the same user within one 30-second step would reuse the same code, which
+        # django-otp correctly refuses (replay protection). Tests forget the last-used step instead.
+        TOTPDevice.objects.filter(pk=device.pk).update(
+            last_t=-1, throttling_failure_count=0, throttling_failure_timestamp=None
+        )
+        device.refresh_from_db()
         resp = client.post(
             "/" + settings.ADMIN_URL + "account/login/", {"username": user.email, "password": PASSWORD}
         )

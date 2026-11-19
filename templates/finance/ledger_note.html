@@ -1,0 +1,14 @@
+{% extends "portal/base.html" %}
+{% block title %}{% if step == "reverse" %}Reverse{% else %}Reject{% endif %} {{ entry }}{% endblock %}
+{% block content %}
+<div class="panel max-w-xl">
+  <p class="eyebrow"><a class="hover:underline" href="{% url 'portal:resource_detail' department 'ledger' entry.pk %}">{{ entry }}</a></p>
+  <h1 class="portal-title">{% if step == "reverse" %}Correct a posted entry{% else %}Reject this entry{% endif %}</h1>
+  <p class="mt-2 text-sm">{% if step == "reverse" %}Posted entries are never edited. A reversing entry of {{ entry.amount|floatformat:2 }} will be recorded in your name and must be approved by someone else. Then record the correct entry.{% else %}It goes back to the person who recorded it, with your reason.{% endif %}</p>
+  <form method="post" class="rlm-form mt-4 space-y-4">{% csrf_token %}
+    <div><label for="note">Reason (required)</label><textarea id="note" name="note" rows="3" maxlength="300" required></textarea></div>
+    <div class="flex gap-3"><button type="submit" class="btn-danger">{% if step == "reverse" %}Create reversing entry{% else %}Reject{% endif %}</button>
+    <a class="btn-outline" href="{% url 'portal:resource_detail' department 'ledger' entry.pk %}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}

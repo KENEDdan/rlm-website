@@ -1,0 +1,16 @@
+{% load static %}<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">
+<title>Accountability report · {{ site.short_name|default:"RLM" }}</title><link rel="stylesheet" href="{% static 'css/site.css' %}"></head>
+<body class="print-page">
+<div class="print-toolbar"><button type="button" class="btn-primary btn-sm" data-print>Print / Save as PDF</button> <a class="btn-outline btn-sm" href="{% url 'portal:resource_detail' department 'donors' donor.pk %}">Back</a></div>
+<header class="print-header"><img src="{% static 'brand/logo-transparent-160.webp' %}" alt="" width="64" height="64" class="h-16 w-16">
+<div><p class="font-display text-xl font-extrabold">{{ site.ministry_name }}</p><h1 class="text-lg font-bold">Partnership accountability report</h1><p class="text-sm">Prepared for {{ donor.name }} · {{ now|date:"j F Y" }}</p></div></header>
+<p>Thank you for your partnership. This report summarises what you committed, what the ministry has received and the requests we have shared with you.</p>
+<section class="kpi-grid mt-6"><div class="kpi"><p class="kpi-label">Committed</p><p class="kpi-value">{{ pledged|floatformat:2 }}</p></div><div class="kpi"><p class="kpi-label">Received</p><p class="kpi-value">{{ received|floatformat:2 }}</p></div></section>
+<section class="print-section"><h2 class="panel-title">Commitments</h2><table class="table-rlm"><thead><tr><th scope="col">Purpose</th><th scope="col">Pledged</th><th scope="col">Amount</th><th scope="col">Received</th><th scope="col">Status</th></tr></thead>
+<tbody>{% for p in pledges %}<tr><td>{{ p.purpose|default:"General support" }}</td><td>{{ p.pledged_on|date:"j M Y" }}</td><td>{{ p.amount|floatformat:2 }} {{ p.currency }}</td><td>{{ p.received_amount|floatformat:2 }}</td><td>{{ p.get_status_display }}</td></tr>{% empty %}<tr><td colspan="5">None recorded.</td></tr>{% endfor %}</tbody></table></section>
+<section class="print-section"><h2 class="panel-title">Appeals, proposals and reports shared</h2><table class="table-rlm"><thead><tr><th scope="col">Title</th><th scope="col">Type</th><th scope="col">Sent</th><th scope="col">Status</th></tr></thead>
+<tbody>{% for p in proposals %}<tr><td>{{ p.title }}</td><td>{{ p.get_kind_display }}</td><td>{{ p.sent_on|date:"j M Y"|default:"—" }}</td><td>{{ p.get_status_display }}</td></tr>{% empty %}<tr><td colspan="4">None.</td></tr>{% endfor %}</tbody></table></section>
+<p class="mt-8 text-xs">Figures are taken from the ministry's finance records on {{ now|date:"j F Y" }}. Generating this report was recorded in the audit log.</p>
+<script src="{% static 'js/portal.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+</body></html>

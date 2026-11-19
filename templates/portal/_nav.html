@@ -5,6 +5,7 @@
     <details class="portal-nav-dept" {% if department == dept.code %}open{% endif %}>
       <summary>{{ dept.name }}{% if dept.is_head %} <span class="portal-badge">Head</span>{% elif dept.level == 1 %} <span class="portal-badge">Branch</span>{% endif %}</summary>
       <a href="{{ dept.url }}" class="portal-nav-link{% if department == dept.code and request.resolver_match.url_name == 'dashboard' %} is-current{% endif %}">Dashboard</a>
+      {% if dept.budget_url %}<a href="{{ dept.budget_url }}" class="portal-nav-link">Our budget</a>{% endif %}
       {% for group, items in dept.groups.items %}
         <p class="portal-nav-group">{{ group }}</p>
         {% for item in items %}<a href="{{ item.url }}" class="portal-nav-link{% if request.path|slice:':200' == item.url %} is-current{% endif %}">{{ item.label }}</a>{% endfor %}

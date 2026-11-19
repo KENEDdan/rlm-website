@@ -209,3 +209,16 @@ def test_monthly_series_fills_gaps() -> None:
     _indicator()
     series = monthly_series(Indicator.objects.all(), "created_at", date(2026, 1, 1), date(2026, 12, 31))
     assert len(series) == 12
+
+
+def test_workflow_urls_never_shadow_generic_resource_routes() -> None:
+    from django.urls import resolve
+
+    for department, slug in REGISTRY:
+        base = f"{P}{department}/{slug}/"
+        assert resolve(base).url_name == "resource_list", base
+        assert resolve(base + "new/").url_name == "resource_create", base
+        assert resolve(base + "export.csv").url_name == "resource_export", base
+        assert resolve(base + "1/").url_name == "resource_detail", base
+        assert resolve(base + "1/edit/").url_name == "resource_edit", base
+        assert resolve(base + "1/delete/").url_name == "resource_delete", base
