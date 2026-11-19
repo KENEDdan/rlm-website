@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "logistics",
     "missions",
     "discipleship",
+    "communications",
 ]
 
 MIDDLEWARE = [

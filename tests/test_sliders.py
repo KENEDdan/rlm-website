@@ -330,6 +330,7 @@ def _testimony(**kw) -> MediaTestimony:  # type: ignore[no-untyped-def]
         "person_display_name": "Mary Akol Deng",
         "consent_confirmed": True,
         "is_published": True,
+        "subject_is_adult": True,
         "is_approved": True,
     }
     data.update(kw)

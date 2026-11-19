@@ -90,7 +90,7 @@ class TestimonyAdmin(AuditedAdminMixin, admin.ModelAdmin):
         (
             "Approval and publishing",
             {
-                "fields": ("is_approved", "is_published"),
+                "fields": ("subject_is_adult", "is_approved", "is_published"),
                 "description": "Only testimonies that are approved AND published (with consent) appear on "
                 "the website, including the home page slider.",
             },

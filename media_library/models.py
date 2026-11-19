@@ -138,7 +138,7 @@ class Report(PublishableModel):
 class TestimonyQuerySet(PublishedQuerySet):
     def approved(self) -> TestimonyQuerySet:
         """What the public may see: published, consent recorded AND approved by staff."""
-        return self.filter(is_published=True, consent_confirmed=True, is_approved=True)
+        return self.filter(is_published=True, consent_confirmed=True, is_approved=True, subject_is_adult=True)
 
 
 class Testimony(PublishableModel):
@@ -169,6 +169,11 @@ class Testimony(PublishableModel):
     consent_confirmed = models.BooleanField(
         default=False, help_text="Tick only when the person has agreed to their testimony being published."
     )
+    subject_is_adult = models.BooleanField(
+        "the person is 18 or over",
+        default=False,
+        help_text="Required before approval: testimonies of children are never published (privacy rule for minors).",
+    )
     is_approved = models.BooleanField(
         "approved",
         default=False,
@@ -196,6 +201,10 @@ class Testimony(PublishableModel):
             errors["consent_confirmed"] = "Confirm consent before publishing a testimony."
         if self.is_approved and not self.consent_confirmed:
             errors["is_approved"] = "A testimony can only be approved once consent is confirmed."
+        if (self.is_approved or self.is_published) and not self.subject_is_adult:
+            errors["subject_is_adult"] = (
+                "Testimonies of children (under 18) are never published. Confirm the person is 18 or over."
+            )
         if self.name_display == self.NameDisplay.FULL_NAME and not self.full_name_consent:
             errors["full_name_consent"] = (
                 "The full name can only be shown with the person's explicit consent. "

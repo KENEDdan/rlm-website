@@ -159,14 +159,14 @@ def monthly_series(
         lookup = f"{date_field}__date"  # compare calendar days in the ministry's time zone
     rows = (
         qs.filter(**{f"{lookup}__gte": start, f"{lookup}__lte": end})
-        .annotate(month=TruncMonth(date_field))
-        .values("month")
+        .annotate(rlm_bucket=TruncMonth(date_field))
+        .values("rlm_bucket")
         .annotate(total=agg)
-        .order_by("month")
+        .order_by("rlm_bucket")
     )
     totals = {}
     for row in rows:
-        month = row["month"]
+        month = row["rlm_bucket"]
         if isinstance(month, dt.datetime):
             month = month.date()
         totals[month] = row["total"] or 0
