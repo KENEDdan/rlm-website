@@ -47,7 +47,7 @@ FROM runtime-base AS dev
 COPY --from=deps-dev /opt/venv /opt/venv
 COPY --from=css /usr/local/bin/tailwindcss /usr/local/bin/tailwindcss
 COPY --chown=app:app . /app
-RUN mkdir -p /app/data/media /app/staticfiles && chown -R app:app /app/data /app/staticfiles
+RUN mkdir -p /app/data/media /app/data/private /app/staticfiles && chown -R app:app /app/data /app/staticfiles
 USER app
 EXPOSE 8000
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -71,7 +71,7 @@ RUN DJANGO_SETTINGS_MODULE=config.settings.prod \
     && python -m compileall -q /app \
     && /opt/venv/bin/python -m pip uninstall -y -q pip \
     && /usr/local/bin/python -m pip uninstall -y -q pip \
-    && mkdir -p /app/data/media \
+    && mkdir -p /app/data/media /app/data/private \
     && chown -R app:app /app/data \
     && chmod +x /app/docker/entrypoint.sh
 USER app

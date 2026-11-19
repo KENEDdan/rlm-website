@@ -13,6 +13,7 @@ x-app: &app
   volumes:
     - .:/app
     - media:/app/data/media
+    - private:/app/data/private  # receipts, permits, member documents: never served directly
   depends_on:
     db:
       condition: service_healthy
@@ -79,6 +80,7 @@ services:
 volumes:
   pgdata:
   media:
+  private:
 
 networks:
   internal:

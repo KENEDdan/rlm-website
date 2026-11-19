@@ -9,6 +9,7 @@ EXIF/GPS metadata.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from django.conf import settings
@@ -27,9 +28,24 @@ from .uploads import (
 )
 
 
+class PrivateStorage(FileSystemStorage):
+    """File system storage rooted at PRIVATE_MEDIA_ROOT (read on every use) that has NO public URL."""
+
+    @property
+    def base_location(self) -> str:  # type: ignore[override]
+        return str(settings.PRIVATE_MEDIA_ROOT)
+
+    @property
+    def location(self) -> str:  # type: ignore[override]
+        return os.path.abspath(self.base_location)
+
+    def url(self, name: str | None) -> str:
+        raise ValueError("Private files have no public URL; use the staff-portal download view.")
+
+
 def private_storage() -> FileSystemStorage:
-    """Callable storage (serialises cleanly in migrations, reads the setting at runtime)."""
-    return FileSystemStorage(location=str(settings.PRIVATE_MEDIA_ROOT), base_url=None)
+    """Callable storage (serialises cleanly in migrations)."""
+    return PrivateStorage()
 
 
 def validate_document_upload(file: File) -> None:

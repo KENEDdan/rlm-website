@@ -67,7 +67,7 @@ def seed() -> int:
 
     if Member.objects.filter(city__startswith=M).exists():
         return 0
-    rng = random.Random(16)  # noqa: S311 - deterministic FAKE demo data, nothing security-related
+    rng = random.Random(16)  # noqa: S311  # nosec B311 - deterministic FAKE demo data, not security
     today = timezone.localdate()
     year = today.year
     branches = list(Branch.objects.filter(slug__in=["juba", "yei"]))
