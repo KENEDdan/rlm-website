@@ -17,7 +17,7 @@ administrator. Keep both people's phone numbers somewhere you can reach without 
    compromised.
 2. **Write a timeline:** what you noticed, when, which account, what you clicked.
 3. **Contain** using the matching section below (disable an account, rotate a secret, take the site offline).
-4. **Preserve evidence:** export the audit log view (Founder: **Audit log**, filter by date or person) and
+4. **Preserve evidence:** export the audit log view (Founder: **Audit log** in the admin, filter by date or person, and **Account audit trail** in the portal) and
    keep server logs. Do not "clean up" first.
 
 ---
@@ -25,27 +25,57 @@ administrator. Keep both people's phone numbers somewhere you can reach without 
 ## 1. A staff account may be compromised
 
 *Signs: an unknown sign-in in the audit log, changes nobody made, a phishing email someone answered, a
-password reused elsewhere that leaked.*
+password reused elsewhere that leaked, or an email "Security alert: account change outside the staff
+portal".*
 
-1. Founder: **Users → the person → untick Active → Save.** This blocks new sign-ins immediately.
-2. Same screen: action **"Reset two-factor"** on that user.
-3. Sign everyone out by restarting with a new `DJANGO_SECRET_KEY` if the attacker may have a session
-   (see `docs/BACKUP_RESTORE.md` §3 last paragraph).
-4. **Audit log → filter by that person**: list what they viewed, exported (`export`), changed or deleted
-   since the suspected time. Exports of prayer requests, volunteers or donors are a **data breach** (§5).
-5. Undo unauthorised content changes (check news, giving settings, leaders, pages, social links).
-6. **Check Giving settings** bank/mobile-money details against the bank, by phone (§4).
-7. Re-enable the person only after they set a **new unique password** with the Founder present and
-   re-enrol their authenticator.
+All steps are in the staff portal under **Accounts & security**, by a **Super Admin** (each asks for your
+password and a fresh authenticator code first).
 
-**If the Founder's account is compromised:** the technical lead disables it from the command line:
-`docker compose exec web python manage.py shell -c "from accounts.models import User; User.objects.filter(email='FOUNDER_EMAIL').update(is_active=False)"`
-then follows the same steps and creates a fresh Founder account with `manage.py create_founder` (HANDOVER §2).
+1. **Staff accounts → the person → Deactivate.** New sign-ins are blocked and **every session they have is
+   ended at once**.
+2. Same page: **Reset two-step sign-in** and **Force password reset** (the old password stops working; they get
+   a single-use link later, only when you reactivate them).
+3. **Account audit trail** (and the full audit log in the admin, filtered by that person): list what they
+   viewed, exported, changed or deleted since the suspected time, and whether any **account or role** was
+   changed. Exports of members, prayer requests, volunteers, donors or pastoral notes are a **data breach**
+   (section 5).
+4. If the trail shows **"changed OUTSIDE the portal"**, someone changed accounts without these screens (for
+   example in the database). Treat the server as possibly compromised too (section 3).
+5. Undo unauthorised changes: roles given to anyone (Change roles), content (news, pages, hero slides), and
+   **check Giving settings** bank/mobile-money details against the bank by phone (section 4).
+6. If the attacker may still hold a session elsewhere, the technical lead can sign **everyone** out by
+   restarting with a new `DJANGO_SECRET_KEY` (`docs/BACKUP_RESTORE.md` section 3, last paragraph).
+7. Reactivate only after you have spoken to the person in person or by phone; they then set a new, unique
+   password and re-enrol their authenticator.
+
+**If a Super Admin account is compromised** (or no Super Admin can sign in): another Super Admin follows the
+steps above. If there is none, the technical lead runs on the server:
+`docker compose -f docker-compose.prod.yml exec web python manage.py emergency_disable --email <address> --reset-2fa`
+It can only remove access, ends all that account's sessions, is recorded in the audit log and emails the Super
+Admins. If no active Super Admin remains, `manage.py create_super_admin` creates a new first Super Admin (it
+refuses while one is active) and the Founder signs in at once to set up the authenticator.
 
 ## 2. A phone with the authenticator app is lost or stolen
 
-Founder: **Users → the person → "Reset two-factor"**. The person signs in and scans a new QR code. If they
-also suspect the password is known, change it at the same time (§1 step 7).
+1. The person can still sign in with one of their **10 backup codes**, then press **New backup codes**.
+2. Otherwise a Super Admin, after **confirming it is really them** (phone call or in person; never by email or
+   chat alone): **Accounts & security → Staff accounts → the person → Reset two-step sign-in.** Their old
+   authenticator and backup codes stop working and they are signed out everywhere.
+3. They sign in with their password and scan a new QR code, then keep the new backup codes safe.
+4. If they think someone may also know their password: **Force password reset** at the same time.
+
+## 2a. A staff member leaves (or changes role)
+
+* **Last working day:** Super Admin → the person → **Deactivate** (signs them out everywhere). Do this the
+  same day, before handing over equipment.
+* Make sure their work is reassigned first: open items they own (follow-ups, mentorships, purchase requests,
+  design requests, donor relationships, welfare cases) can be filtered by person in each list.
+* Shared things they knew: change any shared mailbox or social media passwords they had, and remove them from
+  social media page roles and the domain/hosting accounts if they had access.
+* After the retention period you choose (or straight away if they ask), **Delete account**. The audit history
+  is kept.
+* **Changing role:** **Change roles and departments** and remove what they no longer need. Do not leave old
+  roles "just in case": the quarterly **Access review** exists to catch these.
 
 ## 3. The PC (now) or server (later) may be compromised
 
@@ -101,7 +131,7 @@ The forms already have rate limits, a honeypot and Turnstile. If spam still gets
 1. Check Turnstile keys are set and **TURNSTILE_ENABLED** is on (`manage.py check --deploy` warns otherwise).
 2. Lower limits temporarily in `.env`: `FORM_RATE=2/h`, restart.
 3. **(server)** Add a Cloudflare WAF rule or "Under attack" mode.
-4. Delete the spam items (Secretary: select → delete). Never click links in spam submissions.
+4. Delete the spam items (Membership Administration: select → delete). Never click links in spam submissions.
 
 ## 7. The website is defaced or shows harmful content
 

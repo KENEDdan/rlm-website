@@ -96,9 +96,9 @@ def dashboard_export(request: HttpRequest, department: str, fmt: str) -> HttpRes
         writer.writerow(["Period", filters.start.isoformat(), filters.end.isoformat()])
         writer.writerow(["Branch", filters.branch_name or "All branches"])
         writer.writerow([])
-        writer.writerow(["Figure", "Value"])
+        writer.writerow(["Figure", "Value", "Code (for automatic target values)"])
         for kpi in board.kpis:
-            writer.writerow([csv_safe(kpi.label), csv_safe(kpi.value)])
+            writer.writerow([csv_safe(kpi.label), csv_safe(kpi.value), kpi.code])
         for chart in board.charts:
             writer.writerow([])
             writer.writerow([csv_safe(chart.title), ""])

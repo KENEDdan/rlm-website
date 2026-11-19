@@ -216,7 +216,7 @@ def staff_security() -> list[Check]:
             founders <= 2,
             "Founder accounts",
             f"{founders} superuser accounts: keep it to the Founder and at most one deputy.",
-            "Admin > Users: remove 'Superuser status' from other accounts and give them a role instead.",
+            "Staff portal > Accounts & security: change their roles so only the Founder and one deputy are Super Admins.",
         )
         + _one(
             not without_2fa,

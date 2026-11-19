@@ -27,7 +27,7 @@ python scripts/generate_env.py > .env        # or copy .env.example and fill eve
 docker compose up -d --build
 
 # 3. Create the first staff account (the Founder): asks for the password, adds the Founder role
-docker compose exec web python manage.py create_founder --email you@example.org --name "Your Name"
+docker compose exec web python manage.py create_super_admin   # asks for email, name, password
 
 # 4. Optional: fake demo content so every page has something to show
 docker compose exec web python manage.py seed_demo
@@ -65,9 +65,11 @@ docker compose exec web python manage.py makemigrations --check --dry-run
 
 | Command | Purpose |
 |---|---|
-| `manage.py create_founder --email … --name …` | Create the Founder account (password rules, Founder role, audit log) |
+| `manage.py create_super_admin` | Create the FIRST Super Admin (refuses once one exists; others are invited in the staff portal) |
+| `manage.py emergency_disable --email … [--reset-2fa]` | Break-glass: deactivate an account and end its sessions (audited, Super Admins alerted) |
+| `manage.py seed_indicators` | Suggested M&E targets per department (placeholders to review) |
 | `manage.py launch_check [--all] [--strict]` | What is still a placeholder or unsafe before going public, with where to fix it |
-| `manage.py sync_roles` | Re-create the 7 staff roles and their permissions (idempotent) |
+| `manage.py sync_roles` | Re-create the staff roles and their website-content permissions (idempotent) |
 | `manage.py seed_demo [--reset] [--no-images]` | Fake demo content; refuses to run when `DEBUG` is off |
 | `manage.py personal_data find\|export\|erase --email …` | Answer a person's request to see or delete their data |
 | `manage.py rotate_encryption_keys [--dry-run]` | Re-encrypt personal data with a new key (see `docs/BACKUP_RESTORE.md`) |

@@ -47,16 +47,18 @@ recovery codes stored in the ministry password manager.
 
 Done once, by the technical lead, **with the Founder present**:
 
-1. On the server: `docker compose -f docker-compose.prod.yml exec web python manage.py create_founder --email <founder email> --name "<full name>"`
-   The Founder types the password themselves (12+ characters, a passphrase they use nowhere else).
+1. On the server: `docker compose -f docker-compose.prod.yml exec web python manage.py create_super_admin`
+   It asks for the email and name; the Founder types the password themselves (12+ characters, a passphrase
+   they use nowhere else). It refuses to run once a Super Admin exists.
 2. The Founder **immediately** opens `https://<domain>/<DJANGO_ADMIN_URL>account/login/`, signs in, scans the
    QR code with an authenticator app on their own phone, and enters the code.
 3. The Founder writes the **10 backup codes** on paper (kept in a safe) and stores them in the password
    manager.
-4. Repeat for the deputy (second Founder) so the ministry is never locked out.
-5. The Founder creates the other staff accounts (ADMIN_GUIDE §3.1): one person, one account, the
-   **smallest role** that lets them do their work.
-6. Remove any developer accounts in the admin that are no longer needed (Users > untick Active).
+4. The Founder invites the deputy as the second Super Admin from the staff portal (ADMIN_GUIDE §21) so the
+   ministry is never locked out (at most two Super Admins).
+5. The Founder invites the other staff (ADMIN_GUIDE §21): one person, one account, only the departments and
+   head roles their work needs. Then run `manage.py seed_indicators` and set real targets with each head (§18).
+6. Deactivate any developer accounts that are no longer needed (Accounts & security > the person > Deactivate).
 
 ---
 
@@ -84,7 +86,7 @@ shows 0 blockers** (`launch_check --strict` exits with an error otherwise).
 - ☐ Giving categories and current needs reviewed
 - ☐ Test pledge made and confirmed in the admin; receipt email received
 
-### Every form tested on the live site (Secretary)
+### Every form tested on the live site (Membership Administration)
 - ☐ Volunteer form → appears in admin, staff alert email received (no personal details in it), acknowledgement email received
 - ☐ Event registration → confirmation email; second registration with the same email does not duplicate
 - ☐ Prayer request (with and without contact details)
@@ -110,12 +112,14 @@ shows 0 blockers** (`launch_check --strict` exits with an error otherwise).
 | Who | Covers | Material |
 |---|---|---|
 | All staff | Signing in with 2FA, the security sheet, phishing, what to do if something looks wrong | `STAFF_SECURITY_SHEET.html`, ADMIN_GUIDE §1 |
-| Secretary | Handling submissions, form options, exports and why to avoid them | ADMIN_GUIDE §2 |
-| Founder + deputy | Users and roles, Site settings, pages, audit log, data requests | ADMIN_GUIDE §3 |
-| Programs & Events | Events, capacity, registrations | ADMIN_GUIDE §4 |
-| Media & Communications | Page text, news, albums, videos, resources, consent for photos | ADMIN_GUIDE §5 |
-| Finance | Giving settings, confirming gifts, receipts | ADMIN_GUIDE §6 |
-| Branch Coordinators / Department heads | Their own branch or department only | ADMIN_GUIDE §7–8 |
+| All staff | The staff portal: dashboard, filters, records, Our budget, asking other departments | ADMIN_GUIDE §10 |
+| Founder + deputy | Inviting staff and roles, access review, account audit trail, Executive overview, reviewing reports, Site settings | ADMIN_GUIDE §3, §20, §21 |
+| Each department head + team | Their department's portal section; targets and monthly report | ADMIN_GUIDE §11–17, §18 |
+| Membership Administration | Website submissions, form options | ADMIN_GUIDE §2 |
+| Missions & Outreach | Events, capacity, registrations | ADMIN_GUIDE §4 |
+| Media & Communications | Page text, news, albums, videos, resources, consent for photos and testimonies | ADMIN_GUIDE §5, §14 |
+| Finance | Giving settings, confirming gifts, ledger and segregation of duties | ADMIN_GUIDE §6, §12 |
+| Branch Coordinators | Their own branch only | ADMIN_GUIDE §7, §19 |
 
 Each person signs in during the session and finishes 2FA setup before leaving.
 

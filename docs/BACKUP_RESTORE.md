@@ -10,6 +10,7 @@
 |---|---|---|
 | PostgreSQL database | Docker volume `rlm_pgdata` | all content and submissions lost |
 | Uploaded media | Docker volume `rlm_media` | photos, posters, PDFs, audio lost |
+| **Private uploads** (receipts, vouchers, permits, contracts, member documents, field photos) | Docker volume `rlm_private` | the ministry's financial and legal paperwork lost |
 | **Encryption keys** `FIELD_ENCRYPTION_KEYS` and `BLIND_INDEX_KEY` | `.env` | **every prayer request, volunteer, donor and contact record is unreadable forever**, even with a perfect database backup |
 | `DJANGO_SECRET_KEY`, `DJANGO_ADMIN_URL` | `.env` | sessions/links reset (recoverable) |
 
@@ -33,6 +34,9 @@ docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -
 # Media
 MSYS_NO_PATHCONV=1 docker run --rm -v rlm_media:/media:ro -v "$(pwd -W)/backups:/out" alpine:3.20 \
   tar czf "/out/rlm-media-$STAMP.tgz" -C /media .
+# Private uploads (sensitive: always encrypt this archive before it leaves the PC)
+MSYS_NO_PATHCONV=1 docker run --rm -v rlm_private:/private:ro -v "$(pwd -W)/backups:/out" alpine:3.20 \
+  tar czf "/out/rlm-private-$STAMP.tgz" -C /private .
 ```
 If the dump will leave the PC (USB stick, cloud), encrypt it first, e.g. 7-Zip with AES-256 and a strong
 password kept in the password manager.
@@ -82,7 +86,7 @@ confirmation/unsubscribe links stop working.
 ## 4. Production (built and rehearsed in phase K; runs once the server exists)
 
 Backups use the `backup` service in `docker-compose.prod.yml` (image `docker/backup`): `pg_dump` + media
-archive, **encrypted with age** using only the **public** key on the server, SHA-256 checksums, local
+archive + private-uploads archive (receipts, permits, member documents), **encrypted with age** using only the **public** key on the server, SHA-256 checksums, local
 retention (`BACKUP_RETENTION_DAYS`, default 30) and an optional off-site copy with rclone
 (`BACKUP_REMOTE`). Cron runs it nightly at 02:30 (`/etc/cron.d/rlm-backup`); `scripts/deploy.sh` also runs
 it before every migration.
@@ -90,7 +94,7 @@ it before every migration.
 ```bash
 cd /srv/rlm
 docker compose -f docker-compose.prod.yml run --rm backup          # manual backup
-ls -l /srv/rlm/backups                                              # rlm-<time>-db.dump.age, -media.tgz.age, .sha256
+ls -l /srv/rlm/backups                                              # rlm-<time>-db.dump.age, -media.tgz.age, -private.tgz.age, .sha256
 ```
 
 ### Restore test (monthly; does not touch live data)
@@ -107,6 +111,7 @@ It verifies the checksum, restores into the scratch database `rlm_restore_test` 
 docker compose -f docker-compose.prod.yml stop caddy web worker beat
 CONFIRM_OVERWRITE=yes docker compose -f docker-compose.prod.yml run --rm --entrypoint restore.sh   -e CONFIRM_OVERWRITE -v /tmp/age.key:/run/secrets/age.key:ro backup db rlm-...-db.dump.age rlm
 CONFIRM_OVERWRITE=yes docker compose -f docker-compose.prod.yml run --rm --entrypoint restore.sh   -e CONFIRM_OVERWRITE -v /tmp/age.key:/run/secrets/age.key:ro backup media rlm-...-media.tgz.age
+CONFIRM_OVERWRITE=yes docker compose -f docker-compose.prod.yml run --rm --entrypoint restore.sh   -e CONFIRM_OVERWRITE -v /tmp/age.key:/run/secrets/age.key:ro backup private rlm-...-private.tgz.age
 docker compose -f docker-compose.prod.yml up -d
 shred -u /tmp/age.key
 ```

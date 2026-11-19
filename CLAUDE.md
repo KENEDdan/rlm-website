@@ -20,7 +20,9 @@ WITHOUT code changes or redesign — everything is data managed in the admin.
 ## Apps (one Django app each)
 core, accounts, branches, programs, events, registrations (volunteer, event),
 prayer, contact, newsletter, media_library, resources (sermons/devotionals),
-news, giving (partnership + donations), leadership, audit
+news, giving (partnership + donations), leadership, audit,
+portal (staff portal shell, departments, M&E), membership, finance, logistics, missions, discipleship,
+communications (Media & Communications), development
 
 ## SECURITY RULES — NON-NEGOTIABLE
 1. NEVER commit secrets, `.env`, database dumps, or personal/financial data. Only `.env.example` with fake values.
@@ -49,14 +51,14 @@ news, giving (partnership + donations), leadership, audit
 14. Errors: DEBUG=False in prod, generic error pages, Sentry/logging with PII scrubbed.
 15. If a requested feature conflicts with these rules, STOP and ask — do not weaken security silently.
 
-## Roles (Django Groups)
-- Founder / Super Admin: everything incl. users, giving settings, audit log
-- Secretary: contacts, prayer requests, volunteers, events, news
-- Finance & Admin: giving/partnership data and settings only
-- Programs & Events: programmes, events, event registrations
-- Media & Communications: gallery, sermons/resources, news, social links
-- Branch Coordinator: only their own branch's data
-- Departmental Heads: scoped to their department's content
+## Roles (Django Groups + portal.DepartmentMembership; see accounts/roles.py and docs/DECISIONS.md D-016/D-017)
+- Founder / Super Admin (active superuser, max 2): everything; the ONLY role that manages accounts and roles
+- Seven departments, each member or head (head = approvals, exports, reports):
+  Membership Administration; Finance & Resource Mobilization (most restricted: only it + Founder see ledgers
+  and donors); Logistics & Procurement; Media & Communications; Missions & Outreach; Discipleship;
+  Development & Infrastructure
+- Branch Coordinator: Membership, Missions, Discipleship limited to their own branch
+- Executive Leadership: Executive Overview (aggregate figures only)
 
 ## Conventions
 - Type hints, ruff + black, small views, business logic in `services.py`

@@ -184,3 +184,69 @@ exist.
   Super Admins are flagged but never auto-disabled, so the ministry cannot be locked out.
 * **Bootstrap**: `manage.py create_super_admin` (interactive, hidden password prompt) replaces
   `create_founder` and refuses to run once an active Super Admin exists.
+
+## D-018: Membership Administration
+(2026-11-19) Member numbers (`RLM-000123`) are given on **approval**, so declined applicants never use one.
+Admission follows received → under review → approved / not accepted (head only, private reason required,
+emailed decision that never repeats what the applicant wrote) → orientation → integration → active, then
+inactive or transferred. The **engagement score** is the share of the member's branch's activities in the last
+90 days they attended, plus 10 while they hold a current service record (capped at 100). Bulk messages go only
+to members who ticked a new, optional "send me ministry announcements" box on the form (needed to respect
+opt-in) and never to under-18s; WhatsApp is click-to-chat links (no WhatsApp API, nothing sent automatically).
+
+## D-019: Finance controls
+(2026-11-19) Approving an entry **posts** it (one step) and only someone other than the recorder can do it;
+above `FinanceSettings.approval_threshold` (placeholder 1,000, editable by the Finance head) only a Super Admin.
+Corrections are negative mirror entries that need the same approval. Confirming a website gift issues the
+receipt **and** creates an income entry awaiting another person's approval. Budgets are per **calendar year**
+(open question: the ministry's financial year). Other departments see only "Our budget" totals; Executive
+Leadership sees ministry-wide aggregates on the overview (open question).
+
+## D-020: Procurement
+(2026-11-19) Any department files purchase requests in its own name and sees only its own. At least **three**
+quotations are required before a recommendation (no override); choosing a supplier that is not the cheapest
+needs a written reason. Finance confirms a **current-year budget line of the requesting department**;
+approval is by the Logistics head or a Super Admin and never by the requester. The purchase order amount and
+supplier come from the recommended quotation.
+
+## D-021: Missions → Discipleship handoff, pastoral care
+(2026-11-19) Every `NewConvert` creates a `FollowUp` through a signal (audited as a handoff); first contact is
+due 7 days after the decision. Missions sees the follow-up status on its convert records; the Executive
+Overview shows the handoff counts. Mentors and facilitators are chosen from Discipleship department members.
+Pastoral notes and check-ins: assigned mentor, Discipleship head, Founder; never exportable; only the author
+edits a note. Minors in converts, registrations and disciples are visible to the relevant head and the Founder.
+
+## D-022: Media & Communications
+(2026-11-19) Testimonies gained "the person is 18 or over"; approval and publication require it and consent.
+Existing approved testimonies are **hidden** until Media confirms the box (safe default; nothing is live yet).
+Social reach is typed in monthly from each platform's insights (no tracking scripts). Design requests are shared
+with the requesting department (view and add only). Albums, videos, testimonies and hero slides are the same
+records in the portal and the admin.
+
+## D-023: Development & Infrastructure
+(2026-11-19) Project costs are recorded on the project (with the Finance voucher number) rather than read from
+the ledger, so Development can work before Finance has posted entries (open question: whether to link them to
+ledger entries later). A capital proposal sent to Finance creates a Finance funding proposal (audited handoff).
+The project timeline is a server-rendered SVG (planned span, progress from the latest site visit, today line).
+
+## D-024: The four questionnaire forms
+(2026-11-19) Wording, sections and button labels follow `docs/membership_policy_questionnaire.md`. Choices:
+* "Country and city of residence" is two fields (filtering by country, mobile autocomplete).
+* Email is optional on the Membership and Discipleship forms (many people use WhatsApp only) and required on
+  the Partnership and Finance-volunteer forms.
+* Partnership category, areas and partnership types stay **admin-managed Form options** (D-011); growth areas,
+  yes/no answers and gender are fixed codes because reports and assessments depend on them.
+* "Which area would you like to grow in?" allows several answers.
+* Under 18 (from the date of birth or age): guardian name, contact and consent are required, and the person is
+  never put on announcement lists. The **general volunteer form is kept** for serving interests; the Finance &
+  Accountability volunteer form is separate because it needs vetting.
+* Unsuccessful applications (not accepted / not taken forward) are deleted after
+  `SiteSettings.retention_unsuccessful_days` (365). Data-subject export/erase covers the new records; donors
+  are anonymised (pledges are financial records).
+
+## D-025: Operations
+(2026-11-19) Private uploads live on their own `private` Docker volume (never mounted by Caddy) and are in the
+nightly encrypted backups. `manage.py emergency_disable` is the only server-side account command besides the
+first-Super-Admin bootstrap: it can only remove access, ends sessions and alerts the Super Admins.
+`seed_demo` fills every dashboard with fake data (DEBUG only, no accounts) and `seed_indicators` creates
+suggested targets. No new third-party packages were added for any of this work.

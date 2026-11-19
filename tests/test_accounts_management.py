@@ -506,3 +506,23 @@ def test_invite_creation_is_rate_limited(founder_client, settings) -> None:  # t
         for i in range(4)
     ]
     assert codes[-1] == 429
+
+
+def test_emergency_disable_command(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
+    from io import StringIO
+
+    from django.core.management import CommandError, call_command
+
+    founder = make_staff(FOUNDER, superuser=True, email="f@example.test")
+    client = verified_client(founder)
+    mail.outbox.clear()
+    call_command("emergency_disable", "--email", "F@example.test", "--reset-2fa", stdout=StringIO())
+    founder.refresh_from_db()
+    assert not founder.is_active and not TOTPDevice.objects.filter(user=founder).exists()
+    assert client.get(P).status_code == 302  # signed out
+    entry = AuditLog.objects.filter(
+        action=AuditLog.Action.ACCOUNT_CHANGE, actor_email="system:emergency_disable"
+    )
+    assert entry.exists()
+    with pytest.raises(CommandError):
+        call_command("emergency_disable", "--email", "nobody@example.test", stdout=StringIO())

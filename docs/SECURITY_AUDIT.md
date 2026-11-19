@@ -1,3 +1,118 @@
+# Security audit, re-run 2: staff portal, departments and the account system
+
+**Date:** 2026-11-19 · **Scope:** everything added since the Phase I audit below: the `portal` app, the seven
+department apps (`membership`, `finance`, `logistics`, `missions`, `discipleship`, `communications`,
+`development`), the four questionnaire forms, private uploads, and the rebuilt account and role system
+(`accounts.services`, `guard`, `integrity`, invitations, re-authentication). **Standard:** CLAUDE.md rules 1-15,
+OWASP Top 10 (2021), OWASP ASVS 4.0 Level 2 (V1 architecture, V2 authentication, V3 sessions, V4 access
+control, V7 logging, V8 data protection, V12 files). Threat model: `docs/THREAT_MODEL.md`.
+
+## R2.1 Summary
+
+| Severity | Found | Fixed | Remaining |
+|---|---|---|---|
+| Critical | 0 | – | – |
+| High | 1 | 1 | 0 |
+| Medium | 4 | 4 | 0 |
+| Low | 5 | 3 | 2 accepted (R2.4) |
+
+After the fixes: **2,342 tests pass** (148 in the new test files), **94% line coverage overall**; the security
+modules are at 90-100% (`accounts/guard.py` 96%, `accounts/integrity.py` 100%, `accounts/services.py` 90%,
+`portal/access.py` 95%, `portal/resources.py` 86%; `accounts/tasks.py` raised from 0% to covered).
+
+## R2.2 Method and tool results
+
+* Manual review of every new view, form, resource definition, service, signal and template, with the question
+  "can a user reach a record outside their department, branch, head level or the minors/pastoral rules?".
+* A **portal-wide smoke test** that loads the demo data and opens every dashboard, printable report, budget
+  page and every resource's list/detail/edit screen as the Super Admin; a test that **every** registered
+  screen refuses staff without a role in that department (list and CSV export); a test that walks **every URL
+  pattern** anonymously with GET and POST of account-like data and proves no user is created.
+* A visual check through the real sign-in (password + TOTP) in headless Chromium, desktop and 390 px phone.
+
+| Tool | Result |
+|---|---|
+| `ruff check .` / `black --check .` | clean |
+| `bandit -c pyproject.toml -r .` (CI configuration) | **0 issues** (one deterministic demo-data RNG marked `nosec B311`) |
+| `pip-audit -r requirements/base.txt --require-hashes` | no known vulnerabilities (**no new packages were added**) |
+| `manage.py check --deploy` (prod settings) | only `rlm.E001` (Turnstile keys absent in the local `.env`, as designed) |
+| `makemigrations --check` | no changes |
+| Grep for `\|safe`, `mark_safe`, `csrf_exempt`, `.raw(`, `.extra(`, `RawSQL`, cursors, inline `<script>`, `style="`, `on*=` handlers in new code | none |
+
+## R2.3 Findings fixed
+
+### H-1 Private uploads could not be stored in the containers (High: availability of financial records; rule 8)
+The private storage resolved its location at import time and `/app/data/private` did not exist (or was not
+writable by the app user) in the images, so receipts, vouchers, permits, contracts and member documents would
+have failed to upload in production. **Fix:** `PrivateStorage` reads `PRIVATE_MEDIA_ROOT` on use and refuses to
+build a public URL; the Dockerfile creates the folder; both compose files mount a separate `private` volume
+that **Caddy never mounts**; `media-init` fixes its ownership; nightly backups add an encrypted
+`-private.tgz.age` archive and `restore.sh private` restores it. Test: `test_private_file_upload_download_is_scoped_and_audited`.
+
+### M-1 Group changes were not audited (Medium, rule 6)
+The `m2m_changed` handlers for `User.groups` and `User.user_permissions` were connected with weak references
+to closures and were garbage-collected, so role-group changes (inside or outside the portal) left no audit
+entry. **Fix:** `weak=False`. Tests: `test_role_change_audited_with_old_and_new_values`,
+`test_out_of_band_group_and_membership_changes_detected`.
+
+### M-2 The Django admin could manage users without the portal's safeguards (Medium, rules 4-5)
+Superusers could add/edit users and set passwords in the admin, bypassing re-authentication, invite-only
+onboarding, the Super Admin limit and last-Super-Admin protection. **Fix:** the admin's user screens are
+read-only for everyone; the "set another user's password" screen was removed. Test:
+`test_user_admin_is_read_only_even_for_superusers` and the per-role admin checks.
+
+### M-3 The Founder group carried account-administration permissions (Medium, rule 5)
+A non-superuser placed in the Founder group would have had `accounts.*` and `auth.*` permissions. **Fix:**
+`founder_permissions()` excludes account, group, permission, OTP, axes, session and department-membership
+permissions; account management depends on the superuser flag alone, enforced in `accounts.services`. Test:
+`test_founder_group_has_content_permissions_but_not_account_admin`.
+
+### M-4 The documented emergency procedure bypassed the account guard (Medium, rules 4 and 6)
+`INCIDENT_RESPONSE.md` told the technical lead to disable a compromised Founder with a raw
+`QuerySet.update()` in a shell: no audit entry, no alert, sessions left alive. **Fix:**
+`manage.py emergency_disable --email … [--reset-2fa]` can only remove access, ends sessions, is audited and
+alerts the Super Admins; the guide was rewritten. Test: `test_emergency_disable_command`.
+
+### Lows fixed
+* **L-1** Department workflow URLs (`…/<pk>/<step>/`) shadowed the generic `…/<pk>/edit/` routes, which would
+  have bypassed the generic per-object edit check for those screens. All steps now live under `/step/`, and
+  `test_workflow_urls_never_shadow_generic_resource_routes` guards every registered screen.
+* **L-2** Charts were unreadable on phones and wide tables made dashboards scroll sideways (WCAG 1.4.10
+  reflow). Fixed; verified at 390 px.
+* **L-3** `monthly_series` crashed for models with a field called `month` (dashboard denial of service).
+  Fixed with a private annotation name.
+
+## R2.4 Accepted risks and decisions for the ministry
+* **Shell or database access cannot be prevented by the application.** Changes made there are *detected*
+  (model guard: immediate alert; HMAC fingerprint check every 15 minutes, keyed with `SECRET_KEY`, which is
+  not in the database) but not blocked. Someone with both the database and `SECRET_KEY` could forge the
+  fingerprint: protect the server (DEPLOYMENT.md).
+* **Invitation tokens are in the link path**, so they can appear in reverse-proxy access logs. They are
+  single-use, expire after 48 hours, only their SHA-256 is stored, and the acceptance page loads no
+  third-party resources (no Referer leak). Keep access logs private and short-lived.
+* Executive Leadership sees **aggregate** finance figures (income, expenditure, cash, pledges) for the whole
+  ministry. Confirm this is intended (open question in the final report).
+* Branch Coordinator status restricts **every** department the person belongs to (simplest safe rule).
+* Ages and dates of birth are self-declared; the minors rule depends on them. Staff should correct a record
+  when they learn the real age.
+* "Printable / PDF" relies on the browser's Save as PDF; no server-side PDF library was added.
+
+## R2.5 Areas reviewed and found sound
+Department scoping on every list, detail, form, delete, file download and CSV export (one code path,
+`Resource.get_queryset` + `Resource.can`, out-of-scope objects are 404); dropdown choices limited to visible
+records (unknown related models get none); post-save scope re-check; requester-department sharing (purchase
+and design requests) limited to the requester's own department and to view/add; minors visible only to the
+Membership/Discipleship head and Founder; pastoral notes limited to the assigned mentor, head and Founder,
+never exportable, every view audited; Finance ledger segregation of duties, Founder approval above the
+threshold, posted entries immutable at model, queryset and view level; procurement approver never the
+requester; head-only exports, all audit-logged and CSV-injection safe; private files outside the web root
+with permission-checked, audited, `no-store` downloads and libmagic content checks; invite-only onboarding
+with forced TOTP enrolment; re-authentication for account changes; last-Super-Admin protection; session
+termination on deactivation; dormant-account handling; questionnaire forms with CSRF, honeypot, Turnstile,
+rate limiting, consent text and encrypted sensitive fields; staff-alert emails without personal data.
+
+---
+
 # Security audit: Phase I
 
 **Date:** 2026-11-16 · **Scope:** whole repository at the end of phases A–H · **Standard:** CLAUDE.md
