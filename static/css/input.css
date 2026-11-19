@@ -226,7 +226,7 @@
   .portal-filters { @apply mb-6 grid grid-cols-2 gap-3 rounded-2xl border border-rlm-line bg-white p-4 sm:grid-cols-4 lg:flex lg:flex-wrap lg:items-end; }
   .portal-filters input, .portal-filters select { @apply py-2 text-sm; }
   .portal-form { @apply max-w-3xl space-y-5; }
-  .panel { @apply rounded-2xl border border-rlm-line bg-white p-5 shadow-sm; }
+  .panel { @apply min-w-0 rounded-2xl border border-rlm-line bg-white p-5 shadow-sm; }  /* min-w-0: grid items may shrink on phones */
   .panel-title { @apply mb-3 font-display text-base font-extrabold text-rlm-black; }
   .kpi-grid { @apply grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6; }
   .kpi { @apply relative overflow-hidden rounded-2xl border border-rlm-line bg-white p-4 shadow-sm; }
@@ -256,7 +256,7 @@
   .chart-svg { @apply h-auto w-full; }
   .chart-grid { stroke: var(--rlm-line); stroke-width: 1; }
   .chart-axis { stroke: var(--rlm-grey); stroke-width: 1; }
-  .chart-tick { fill: var(--rlm-grey); font-size: 11px; }
+  .chart-tick { fill: var(--rlm-grey); font-size: 14px; }
   .chart-mark { fill: var(--rlm-flame-dark); }
   .chart-track { fill: var(--rlm-cream); }
   .chart-plan { fill: var(--rlm-line); stroke: var(--rlm-grey); stroke-width: 0.15; }

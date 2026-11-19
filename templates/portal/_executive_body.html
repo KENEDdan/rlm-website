@@ -9,7 +9,7 @@
   <section class="panel">
     <h2 class="panel-title flex items-center justify-between gap-2">
       <span>{{ card.department.name|default:card.code }}</span>
-      {% if card.url %}<a class="portal-link text-sm font-semibold" href="{{ card.url }}">Open<span class="sr-only"> {{ card.department.name }}</span> →</a>{% endif %}
+      {% if card.url %}<a class="portal-link whitespace-nowrap text-sm font-semibold" href="{{ card.url }}">Open<span class="sr-only"> {{ card.department.name }}</span> →</a>{% endif %}
     </h2>
     <dl class="exec-kpis">
       {% for kpi in card.kpis %}<div><dt>{{ kpi.label }}</dt><dd>{{ kpi.value }}{% if kpi.status %} {% include "portal/_status.html" with value=kpi.status label=" " %}{% endif %}</dd></div>

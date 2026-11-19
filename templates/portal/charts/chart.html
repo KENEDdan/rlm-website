@@ -11,11 +11,11 @@
       <li class="hbar-row">
         <span class="hbar-label">{{ row.label }}</span>
         <svg class="hbar-track" viewBox="0 0 100 10" preserveAspectRatio="none" role="presentation">
-          <title>{{ row.label }}: {{ row.value }}</title>
+          <title>{{ row.label }}: {{ row.display }}</title>
           <rect x="0" y="0" width="100" height="10" rx="2" class="chart-track"></rect>
           <rect x="0" y="0" width="{{ row.pct }}" height="10" rx="2" class="chart-mark"></rect>
         </svg>
-        <span class="hbar-value">{{ row.value }}</span>
+        <span class="hbar-value">{{ row.display }}</span>
       </li>
       {% endfor %}
     </ul>
@@ -41,7 +41,7 @@
           </g>
         {% endfor %}
       {% endif %}
-      {% for b in g.bars %}{% if b.show_label %}<text x="{{ b.cx }}" y="{{ g.label_y }}" class="chart-tick" text-anchor="middle">{{ b.label|truncatechars:10 }}</text>{% endif %}{% endfor %}
+      {% for b in g.bars %}{% if b.show_label %}<text x="{{ b.cx }}" y="{{ g.label_y }}" class="chart-tick" text-anchor="middle">{{ b.label|truncatechars:7 }}</text>{% endif %}{% endfor %}
       <line x1="{{ g.x0 }}" x2="{{ g.x1 }}" y1="{{ g.base_y }}" y2="{{ g.base_y }}" class="chart-axis"></line>
     </svg>
   {% endif %}

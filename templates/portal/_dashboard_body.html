@@ -8,7 +8,7 @@
 {% endif %}
 
 <div class="mt-6 grid gap-6 xl:grid-cols-3">
-  <div class="space-y-6 xl:col-span-2">
+  <div class="min-w-0 space-y-6 xl:col-span-2">
     {% if board.charts %}
     <div class="grid gap-6 lg:grid-cols-2">
       {% for chart in board.charts %}{% include "portal/charts/chart.html" %}{% endfor %}
@@ -27,7 +27,7 @@
     </section>
     {% endfor %}
   </div>
-  <div class="space-y-6">
+  <div class="min-w-0 space-y-6">
     <section class="panel">
       <h2 class="panel-title">Needs attention</h2>
       {% include "portal/_items.html" with items=board.attention empty="Nothing needs attention right now." %}

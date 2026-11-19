@@ -29,8 +29,10 @@ class Chart:
     geometry: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        builder = {"bar": vertical_bars, "hbar": horizontal_bars, "line": line}[self.kind]
-        self.geometry = builder(self.points)
+        if self.kind == "hbar":
+            self.geometry = horizontal_bars(self.points, self.unit)
+        else:
+            self.geometry = {"bar": vertical_bars, "line": line}[self.kind](self.points)
 
     @property
     def is_empty(self) -> bool:
@@ -62,16 +64,25 @@ def nice_max(value: float) -> float:
     return 10 * base  # pragma: no cover
 
 
-W, H = 640, 240
-PAD_L, PAD_R, PAD_T, PAD_B = 48, 12, 16, 40
+# Charts are drawn about 280-600 px wide; a small viewBox keeps the 15-unit labels readable (>= 11 px).
+W, H = 360, 210
+PAD_L, PAD_R, PAD_T, PAD_B = 46, 6, 12, 34
+
+
+def _short(value: float) -> str:
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:g}M"
+    if value >= 1_000:
+        return f"{value / 1_000:g}k"
+    return f"{value:g}"
 
 
 def _ticks(top: float) -> list[dict[str, Any]]:
     plot_h = H - PAD_T - PAD_B
     ticks = []
-    for i in range(5):
-        value = top * i / 4
-        ticks.append({"y": round(PAD_T + plot_h - plot_h * i / 4, 1), "label": fmt(value)})
+    for i in range(3):
+        value = top * i / 2
+        ticks.append({"y": round(PAD_T + plot_h - plot_h * i / 2, 1), "label": _short(value)})
     return ticks
 
 
@@ -82,7 +93,7 @@ def vertical_bars(points: list[tuple[str, Number]]) -> dict[str, Any]:
     slot = plot_w / n
     bar_w = max(4.0, min(36.0, slot * 0.6))
     bars = []
-    label_every = 1 if n <= 12 else math.ceil(n / 12)
+    label_every = 1 if n <= 6 else math.ceil(n / 6)
     for i, (label, value) in enumerate(points):
         h = plot_h * float(value) / top if top else 0
         x = PAD_L + slot * i + (slot - bar_w) / 2
@@ -114,11 +125,18 @@ def vertical_bars(points: list[tuple[str, Number]]) -> dict[str, Any]:
     }
 
 
-def horizontal_bars(points: list[tuple[str, Number]]) -> dict[str, Any]:
+def horizontal_bars(points: list[tuple[str, Number]], unit: str = "") -> dict[str, Any]:
     top = float(max((v for _, v in points), default=0) or 0) or 1
     rows = []
     for label, value in points:
-        rows.append({"label": label, "value": value, "pct": round(float(value) * 100 / top, 1)})
+        rows.append(
+            {
+                "label": label,
+                "value": value,
+                "display": fmt(value, unit),
+                "pct": round(float(value) * 100 / top, 1),
+            }
+        )
     row_h = 28
     return {"rows": rows, "row_h": row_h, "h": max(row_h * len(rows), row_h), "w": 100}
 
