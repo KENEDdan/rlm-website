@@ -290,6 +290,8 @@ class Resource:
         if callable(display):
             return display()
         value = getattr(obj, name, None)
+        if isinstance(value, models.Manager):  # many-to-many: list the related records
+            return ", ".join(str(item) for item in value.all()[:20]) or "—"
         if callable(value):
             value = value()
         return format_value(value)

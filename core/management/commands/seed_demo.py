@@ -86,8 +86,9 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------ reset
     def reset(self) -> int:
         from core.crypto import blind_index
+        from portal.demo import reset as reset_portal
 
-        total = 0
+        total = reset_portal()
         for model in (Post, Resource, Series, ResourceCategory, Video, Testimony, Album, Event):
             total += model.objects.filter(slug__startswith=DEMO).delete()[0]  # photos cascade with albums
         total += CurrentNeed.objects.filter(title__startswith="DEMO").delete()[0]
@@ -303,6 +304,13 @@ class Command(BaseCommand):
             self.created += 1
 
         self.seed_submissions(conf, juba)
+        # Staff portal: fake records for every department dashboard, plus the suggested M&E indicators.
+        from django.core.management import call_command
+
+        from portal.demo import seed as seed_portal
+
+        self.created += seed_portal()
+        call_command("seed_indicators", stdout=self.stdout)
         return self.created
 
     def seed_submissions(self, event: Event, branch: Branch | None) -> None:
