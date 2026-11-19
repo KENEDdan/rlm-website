@@ -59,8 +59,9 @@ def resolve_period(period: str, month: str | None) -> tuple[str, dt.date]:
 
 
 def _decimal(value: Any) -> Decimal | None:
+    """'1,200', '45%', '700.00', '3 / 4' -> the first number (None when there is none)."""
     try:
-        return Decimal(str(value).replace(",", "").split(" ")[0])
+        return Decimal(str(value).replace(",", "").split(" ")[0].rstrip("%"))
     except (InvalidOperation, ValueError):
         return None
 

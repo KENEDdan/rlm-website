@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from io import StringIO
 
 import pytest
 from django.conf import settings
@@ -222,3 +223,48 @@ def test_workflow_urls_never_shadow_generic_resource_routes() -> None:
         assert resolve(base + "1/").url_name == "resource_detail", base
         assert resolve(base + "1/edit/").url_name == "resource_edit", base
         assert resolve(base + "1/delete/").url_name == "resource_delete", base
+
+
+def test_suggested_indicators_point_at_real_dashboard_figures(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
+    from django.core.management import call_command
+
+    from portal.management.commands.seed_indicators import SUGGESTED
+
+    call_command("seed_indicators", stdout=StringIO())
+    call_command("seed_indicators", stdout=StringIO())  # idempotent
+    assert Indicator.objects.count() == sum(len(rows) for rows in SUGGESTED.values())
+    founder = verified_client(make_staff(superuser=True))
+    for code, rows in SUGGESTED.items():
+        figures = {k.code for k in founder.get(P + f"{code}/").context["board"].kpis}
+        for _name, _unit, _target, _higher, source, _desc in rows:
+            assert source in figures, (code, source)
+
+
+def test_report_auto_fills_indicator_values(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
+    from django.utils import timezone
+
+    from membership.models import Member
+
+    Member.objects.create(full_name="A", status="active")
+    _indicator("membership", name="Active members", auto_source="active_members")
+    head = verified_client(make_staff(MEMBERSHIP, heads={"membership"}))
+    head.post(P + "membership/reports/generate/", {"month": timezone.localdate().strftime("%Y-%m")})
+    value = IndicatorValue.objects.get(indicator__name="Active members")
+    assert value.value == 1
+
+
+def test_executive_flags(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from development.models import Milestone, Project
+
+    project = Project.objects.create(name="Hostel", kind="hostel")
+    Milestone.objects.create(project=project, title="Roof", due_date=timezone.localdate() - timedelta(days=2))
+    founder = verified_client(make_staff(superuser=True))
+    html = founder.get(P + "executive/").content.decode()
+    assert "milestone(s) overdue" in html and f'href="{P}development/projects/"' in html
+    executive = verified_client(make_staff(EXECUTIVE))
+    html = executive.get(P + "executive/").content.decode()
+    assert "milestone(s) overdue" in html and f'href="{P}development/projects/"' not in html

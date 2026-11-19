@@ -62,6 +62,13 @@ def build_overview(request: HttpRequest, access: Access, filters: Filters) -> di
                 item.url = ""
             handoffs.append(item)
 
+    from .flags import collect
+
+    flags = collect()
+    for item in flags:
+        if item.url and not _url_allowed(item.url, access):
+            item.url = ""
+
     reports = report_status()
     for row in reports:
         if row["report"] is not None and access.can_enter(row["department"].code):
@@ -73,6 +80,7 @@ def build_overview(request: HttpRequest, access: Access, filters: Filters) -> di
         "indicators": indicators,
         "pending": pending,
         "handoffs": handoffs,
+        "flags": flags,
         "reports": reports,
         "overdue": [r for r in reports if r["overdue"]],
         "awaiting_review": [r for r in reports if r["awaiting_review"]],

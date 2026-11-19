@@ -1,5 +1,9 @@
 {% with o=overview %}
 <div data-focus tabindex="-1" class="sr-only">Overview updated.</div>
+<section class="panel mb-6" aria-labelledby="flags-title">
+  <h2 class="panel-title" id="flags-title">Flags across the ministry</h2>
+  {% include "portal/_items.html" with items=o.flags empty="No red flags today." %}
+</section>
 <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
   {% for card in o.cards %}
   <section class="panel">
