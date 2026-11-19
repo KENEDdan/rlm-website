@@ -1,0 +1,14 @@
+{% extends "portal/base.html" %}
+{% block title %}Enrol in discipleship{% endblock %}
+{% block content %}
+<div class="panel max-w-xl">
+  <p class="eyebrow"><a class="hover:underline" href="{% url 'portal:resource_detail' department slug obj.pk %}">{{ obj }}</a></p>
+  <h1 class="portal-title">Enrol in discipleship</h1>
+  <p class="mt-2 text-sm">A disciple record is created (or reused). Choose a class now, or leave it empty and add them to a class later.</p>
+  <form method="post" class="rlm-form mt-4 space-y-4">{% csrf_token %}
+    <div><label for="cohort">Class / cohort (optional)</label>
+      <select id="cohort" name="cohort"><option value="">Not yet</option>{% for c in cohorts %}<option value="{{ c.pk }}">{{ c }} ({{ c.get_status_display }})</option>{% endfor %}</select></div>
+    <div class="flex gap-3"><button type="submit" class="btn-primary">Enrol</button><a class="btn-outline" href="{% url 'portal:resource_detail' department slug obj.pk %}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}
