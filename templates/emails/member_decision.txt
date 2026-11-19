@@ -1,0 +1,12 @@
+{% autoescape off %}Dear {{ member.full_name }},
+
+{% if approved %}Thank you for registering. We are glad to tell you that your membership application has been approved{% if member.member_number %} (member number {{ member.member_number }}){% endif %}.
+
+Someone from the ministry will contact you about orientation and how you can take part.{% else %}Thank you for registering with us. After prayerful review we are not able to accept your membership application at this time.
+
+You are always welcome at our services and fellowships. If you would like to talk about this, please contact the ministry.{% endif %}
+
+God bless you,
+{{ site.ministry_name }}
+
+This is an automated message.{% endautoescape %}

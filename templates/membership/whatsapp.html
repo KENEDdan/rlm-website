@@ -1,0 +1,7 @@
+{% extends "portal/base.html" %}
+{% block title %}WhatsApp links · {{ message }}{% endblock %}
+{% block content %}
+<div class="portal-head"><div><p class="eyebrow"><a class="hover:underline" href="{% url 'portal:resource_detail' department 'messages' message.pk %}">{{ message }}</a></p><h1 class="portal-title">WhatsApp links</h1>
+<p class="text-sm text-rlm-grey">Opens WhatsApp with the message ready; you press send for each person. Only members who agreed to receive messages are listed; under-18s are never included. This list was recorded in the audit log.</p></div></div>
+<div class="panel"><ul class="portal-items">{% for l in links %}<li><a class="portal-link" href="{{ l.url }}" target="_blank" rel="noopener noreferrer">{{ l.member.full_name }}</a></li>{% empty %}<li>No opted-in members with a phone number in this audience.</li>{% endfor %}</ul></div>
+{% endblock %}

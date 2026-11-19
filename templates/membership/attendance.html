@@ -1,0 +1,14 @@
+{% extends "portal/base.html" %}
+{% block title %}Attendance · {{ activity }}{% endblock %}
+{% block content %}
+<div class="portal-head"><div><p class="eyebrow"><a class="hover:underline" href="{% url 'portal:resource_detail' department 'activities' activity.pk %}">{{ activity }}</a></p><h1 class="portal-title">Take attendance</h1>
+<p class="text-sm text-rlm-grey">Tick everyone who was present. Members not ticked are recorded as absent.</p></div></div>
+<form method="post" class="panel rlm-form">{% csrf_token %}
+  {% if rows %}
+  <fieldset><legend class="sr-only">Members present</legend>
+  <div class="checkbox-list">{% for member, present in rows %}<label for="m{{ member.pk }}"><input type="checkbox" id="m{{ member.pk }}" name="present" value="{{ member.pk }}" {% if present %}checked{% endif %}> {{ member.full_name }} <span class="text-xs text-rlm-grey">{{ member.member_number }}</span></label>{% endfor %}</div>
+  </fieldset>
+  <button type="submit" class="btn-primary mt-4">Save attendance</button>
+  {% else %}<p class="text-sm">No current members{% if activity.branch %} in {{ activity.branch }}{% endif %}.</p>{% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,1 @@
+{% if approved %}Welcome to {{ site.ministry_name }}{% else %}Your membership application to {{ site.ministry_name }}{% endif %}

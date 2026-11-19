@@ -1,0 +1,15 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ label }}{% endblock %}
+{% block content %}
+<div class="panel max-w-xl">
+  <p class="eyebrow"><a class="hover:underline" href="{% url 'portal:resource_detail' department 'members' member.pk %}">{{ member }}</a></p>
+  <h1 class="portal-title">{{ label }}</h1>
+  <p class="mt-2 text-sm">Current status: <strong>{{ member.get_status_display }}</strong>.{% if name == "approve" or name == "reject" %} The applicant will receive an email with the decision (it does not repeat anything they wrote, nor your note).{% endif %}</p>
+  {% if name == "approve" and member.is_minor %}<p class="mt-2 text-sm font-semibold">This applicant is under 18. Guardian consent recorded: {{ member.guardian_consent|yesno:"yes,NO" }}.</p>{% endif %}
+  <form method="post" class="rlm-form mt-4 space-y-4">{% csrf_token %}
+    {% if name == "reject" or name == "approve" %}<div><label for="note">{% if name == "reject" %}Reason (required, private){% else %}Note (optional, private){% endif %}</label><textarea id="note" name="note" rows="3" maxlength="2000"></textarea></div>{% endif %}
+    <div class="flex gap-3"><button type="submit" class="{% if name == 'reject' %}btn-danger{% else %}btn-primary{% endif %}">{{ label }}</button>
+    <a class="btn-outline" href="{% url 'portal:resource_detail' department 'members' member.pk %}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}
