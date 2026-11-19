@@ -1,0 +1,23 @@
+{# Gantt-style timeline: grey bar = planned span, dark flame = progress reported on site, black line = today. #}
+<figure class="panel chart">
+  <figcaption class="panel-title">{{ title|default:"Timeline" }}</figcaption>
+  <p class="mb-3 text-xs text-rlm-grey">{{ t.start|date:"M Y" }} – {{ t.end|date:"M Y" }}. Bar = planned dates; dark part = progress seen on site{% if t.today is not None %}; vertical line = today{% endif %}.</p>
+  <ul class="space-y-2" aria-hidden="true">
+    {% for r in t.rows %}
+    <li class="grid grid-cols-[minmax(0,10rem)_1fr] items-center gap-3 text-sm">
+      <span class="truncate">{% if r.url %}<a class="portal-link" href="{{ r.url }}">{{ r.label }}</a>{% else %}{{ r.label }}{% endif %}</span>
+      <svg viewBox="0 0 100 10" preserveAspectRatio="none" class="h-4 w-full" role="presentation">
+        <title>{{ r.label }}: {{ r.start|date:"j M Y" }} to {{ r.end|date:"j M Y" }}{% if r.progress is not None %}, {{ r.progress }}% done{% endif %}{% if r.late %} (behind schedule){% endif %}</title>
+        <rect x="0" y="0" width="100" height="10" class="chart-track" rx="1"></rect>
+        <rect x="{{ r.x }}" y="1" width="{{ r.w }}" height="8" class="chart-plan" rx="1"></rect>
+        <rect x="{{ r.x }}" y="1" width="{{ r.done_w }}" height="8" class="chart-mark" rx="1"></rect>
+        {% if t.today is not None %}<rect x="{{ t.today }}" y="0" width="0.4" height="10" class="chart-today"></rect>{% endif %}
+      </svg>
+    </li>
+    {% endfor %}
+  </ul>
+  <details class="mt-2 text-sm"><summary class="cursor-pointer text-rlm-grey">Show as a table</summary>
+    <table class="table-rlm mt-2"><thead><tr><th scope="col">Project</th><th scope="col">Start</th><th scope="col">Target end</th><th scope="col">Progress</th><th scope="col">Schedule</th></tr></thead>
+    <tbody>{% for r in t.rows %}<tr><td>{{ r.label }}</td><td>{{ r.start|date:"j M Y" }}</td><td>{{ r.end|date:"j M Y" }}</td><td>{% if r.progress is not None %}{{ r.progress }}%{% else %}—{% endif %}</td><td>{% if r.late %}{% include "portal/_status.html" with value="bad" label="Behind" %}{% else %}{% include "portal/_status.html" with value="good" label="On track" %}{% endif %}</td></tr>{% endfor %}</tbody></table>
+  </details>
+</figure>

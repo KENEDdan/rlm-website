@@ -54,6 +54,8 @@ class Dashboard:
     activity: list[Item] = field(default_factory=list)
     actions: list[Action] = field(default_factory=list)
     sections: list[dict[str, Any]] = field(default_factory=list)  # extra tables: {"title", "columns", "rows"}
+    timeline: dict[str, Any] | None = None  # Gantt-style geometry from portal.charts.timeline
+    timeline_title: str = ""
 
     def figures(self) -> list[dict[str, Any]]:
         return [{"code": k.code, "label": k.label, "value": str(k.value)} for k in self.kpis]

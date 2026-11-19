@@ -258,7 +258,9 @@
   .chart-axis { stroke: var(--rlm-grey); stroke-width: 1; }
   .chart-tick { fill: var(--rlm-grey); font-size: 11px; }
   .chart-mark { fill: var(--rlm-flame-dark); }
-  .chart-track { fill: var(--rlm-line); }
+  .chart-track { fill: var(--rlm-cream); }
+  .chart-plan { fill: var(--rlm-line); stroke: var(--rlm-grey); stroke-width: 0.15; }
+  .chart-today { fill: var(--rlm-black); }
   .chart-line { fill: none; stroke: var(--rlm-flame-dark); stroke-width: 2; }
   .chart-dot { fill: var(--rlm-flame-dark); stroke: var(--rlm-white); stroke-width: 2; }
   .chart-hitarea { fill: transparent; }

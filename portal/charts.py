@@ -182,3 +182,39 @@ def grouped_counts(
         key = row[field_name]
         out.append(((labels or {}).get(key, key) if key not in (None, "") else "Not set", row["total"]))
     return out
+
+
+def timeline(
+    rows: list[dict[str, Any]], start: dt.date | None = None, end: dt.date | None = None
+) -> dict[str, Any]:
+    """Gantt-style geometry. rows: {"label", "start", "end", "progress" (0-100 or None), "url", "late"}.
+
+    Positions are percentages of the visible range, so the template can draw them in a fluid SVG.
+    """
+    dated = [r for r in rows if r.get("start") and r.get("end")]
+    if not dated:
+        return {"rows": [], "months": []}
+    start = start or min(r["start"] for r in dated)
+    end = end or max(r["end"] for r in dated)
+    span = max((end - start).days, 1)
+
+    def pct(day: dt.date) -> float:
+        return round(max(0.0, min(100.0, (day - start).days * 100 / span)), 2)
+
+    out = []
+    for r in dated:
+        x = pct(r["start"])
+        w = max(1.0, pct(r["end"]) - x)
+        progress = r.get("progress")
+        out.append({**r, "x": x, "w": round(w, 2), "done_w": round(w * (progress or 0) / 100, 2)})
+    today = dt.date.today()
+    months = [{"x": pct(m), "label": m.strftime("%b %y")} for m in month_starts(start, end)][
+        :: max(1, len(month_starts(start, end)) // 8)
+    ]
+    return {
+        "rows": out,
+        "months": months,
+        "today": pct(today) if start <= today <= end else None,
+        "start": start,
+        "end": end,
+    }
