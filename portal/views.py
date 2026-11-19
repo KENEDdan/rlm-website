@@ -151,7 +151,7 @@ def _object_or_404(request: HttpRequest, resource: Resource, pk: int, action: st
 
 
 @never_cache
-@portal_view(level=1)
+@portal_view(url_department=False)  # Resource.can() decides (department, branch, requester)
 def resource_list(request: HttpRequest, department: str, slug: str) -> HttpResponse:
     access = get_access(request)
     resource = _resource_or_404(request, department, slug, "view")
@@ -186,7 +186,7 @@ def resource_list(request: HttpRequest, department: str, slug: str) -> HttpRespo
 
 
 @never_cache
-@portal_view(level=1)
+@portal_view(url_department=False)  # Resource.can() decides (department, branch, requester)
 def resource_detail(request: HttpRequest, department: str, slug: str, pk: int) -> HttpResponse:
     access = get_access(request)
     resource = _resource_or_404(request, department, slug, "view")
@@ -219,6 +219,7 @@ def resource_detail(request: HttpRequest, department: str, slug: str, pk: int) -
         "actions": resource.actions(request, access, obj),
         "can_change": resource.can(access, "change", obj) and resource.fields is not None,
         "can_delete": resource.can(access, "delete", obj),
+        **resource.extra_context(request, access, obj),
     }
     return render(request, getattr(resource, "detail_template", "portal/resource/detail.html"), context)
 
@@ -228,7 +229,7 @@ def _changed_names(form: Any) -> list[str]:
 
 
 @never_cache
-@portal_view(level=1)
+@portal_view(url_department=False)  # Resource.can() decides (department, branch, requester)
 @require_http_methods(["GET", "POST"])
 def resource_form(request: HttpRequest, department: str, slug: str, pk: int | None = None) -> HttpResponse:
     access = get_access(request)
@@ -271,7 +272,7 @@ def resource_form(request: HttpRequest, department: str, slug: str, pk: int | No
 
 
 @never_cache
-@portal_view(level=1)
+@portal_view(url_department=False)  # Resource.can() decides (department, branch, requester)
 @require_http_methods(["GET", "POST"])
 def resource_delete(request: HttpRequest, department: str, slug: str, pk: int) -> HttpResponse:
     resource = _resource_or_404(request, department, slug, "delete")
@@ -291,7 +292,7 @@ def resource_delete(request: HttpRequest, department: str, slug: str, pk: int) -
 
 
 @never_cache
-@portal_view(level=1)
+@portal_view(url_department=False)  # Resource.can() decides (department, branch, requester)
 def resource_export(request: HttpRequest, department: str, slug: str) -> StreamingHttpResponse:
     access = get_access(request)
     resource = _resource_or_404(request, department, slug, "export")
@@ -320,7 +321,7 @@ def resource_export(request: HttpRequest, department: str, slug: str) -> Streami
 
 
 @never_cache
-@portal_view(level=1)
+@portal_view(url_department=False)  # Resource.can() decides (department, branch, requester)
 def resource_file(request: HttpRequest, department: str, slug: str, pk: int, field: str) -> FileResponse:
     resource = _resource_or_404(request, department, slug, "view")
     obj = _object_or_404(request, resource, pk, "view")

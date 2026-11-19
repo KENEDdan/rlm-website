@@ -1,0 +1,9 @@
+{% extends "portal/base.html" %}
+{% block title %}Add to inventory · {{ order }}{% endblock %}
+{% block content %}
+<div class="portal-head"><div><p class="eyebrow"><a class="hover:underline" href="{% url 'portal:resource_detail' department 'orders' order.pk %}">{{ order }}</a></p><h1 class="portal-title">Add received goods to inventory</h1></div></div>
+<form method="post" class="panel rlm-form portal-form">{% csrf_token %}
+  {% include "includes/form_fields.html" %}
+  <button type="submit" class="btn-primary">Add to inventory</button>
+</form>
+{% endblock %}

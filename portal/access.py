@@ -127,11 +127,18 @@ def is_verified_staff(request: HttpRequest) -> bool:
 
 
 def portal_view(
-    department: str | None = None, *, level: int = MEMBER, super_admin: bool = False, executive: bool = False
+    department: str | None = None,
+    *,
+    level: int = MEMBER,
+    super_admin: bool = False,
+    executive: bool = False,
+    url_department: bool = True,
 ) -> Callable[[Callable[..., HttpResponse]], Callable[..., HttpResponse]]:
     """Decorator: 2FA-verified staff only, then the department level / Super Admin / executive check.
 
-    ``department=None`` with a ``department`` URL kwarg checks the department named in the URL.
+    ``department=None`` with a ``department`` URL kwarg checks the department named in the URL, unless
+    ``url_department=False`` (generic resource screens, where ``Resource.can`` makes the decision because some
+    resources are shared with requesting departments).
     """
 
     def decorator(view: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
@@ -149,7 +156,7 @@ def portal_view(
             if code is not None:
                 if code not in DEPARTMENT_ORDER:
                     raise PermissionDenied
-                if access.level(code) < level:
+                if (department or url_department) and access.level(code) < level:
                     raise PermissionDenied
             return view(request, *args, **kwargs)
 

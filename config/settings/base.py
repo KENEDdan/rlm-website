@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "portal",
     "membership",
     "finance",
+    "logistics",
 ]
 
 MIDDLEWARE = [

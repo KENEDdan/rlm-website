@@ -1,0 +1,28 @@
+{% extends "portal/resource/detail.html" %}
+{% block detail_extra %}
+{% with pr=obj %}
+{% if pr.quotations.exists %}
+<section class="panel mt-6">
+  <h2 class="panel-title">Quotation comparison (cheapest first)</h2>
+  <form method="post" action="{% url 'portal:logistics:recommend' pr.pk %}" class="rlm-form">{% csrf_token %}
+  <div class="table-wrap"><table class="table-rlm">
+    <thead><tr>{% if pr.status == "submitted" %}<th scope="col">Choose</th>{% endif %}<th scope="col">Supplier</th><th scope="col">Rating</th><th scope="col">Amount</th><th scope="col">More than cheapest</th><th scope="col">Delivery (days)</th><th scope="col">Valid until</th></tr></thead>
+    <tbody>{% for row in comparison %}<tr>
+      {% if pr.status == "submitted" %}<td><input type="radio" name="quotation" value="{{ row.quotation.pk }}" id="q{{ row.quotation.pk }}" {% if forloop.first %}checked{% endif %} aria-label="Choose {{ row.supplier }}"></td>{% endif %}
+      <th scope="row">{{ row.supplier }}{% if row.recommended %} {% include "portal/_status.html" with value="good" label="Recommended" %}{% endif %}</th>
+      <td>{{ row.rating|default:"—" }}{% if row.rating %}/5{% endif %}</td><td>{{ row.amount|floatformat:2 }}</td>
+      <td>{% if row.difference %}+{{ row.difference|floatformat:2 }}{% else %}Cheapest{% endif %}</td>
+      <td>{{ row.delivery_days|default:"—" }}</td><td>{{ row.valid_until|date:"j M Y"|default:"—" }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if pr.status == "submitted" and can_recommend %}
+    {% if comparison|length >= 3 %}
+    <div class="mt-4"><label for="note">Why this supplier? (required if it is not the cheapest)</label><textarea id="note" name="note" rows="2" maxlength="2000"></textarea></div>
+    <button type="submit" class="btn-primary btn-sm mt-3">Recommend this supplier</button>
+    {% else %}<p class="mt-3 text-sm">{% include "portal/_status.html" with value="warn" label="Needs 3 quotations" %} {{ comparison|length }} of 3 received. Add more quotations below.</p>{% endif %}
+  {% endif %}
+  </form>
+</section>
+{% endif %}
+{% endwith %}
+{{ block.super }}
+{% endblock %}

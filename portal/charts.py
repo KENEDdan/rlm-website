@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
-from django.db.models import Count, QuerySet, Sum
+from django.db.models import Count, DateTimeField, QuerySet, Sum
 from django.db.models.functions import TruncMonth
 
 Number = int | float | Decimal
@@ -154,8 +154,11 @@ def monthly_series(
 ) -> list[tuple[str, Number]]:
     """Count (or sum) rows per month between start and end, filling empty months with 0."""
     agg = Sum(sum_field) if sum_field else Count("pk")
+    lookup = date_field
+    if isinstance(qs.model._meta.get_field(date_field), DateTimeField):
+        lookup = f"{date_field}__date"  # compare calendar days in the ministry's time zone
     rows = (
-        qs.filter(**{f"{date_field}__gte": start, f"{date_field}__lte": end})
+        qs.filter(**{f"{lookup}__gte": start, f"{lookup}__lte": end})
         .annotate(month=TruncMonth(date_field))
         .values("month")
         .annotate(total=agg)

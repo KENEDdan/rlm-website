@@ -261,6 +261,10 @@ class Resource:
         """Workflow buttons on the detail page: dicts with label, url, style, confirm (override)."""
         return []
 
+    def extra_context(self, request: HttpRequest, access: Access, obj: Model) -> dict[str, Any]:
+        """Extra variables for a custom detail template (override)."""
+        return {}
+
     def list_columns(self) -> list[tuple[str, str]]:
         return [(name, self.column_label(name)) for name in self.list_fields]
 

@@ -1,0 +1,12 @@
+{% extends "portal/base.html" %}
+{% block title %}Reject {{ pr }}{% endblock %}
+{% block content %}
+<div class="panel max-w-xl">
+  <p class="eyebrow"><a class="hover:underline" href="{% url 'portal:resource_detail' department 'requests' pr.pk %}">{{ pr }}</a></p>
+  <h1 class="portal-title">Reject this purchase request</h1>
+  <form method="post" class="rlm-form mt-4 space-y-4">{% csrf_token %}
+    <div><label for="note">Reason (required, shown to the requesting department)</label><textarea id="note" name="note" rows="3" maxlength="300" required></textarea></div>
+    <div class="flex gap-3"><button type="submit" class="btn-danger">Reject</button><a class="btn-outline" href="{% url 'portal:resource_detail' department 'requests' pr.pk %}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}
