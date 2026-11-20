@@ -30,20 +30,47 @@ class IndicatorResource(_DepartmentScoped):
     model = Indicator
     slug = "indicators"
     icon = "target"
-    list_fields: ClassVar = ["name", "unit", "target", "period", "latest", "is_active"]
-    filters: ClassVar = ["period", "is_active"]
-    fields: ClassVar = [
+    label = "Targets"
+    branch_lookup = "branch"
+    list_fields: ClassVar = ["name", "category", "year", "branch", "annual_target", "latest", "open_link"]
+    filters: ClassVar = ["year", "category", "is_active"]
+    fields: ClassVar = ["name", "description", "auto_source", "is_active"]
+    detail_fields: ClassVar = [
         "name",
-        "description",
+        "category",
+        "year",
+        "branch",
         "unit",
-        "target",
-        "period",
+        "annual_target",
         "higher_is_better",
-        "auto_source",
-        "is_active",
+        "description",
+        "open_link",
     ]
     children: ClassVar = [("values", "indicator-values", "Recorded values")]
-    perms: ClassVar = {"add": HEAD, "change": HEAD, "delete": HEAD}
+    # Targets are set and changed by leadership on the Performance targets screen (decision 4).
+    perms: ClassVar = {"add": FOUNDER + 1, "change": FOUNDER + 1, "delete": FOUNDER + 1}
+
+    def get_queryset(self, access: Access) -> QuerySet:
+        from django.db.models import Q
+
+        qs = super().get_queryset(access)
+        restricted, branch_id = access.branch_scope(self.department)
+        if not restricted:
+            return qs
+        # restrict_branch already narrowed to the branch; ministry-wide targets stay visible read-only
+        return (qs | Indicator.objects.filter(department__code=self.department, branch__isnull=True)).filter(
+            Q(branch_id=branch_id) | Q(branch__isnull=True)
+        )
+
+    def open_link(self, obj: Indicator) -> Any:
+        from django.utils.html import format_html
+
+        return format_html(
+            '<a class="portal-link" href="{}">Target vs actual</a>',
+            reverse("portal:target_detail", args=[obj.pk]),
+        )
+
+    open_link.short_description = "Monthly view"  # type: ignore[attr-defined]
 
     def latest(self, obj: Indicator) -> Any:
         value = obj.latest_value()
@@ -71,7 +98,9 @@ class IndicatorValueResource(_DepartmentScoped):
 
     def limit_choices(self, access: Access, field_name: str, related: type[Model]) -> QuerySet:
         if field_name == "indicator":
-            return Indicator.objects.filter(department__code=self.department)
+            qs = Indicator.objects.filter(department__code=self.department, is_active=True)
+            restricted, branch_id = access.branch_scope(self.department)
+            return qs.filter(branch_id=branch_id) if restricted else qs
         return super().limit_choices(access, field_name, related)
 
 

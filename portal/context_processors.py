@@ -51,6 +51,7 @@ def _nav(request: HttpRequest) -> dict[str, Any]:
         "access": access,
         "departments": departments,
         "show_executive": access.is_executive,
+        "show_targets": access.is_executive or access.is_super_admin or bool(access.member_departments()),
         "show_executive_finance": executive_can_view(access),
         "show_accounts": access.is_super_admin,
         "show_admin": request.user.is_superuser or bool(request.user.get_all_permissions()),

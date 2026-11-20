@@ -27,22 +27,74 @@ def dept(code: str) -> Department:
 @pytest.fixture
 def books():  # type: ignore[no-untyped-def]
     juba, yei = Branch.objects.get(slug="juba"), Branch.objects.get(slug="yei")
-    BudgetLine.objects.create(year=TODAY.year, department=dept("missions"), category="travel", name="Trips",
-                              amount=Decimal("1000"), status="approved", branch=juba)
-    BudgetLine.objects.create(year=TODAY.year, department=dept("media"), category="media", name="Posters",
-                              amount=Decimal("500"), status="approved", branch=yei)
-    BudgetLine.objects.create(year=TODAY.year, department=dept("media"), category="media", name="Draft line",
-                              amount=Decimal("9999"), status="draft")
-    LedgerEntry.objects.create(kind="income", income_source="offering", amount=Decimal("3000"), date=TODAY,
-                               description="Sunday offering SECRET-IN", status="posted", number="IN-1", branch=juba)
-    LedgerEntry.objects.create(kind="expense", category="travel", amount=Decimal("400"), date=TODAY,
-                               description="Bus to Kajo-Keji SECRET-OUT", counterparty="SECRET-PAYEE",
-                               department=dept("missions"), status="posted", number="EX-1", branch=juba)
-    LedgerEntry.objects.create(kind="expense", category="media", amount=Decimal("700"), date=TODAY,
-                               description="Banners", department=dept("media"), status="posted", number="EX-2",
-                               branch=yei)
-    LedgerEntry.objects.create(kind="expense", category="media", amount=Decimal("50"), date=TODAY,
-                               description="Unposted", department=dept("media"), status="submitted")
+    BudgetLine.objects.create(
+        year=TODAY.year,
+        department=dept("missions"),
+        category="travel",
+        name="Trips",
+        amount=Decimal("1000"),
+        status="approved",
+        branch=juba,
+    )
+    BudgetLine.objects.create(
+        year=TODAY.year,
+        department=dept("media"),
+        category="media",
+        name="Posters",
+        amount=Decimal("500"),
+        status="approved",
+        branch=yei,
+    )
+    BudgetLine.objects.create(
+        year=TODAY.year,
+        department=dept("media"),
+        category="media",
+        name="Draft line",
+        amount=Decimal("9999"),
+        status="draft",
+    )
+    LedgerEntry.objects.create(
+        kind="income",
+        income_source="offering",
+        amount=Decimal("3000"),
+        date=TODAY,
+        description="Sunday offering SECRET-IN",
+        status="posted",
+        number="IN-1",
+        branch=juba,
+    )
+    LedgerEntry.objects.create(
+        kind="expense",
+        category="travel",
+        amount=Decimal("400"),
+        date=TODAY,
+        description="Bus to Kajo-Keji SECRET-OUT",
+        counterparty="SECRET-PAYEE",
+        department=dept("missions"),
+        status="posted",
+        number="EX-1",
+        branch=juba,
+    )
+    LedgerEntry.objects.create(
+        kind="expense",
+        category="media",
+        amount=Decimal("700"),
+        date=TODAY,
+        description="Banners",
+        department=dept("media"),
+        status="posted",
+        number="EX-2",
+        branch=yei,
+    )
+    LedgerEntry.objects.create(
+        kind="expense",
+        category="media",
+        amount=Decimal("50"),
+        date=TODAY,
+        description="Unposted",
+        department=dept("media"),
+        status="submitted",
+    )
     donor = Donor.objects.create(name="SECRET-DONOR", email="donor@example.test")
     Pledge.objects.create(donor=donor, amount=Decimal("800"), received_amount=Decimal("300"))
     return juba, yei
@@ -59,7 +111,15 @@ def test_executive_sees_summaries(make_staff, verified_client, books) -> None:  
     assert media["over"] and media["actual"] == Decimal("700")
     assert {r["label"] for r in d["by_branch"]} == {books[0].name, books[1].name}
     html = page.content.decode()
-    for secret in ("SECRET-IN", "SECRET-OUT", "SECRET-PAYEE", "SECRET-DONOR", "donor@example.test", "EX-1", "IN-1"):
+    for secret in (
+        "SECRET-IN",
+        "SECRET-OUT",
+        "SECRET-PAYEE",
+        "SECRET-DONOR",
+        "donor@example.test",
+        "EX-1",
+        "IN-1",
+    ):
         assert secret not in html
     assert AuditLog.objects.filter(action=AuditLog.Action.VIEW, extra__page="executive finance").exists()
 
@@ -86,8 +146,14 @@ def test_branch_and_period_filters(make_staff, verified_client, books) -> None: 
 def test_executive_cannot_open_ledger_detail(make_staff, verified_client, books) -> None:  # type: ignore[no-untyped-def]
     client = verified_client(make_staff(EXECUTIVE))
     entry = LedgerEntry.objects.get(number="EX-1")
-    for path in ("finance/ledger/", f"finance/ledger/{entry.pk}/", "finance/donors/", "finance/pledges/",
-                 "finance/ledger/export/", "finance/donations/"):
+    for path in (
+        "finance/ledger/",
+        f"finance/ledger/{entry.pk}/",
+        "finance/donors/",
+        "finance/pledges/",
+        "finance/ledger/export/",
+        "finance/donations/",
+    ):
         assert client.get(P + path).status_code in (403, 404), path
 
 

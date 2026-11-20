@@ -32,7 +32,9 @@ def executive_finance(request: HttpRequest) -> HttpResponse:
         "filters": filters,
         "fy_choices": financial_years(),
         "period_choices": PERIOD_CHOICES,
-        "branches": access.allowed_branches("finance") if not access.is_executive else access.allowed_branches(),
+        "branches": (
+            access.allowed_branches("finance") if not access.is_executive else access.allowed_branches()
+        ),
         "branch_fixed": access.branch_restricted_in("finance") and not access.is_executive,
     }
     if is_htmx(request):

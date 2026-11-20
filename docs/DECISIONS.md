@@ -377,3 +377,27 @@ expenditure for the year; income by source; items waiting for executive approval
 Filters: financial year, quarter or month, branch. Drill-down: a department's category totals, never entries.
 No query on this page returns a ledger line, donor, voucher, receipt, payee or description; ledger, donors,
 pledges, donations and exports remain Finance + Founder only (tested). Each view is audit-logged.
+
+## D-031: Monthly performance targets (ministry decision 4)
+(2026-11-20) `portal/indicators.py`, screens under `/portal/targets/`.
+* `Indicator` now has a category (Evangelism, Discipleship, Youth fellowships, Membership, Partnerships,
+  Missions, Finance, Development, Media, Prayer), owner department, unit, financial year, branch (empty = all
+  branches), annual target and twelve editable `MonthlyTarget` rows. The split is even for numbers and money
+  (rounding goes to December) and the same level every month for percentages.
+* Who: the Founder / Super Admin and Executive Leadership create, adjust and import targets ("leadership").
+  Department heads no longer define targets. Department members (within their branch scope) record monthly
+  actuals; actuals cannot be entered for months that have not started.
+* Every change (annual or monthly, by screen or import) writes an append-only `TargetChange` (who, old, new,
+  reason); a reason is mandatory. Changing monthly targets of a count/money indicator moves the annual target to
+  their sum, also recorded.
+* CSV import: fixed columns (template download), every row validated first, nothing imported if any row is
+  wrong, preview, then confirm; updates of existing targets recorded as changes. 512 KB / 1,000 rows cap.
+* Status: year-to-date target vs actual (sum for counts/money; latest month for percentages), percent, monthly
+  trend, RAG = Green at 90%+ of target, Amber 70-89%, Red below 70% (inverted for lower-is-better). A month's
+  actual is overdue when still missing on the 10th of the following month (months before the target existed
+  are not chased). These thresholds are constants in `portal/indicators.py` (defaults, see final report).
+* Executive Overview shows every category (green/amber/red/overdue counts) and the overdue list.
+* Existing indicators were migrated: per-period target -> annual target (x12 monthly, x4 quarterly; percentages
+  unchanged), year = year created, category from the department (Logistics -> Development).
+* `seed_indicators` is demo-only: nothing without `--demo`; samples are named "[DEMO] ...", flagged `is_demo`,
+  badged "Demo", and removed with `--remove`.

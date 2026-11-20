@@ -33,17 +33,9 @@ def build_overview(request: HttpRequest, access: Access, filters: Filters) -> di
             }
         )
 
-    indicators = []
-    for indicator in Indicator.objects.filter(is_active=True).select_related("department"):
-        latest = indicator.latest_value()
-        indicators.append(
-            {
-                "indicator": indicator,
-                "value": latest.value if latest else None,
-                "period": latest.period_start if latest else None,
-                "progress": latest.progress if latest else None,
-            }
-        )
+    from .indicators import board
+
+    targets = board(Indicator.objects.all(), filters.fy or filters.end.year)
 
     pending: list[Item] = []
     for code in DEPARTMENT_ORDER:
@@ -77,7 +69,7 @@ def build_overview(request: HttpRequest, access: Access, filters: Filters) -> di
             )
     return {
         "cards": cards,
-        "indicators": indicators,
+        "targets": targets,
         "pending": pending,
         "handoffs": handoffs,
         "flags": flags,

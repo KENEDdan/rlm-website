@@ -1,0 +1,45 @@
+{% extends "portal/base.html" %}
+{% block title %}Performance targets{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Monitoring &amp; evaluation</p>
+    <h1 class="portal-title">Performance targets {{ board.year }}</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Year to date up to {{ board.month_label }}. {{ rag_rule }}. A month's actual is overdue when it is still missing on the 10th of the next month.</p>
+  </div>
+  {% if can_manage %}<div class="flex flex-wrap gap-2">
+    <a class="btn-primary btn-sm" href="{% url 'portal:target_create' %}">New target</a>
+    <a class="btn-outline btn-sm" href="{% url 'portal:target_import' %}">Import CSV</a>
+  </div>{% endif %}
+</div>
+<form method="get" class="portal-filters rlm-form">
+  <div><label for="t-year">Financial year</label><select id="t-year" name="year">{% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select></div>
+  <div><label for="t-cat">Category</label><select id="t-cat" name="category"><option value="">All categories</option>{% for code, label in categories %}<option value="{{ code }}" {% if code == category %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div><label for="t-dept">Owner department</label><select id="t-dept" name="department"><option value="">All departments</option>{% for d in departments %}<option value="{{ d.code }}" {% if d.code == department %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+  <div class="flex items-end"><button type="submit" class="btn-dark btn-sm">Apply</button></div>
+</form>
+{% if board.overdue %}
+<section class="panel mt-6" aria-labelledby="overdue-title">
+  <h2 class="panel-title" id="overdue-title">Overdue actuals ({{ board.overdue|length }})</h2>
+  <ul class="text-sm">{% for row in board.overdue %}<li><a class="portal-link" href="{% url 'portal:target_detail' row.indicator.pk %}">{{ row.indicator.name }}</a> · {{ row.indicator.department.name }}: {{ row.overdue_labels }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% for cat in board.categories %}{% if cat.rows %}
+<section class="panel mt-6" aria-labelledby="cat-{{ cat.code }}">
+  <h2 class="panel-title" id="cat-{{ cat.code }}">{{ cat.label }} <span class="text-xs font-normal text-rlm-grey">Green {{ cat.green }} · Amber {{ cat.amber }} · Red {{ cat.red }}{% if cat.overdue %} · Overdue {{ cat.overdue }}{% endif %}</span></h2>
+  <div class="table-wrap"><table class="table-rlm">
+    <thead><tr><th scope="col">Target</th><th scope="col">Department</th><th scope="col">Branch</th><th scope="col">Annual</th><th scope="col">Year to date: target</th><th scope="col">Actual</th><th scope="col">%</th><th scope="col">Status</th></tr></thead>
+    <tbody>{% for row in cat.rows %}<tr>
+      <th scope="row"><a class="portal-link" href="{% url 'portal:target_detail' row.indicator.pk %}">{{ row.indicator.name }}</a>{% if row.indicator.is_demo %} <span class="portal-badge">Demo</span>{% endif %}{% if row.overdue %} {% include "portal/_status.html" with value="bad" label="Overdue" %}{% endif %}</th>
+      <td>{{ row.indicator.department.name }}</td><td>{{ row.indicator.branch|default:"All branches" }}</td>
+      <td class="tabular-nums">{{ row.indicator.annual_target|floatformat:"-2" }}{% if row.indicator.unit == "percent" %}%{% endif %}</td>
+      <td class="tabular-nums">{{ row.ytd_target|floatformat:"-2" }}</td>
+      <td class="tabular-nums">{% if row.ytd_actual is None %}—{% else %}{{ row.ytd_actual|floatformat:"-2" }}{% endif %}</td>
+      <td class="tabular-nums">{% if row.progress is None %}—{% else %}{{ row.progress }}%{% endif %}</td>
+      <td>{% include "portal/targets/_rag.html" %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}{% endfor %}
+{% if not board.count %}<section class="panel mt-6"><p class="text-sm">No targets for {{ board.year }} yet.{% if can_manage %} Create one or import a CSV file.{% endif %}</p></section>{% endif %}
+{% endblock %}

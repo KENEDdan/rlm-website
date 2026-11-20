@@ -66,6 +66,17 @@ def _decimal(value: Any) -> Decimal | None:
         return None
 
 
+def _period_actual(indicator: Indicator, start: dt.date, end: dt.date) -> Decimal | None:
+    values = list(
+        IndicatorValue.objects.filter(indicator=indicator, period_start__gte=start, period_start__lte=end)
+        .order_by("period_start")
+        .values_list("value", flat=True)
+    )
+    if not values:
+        return None
+    return sum(values, Decimal("0")) if indicator.is_cumulative else values[-1]
+
+
 @transaction.atomic
 def generate(request: HttpRequest, department: str, period: str, month: str | None) -> DepartmentReport:
     from .views import build_dashboard
@@ -78,9 +89,9 @@ def generate(request: HttpRequest, department: str, period: str, month: str | No
     by_code = {f["code"]: f["value"] for f in figures if f["code"]}
 
     indicator_rows = []
-    for indicator in Indicator.objects.filter(department=dept, is_active=True, period=period):
+    for indicator in Indicator.objects.filter(department=dept, is_active=True, year=start.year):
         value_obj = IndicatorValue.objects.filter(indicator=indicator, period_start=start).first()
-        if indicator.auto_source and indicator.auto_source in by_code:
+        if period == Period.MONTHLY and indicator.auto_source and indicator.auto_source in by_code:
             auto = _decimal(by_code[indicator.auto_source])
             if auto is not None:
                 value_obj, _ = IndicatorValue.objects.update_or_create(
@@ -92,13 +103,21 @@ def generate(request: HttpRequest, department: str, period: str, month: str | No
                         "entered_by": request.user,
                     },
                 )
+        target = indicator.target_for(start, period)
+        actual = (
+            _period_actual(indicator, start, end)
+            if period != Period.MONTHLY
+            else (value_obj.value if value_obj else None)
+        )
         indicator_rows.append(
             {
                 "name": indicator.name,
+                "category": indicator.get_category_display(),
+                "branch": str(indicator.branch or "All branches"),
                 "unit": indicator.unit,
-                "target": str(indicator.target),
-                "value": str(value_obj.value) if value_obj else "",
-                "progress": value_obj.progress if value_obj else None,
+                "target": str(target),
+                "value": "" if actual is None else str(actual),
+                "progress": indicator.progress(actual, target) if actual is not None else None,
             }
         )
 

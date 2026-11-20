@@ -1,0 +1,13 @@
+{% extends "portal/base.html" %}
+{% block title %}New target{% endblock %}
+{% block content %}
+<div class="portal-head"><div>
+  <p class="eyebrow"><a href="{% url 'portal:targets' %}" class="hover:underline">Performance targets</a></p>
+  <h1 class="portal-title">New target</h1>
+  <p class="mt-1 text-sm text-rlm-grey">The annual target is split into twelve monthly targets (evenly for numbers and money; the same level every month for percentages). You can change any month afterwards.</p>
+</div></div>
+<form method="post" class="panel rlm-form portal-form" novalidate>{% csrf_token %}
+  {% include "includes/form_fields.html" %}
+  <div class="flex flex-wrap gap-3"><button type="submit" class="btn-primary">Save</button><a class="btn-outline" href="{% url 'portal:targets' %}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -88,8 +88,11 @@ def test_dashboard_branch_filter_cannot_be_widened_by_a_coordinator(make_staff, 
 
 # ------------------------------------------------------------------ M&E
 def _indicator(code: str = "finance", **kw) -> Indicator:  # type: ignore[no-untyped-def]
+    kw.setdefault("year", 2026)
+    kw.setdefault("category", "finance")
+    kw.setdefault("annual_target", 1200)  # 100 a month
     return Indicator.objects.create(
-        department=Department.objects.get(code=code), name=kw.pop("name", "Funds raised"), target=100, **kw
+        department=Department.objects.get(code=code), name=kw.pop("name", "Funds raised"), **kw
     )
 
 
@@ -103,22 +106,31 @@ def test_indicators_are_scoped_per_department(make_staff, verified_client) -> No
     assert client.get(P + f"membership/indicators/{theirs.pk}/").status_code == 403
 
 
-def test_only_heads_define_targets_members_record_values(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
+def test_only_leadership_defines_targets_members_record_values(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
     member = verified_client(make_staff(FINANCE))
+    head = verified_client(make_staff(FINANCE, heads={"finance"}))
     data = {
         "name": "Grants won",
         "unit": "number",
-        "target": "4",
-        "period": "quarterly",
+        "annual_target": "48",
+        "year": "2026",
+        "category": "finance",
         "higher_is_better": "on",
         "is_active": "on",
     }
     assert member.post(P + "finance/indicators/new/", data).status_code == 403
-    head = verified_client(make_staff(FINANCE, heads={"finance"}))
-    resp = head.post(P + "finance/indicators/new/", data)
+    assert head.post(P + "finance/indicators/new/", data).status_code == 403  # targets are set by leadership
+    assert (
+        head.post(
+            P + "targets/new/", {**data, "department": Department.objects.get(code="finance").pk}
+        ).status_code
+        == 403
+    )
+    founder = verified_client(make_staff(superuser=True))
+    resp = founder.post(P + "targets/new/", {**data, "department": Department.objects.get(code="finance").pk})
     assert resp.status_code == 302
     indicator = Indicator.objects.get(name="Grants won")
-    assert indicator.department.code == "finance"
+    assert indicator.monthly_targets.count() == 12 and indicator.target_for(date(2026, 7, 1)) == 4
     resp = member.post(
         P + "finance/indicator-values/new/",
         {"indicator": indicator.pk, "period_start": "2026-07-01", "value": "3", "note": ""},
@@ -231,13 +243,19 @@ def test_suggested_indicators_point_at_real_dashboard_figures(make_staff, verifi
     from portal.management.commands.seed_indicators import SUGGESTED
 
     call_command("seed_indicators", stdout=StringIO())
-    call_command("seed_indicators", stdout=StringIO())  # idempotent
+    assert not Indicator.objects.exists()  # without --demo nothing is created
+    call_command("seed_indicators", "--demo", stdout=StringIO())
+    call_command("seed_indicators", "--demo", stdout=StringIO())  # idempotent
     assert Indicator.objects.count() == sum(len(rows) for rows in SUGGESTED.values())
+    assert all(i.is_demo and i.name.startswith("[DEMO] ") for i in Indicator.objects.all())
+    assert {i.category for i in Indicator.objects.all()} == set(Indicator.Category.values)
     founder = verified_client(make_staff(superuser=True))
     for code, rows in SUGGESTED.items():
         figures = {k.code for k in founder.get(P + f"{code}/").context["board"].kpis}
-        for _name, _unit, _target, _higher, source, _desc in rows:
-            assert source in figures, (code, source)
+        for _cat, _name, _unit, _target, _higher, source in rows:
+            assert not source or source in figures, (code, source)
+    call_command("seed_indicators", "--remove", stdout=StringIO())
+    assert not Indicator.objects.exists()
 
 
 def test_report_auto_fills_indicator_values(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]

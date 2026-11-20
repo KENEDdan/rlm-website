@@ -2,6 +2,7 @@
   {% with nav=portal_nav %}
   {% if nav.approvals_url %}<a href="{{ nav.approvals_url }}" class="portal-nav-top{% if '/approvals/' in request.path %} is-current{% endif %}">Approvals{% if nav.approvals_pending %} <span class="portal-badge">{{ nav.approvals_pending }}</span>{% endif %}</a>{% endif %}
   {% if nav.show_executive_finance %}<a href="{% url 'portal:finance:executive_finance' %}" class="portal-nav-top{% if request.resolver_match.url_name == 'executive_finance' %} is-current{% endif %}">Executive finance</a>{% endif %}
+  {% if nav.show_targets %}<a href="{% url 'portal:targets' %}" class="portal-nav-top{% if '/targets/' in request.path %} is-current{% endif %}">Performance targets</a>{% endif %}
   {% if nav.show_executive %}<a href="{% url 'portal:executive' %}" class="portal-nav-top{% if request.resolver_match.url_name == 'executive' %} is-current{% endif %}" {% if request.resolver_match.url_name == 'executive' %}aria-current="page"{% endif %}>Executive overview</a>{% endif %}
   {% for dept in nav.departments %}
     <details class="portal-nav-dept" {% if department == dept.code %}open{% endif %}>

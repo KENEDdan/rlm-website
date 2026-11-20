@@ -49,7 +49,9 @@ def summary(filters: Filters, department_code: str = "") -> dict[str, Any]:
     expense_qs = in_period.filter(kind=LedgerEntry.Kind.EXPENSE)
     income, expenditure = _sum(income_qs), _sum(expense_qs)
     to_date = posted.filter(date__lte=filters.end)
-    cash = _sum(to_date.filter(kind=LedgerEntry.Kind.INCOME)) - _sum(to_date.filter(kind=LedgerEntry.Kind.EXPENSE))
+    cash = _sum(to_date.filter(kind=LedgerEntry.Kind.INCOME)) - _sum(
+        to_date.filter(kind=LedgerEntry.Kind.EXPENSE)
+    )
 
     pledges = Pledge.objects.filter(status__in=[Pledge.Status.OPEN, Pledge.Status.PARTIAL])
     outstanding = sum((p.outstanding for p in pledges.only("amount", "received_amount", "status")), ZERO)
@@ -65,10 +67,14 @@ def summary(filters: Filters, department_code: str = "") -> dict[str, Any]:
         budget_by_dept[line.department.code] += positions[line.pk].total
         names[line.department.code] = line.department.name
     actual_by_dept: dict[str, Decimal] = {}
-    for code, name, total in expense_qs.values_list("department__code", "department__name").annotate(t=Sum("amount")):
+    for code, name, total in expense_qs.values_list("department__code", "department__name").annotate(
+        t=Sum("amount")
+    ):
         actual_by_dept[code or ""] = total
         names.setdefault(code or "", name or "No department")
-    by_department = [_row(names[c], budget_by_dept.get(c, ZERO), actual_by_dept.get(c, ZERO), code=c) for c in names]
+    by_department = [
+        _row(names[c], budget_by_dept.get(c, ZERO), actual_by_dept.get(c, ZERO), code=c) for c in names
+    ]
 
     # by branch (lines and spending without a branch are ministry-wide)
     branch_names = dict(Branch.objects.values_list("pk", "name"))
@@ -76,9 +82,15 @@ def summary(filters: Filters, department_code: str = "") -> dict[str, Any]:
     for line in lines:
         budget_by_branch[line.branch_id] += positions[line.pk].total
     actual_by_branch = dict(expense_qs.values_list("branch_id").annotate(t=Sum("amount")))
-    keys = sorted(set(budget_by_branch) | set(actual_by_branch), key=lambda k: (k is None, branch_names.get(k, "")))
+    keys = sorted(
+        set(budget_by_branch) | set(actual_by_branch), key=lambda k: (k is None, branch_names.get(k, ""))
+    )
     by_branch = [
-        _row(branch_names.get(k, "Ministry-wide (no branch)"), budget_by_branch.get(k, ZERO), actual_by_branch.get(k) or ZERO)
+        _row(
+            branch_names.get(k, "Ministry-wide (no branch)"),
+            budget_by_branch.get(k, ZERO),
+            actual_by_branch.get(k) or ZERO,
+        )
         for k in keys
     ]
 
@@ -94,7 +106,14 @@ def summary(filters: Filters, department_code: str = "") -> dict[str, Any]:
     waiting = pending_items()
     drill = None
     if department_code and department_code in names:
-        drill = _drill(department_code, names[department_code], expense_qs, income_qs, [ln for ln in lines if ln.department.code == department_code], positions)
+        drill = _drill(
+            department_code,
+            names[department_code],
+            expense_qs,
+            income_qs,
+            [ln for ln in lines if ln.department.code == department_code],
+            positions,
+        )
     return {
         "year": year,
         "income": income,
@@ -104,9 +123,11 @@ def summary(filters: Filters, department_code: str = "") -> dict[str, Any]:
         "outstanding_pledges": outstanding,
         "open_pledges": pledges.count(),
         "approved_budget": approved_budget,
-        "budget_used_pct": int(_sum(posted.filter(date__year=year, kind=LedgerEntry.Kind.EXPENSE)) * 100 / approved_budget)
-        if approved_budget
-        else None,
+        "budget_used_pct": (
+            int(_sum(posted.filter(date__year=year, kind=LedgerEntry.Kind.EXPENSE)) * 100 / approved_budget)
+            if approved_budget
+            else None
+        ),
         "by_department": by_department,
         "by_branch": by_branch,
         "months": months,
@@ -137,7 +158,9 @@ def _row(label: str, budget: Decimal, actual: Decimal, code: str = "") -> dict[s
 def _by_month(qs: QuerySet) -> list[tuple[dt.date, Decimal]]:
     from django.db.models.functions import TruncMonth
 
-    return list(qs.annotate(m=TruncMonth("date")).values_list("m").annotate(t=Sum("amount")).values_list("m", "t"))
+    return list(
+        qs.annotate(m=TruncMonth("date")).values_list("m").annotate(t=Sum("amount")).values_list("m", "t")
+    )
 
 
 def _totals(qs: QuerySet, field: str, labels: dict[str, str]) -> list[tuple[str, Decimal]]:
@@ -145,8 +168,14 @@ def _totals(qs: QuerySet, field: str, labels: dict[str, str]) -> list[tuple[str,
     return [(labels.get(key, "Other") if key else "Not set", total) for key, total in rows]
 
 
-def _drill(code: str, name: str, expense_qs: QuerySet, income_qs: QuerySet, lines: list[BudgetLine],
-           positions: dict[int, Any]) -> dict[str, Any]:
+def _drill(
+    code: str,
+    name: str,
+    expense_qs: QuerySet,
+    income_qs: QuerySet,
+    lines: list[BudgetLine],
+    positions: dict[int, Any],
+) -> dict[str, Any]:
     """One department: category totals only (never entries)."""
     cats = dict(Category.choices)
     spend = expense_qs.filter(Q(department__code=code))
@@ -158,7 +187,9 @@ def _drill(code: str, name: str, expense_qs: QuerySet, income_qs: QuerySet, line
     return {
         "department": name,
         "code": code,
-        "rows": [_row(cats.get(k, "Other"), budget_by_cat.get(k, ZERO), actual_by_cat.get(k) or ZERO) for k in keys],
+        "rows": [
+            _row(cats.get(k, "Other"), budget_by_cat.get(k, ZERO), actual_by_cat.get(k) or ZERO) for k in keys
+        ],
         "income": _sum(income_qs.filter(department__code=code)),
     }
 

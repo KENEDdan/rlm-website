@@ -2,7 +2,7 @@ from django.apps import apps
 from django.urls import include, path, re_path
 from django.utils.module_loading import module_has_submodule
 
-from . import views
+from . import target_views, views
 from .access import DEPARTMENT_ORDER
 
 app_name = "portal"
@@ -25,6 +25,11 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("no-access/", views.no_access, name="no_access"),
     path("executive/", views.executive, name="executive"),
+    path("targets/", target_views.target_list, name="targets"),
+    path("targets/new/", target_views.target_create, name="target_create"),
+    path("targets/import/", target_views.target_import, name="target_import"),
+    path("targets/template.csv", target_views.target_template, name="target_template"),
+    path("targets/<int:pk>/", target_views.target_detail, name="target_detail"),
     path("accounts/", include("accounts.portal_urls")),
     *department_workflow_urls(),
     re_path(rf"^{DEPT}/$", views.dashboard, name="dashboard"),

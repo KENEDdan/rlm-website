@@ -32,6 +32,8 @@ class AuditLog(models.Model):
         CHANGE = "change", "Changed"
         DELETE = "delete", "Deleted"
         EXPORT = "export", "Exported"
+        IMPORT = "import", "Imported"
+        PRINT = "print", "Printed"
         PRIVACY_EXPORT = "privacy_export", "Personal data exported"
         PRIVACY_ERASE = "privacy_erase", "Personal data erased"
         PURGE = "purge", "Retention purge"

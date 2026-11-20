@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 from typing import Any, ClassVar
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -96,17 +97,49 @@ def period_end(start: date, period: str) -> date:
 
 
 class Indicator(TimeStampedModel):
+    """A performance target for one financial year (ministry decision 4).
+
+    The annual target is split into twelve monthly targets (editable); departments record monthly actuals as
+    ``IndicatorValue`` rows. Every change to a target is kept in ``TargetChange`` (who, old, new, reason).
+    """
+
     class Unit(models.TextChoices):
         NUMBER = "number", "Number"
         PERCENT = "percent", "Percent"
         MONEY = "money", "Money"
 
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="indicators")
+    class Category(models.TextChoices):
+        EVANGELISM = "evangelism", "Evangelism"
+        DISCIPLESHIP = "discipleship", "Discipleship"
+        YOUTH = "youth", "Youth fellowships"
+        MEMBERSHIP = "membership", "Membership"
+        PARTNERSHIPS = "partnerships", "Partnerships"
+        MISSIONS = "missions", "Missions"
+        FINANCE = "finance", "Finance"
+        DEVELOPMENT = "development", "Development"
+        MEDIA = "media", "Media"
+        PRAYER = "prayer", "Prayer"
+
+    department = models.ForeignKey(
+        Department, on_delete=models.CASCADE, related_name="indicators", verbose_name="owner department"
+    )
+    category = models.CharField(max_length=20, choices=Category.choices, db_index=True)
     name = models.CharField(max_length=160)
     description = models.TextField(blank=True)
     unit = models.CharField(max_length=10, choices=Unit.choices, default=Unit.NUMBER)
-    target = models.DecimalField(max_digits=14, decimal_places=2)
-    period = models.CharField(max_length=10, choices=Period.choices, default=Period.MONTHLY)
+    year = models.PositiveSmallIntegerField(
+        "financial year", db_index=True, help_text="January to December (ministry decision 2)."
+    )
+    branch = models.ForeignKey(
+        "branches.Branch",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="indicators",
+        help_text="Leave empty for a ministry-wide target.",
+    )
+    annual_target = models.DecimalField(max_digits=14, decimal_places=2)
+    period = models.CharField(max_length=10, choices=Period.choices, default=Period.MONTHLY, editable=False)
     higher_is_better = models.BooleanField(default=True)
     auto_source = models.CharField(
         max_length=60,
@@ -114,29 +147,120 @@ class Indicator(TimeStampedModel):
         help_text="Optional: the code of a dashboard figure that fills this value automatically "
         "when a report is generated (listed in the admin guide).",
     )
+    is_demo = models.BooleanField(
+        default=False,
+        editable=False,
+        help_text="Sample target created for demonstration; never a real target.",
+    )
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        ordering: ClassVar = ["department__order", "name"]
+        ordering: ClassVar = ["category", "department__order", "name"]
         constraints: ClassVar = [
-            models.UniqueConstraint(fields=["department", "name"], name="unique_indicator_name")
+            models.UniqueConstraint(
+                fields=["department", "name", "year", "branch"],
+                name="unique_indicator_per_year_branch",
+                nulls_distinct=False,
+            )
         ]
 
     def __str__(self) -> str:
-        return self.name
+        return f"{self.name} ({self.year})"
+
+    @property
+    def is_cumulative(self) -> bool:
+        """Counts and money add up over the year; percentages are a level to hold every month."""
+        return self.unit != self.Unit.PERCENT
+
+    def split_annual(self) -> list[Decimal]:
+        """Twelve monthly targets: an even split (rounding goes to December) or, for percentages, the same level."""
+        if not self.is_cumulative:
+            return [self.annual_target] * 12
+        each = (self.annual_target / 12).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+        return [each] * 11 + [self.annual_target - each * 11]
+
+    def monthly_map(self) -> dict[int, Decimal]:
+        stored = {t.month: t.target for t in self.monthly_targets.all()}
+        if len(stored) == 12:
+            return stored
+        split = self.split_annual()
+        return {m: stored.get(m, split[m - 1]) for m in range(1, 13)}
+
+    def target_for(self, start: date, period: str | None = None) -> Decimal:
+        """Target for the period beginning ``start`` (a month, quarter or the whole year)."""
+        months = {Period.MONTHLY: 1, Period.QUARTERLY: 3, Period.ANNUAL: 12}[Period(period or self.period)]
+        targets = self.monthly_map()
+        chosen = [targets[m] for m in range(start.month, min(12, start.month + months - 1) + 1)]
+        if not chosen:
+            return Decimal("0")
+        return sum(chosen, Decimal("0")) if self.is_cumulative else sum(chosen, Decimal("0")) / len(chosen)
+
+    # kept for older screens/reports that read ``indicator.target``: the monthly target of the current month
+    @property
+    def target(self) -> Decimal:
+        today = timezone.localdate()
+        month = today.month if today.year == self.year else 1
+        return self.monthly_map()[month]
 
     def latest_value(self) -> IndicatorValue | None:
         return self.values.order_by("-period_start").first()
 
-    def progress(self, value: Decimal | None) -> int | None:
-        """0-100 (capped) towards the target; for lower-is-better indicators, 100 means at/under target."""
-        if value is None or not self.target:
+    def progress(self, value: Decimal | None, target: Decimal | None = None) -> int | None:
+        """Percent of target reached (uncapped, so over-achievement shows); lower-is-better is inverted."""
+        target = self.target if target is None else target
+        if value is None:
             return None
+        if not target:
+            return None if self.higher_is_better else (100 if value <= 0 else 0)
         if self.higher_is_better:
-            return max(0, min(100, int(value * 100 / self.target)))
-        if value <= self.target:
+            return max(0, int(value * 100 / target))
+        if value <= target:
             return 100
-        return max(0, min(100, int(self.target * 100 / value)))
+        return max(0, int(target * 100 / value))
+
+
+class MonthlyTarget(TimeStampedModel):
+    indicator = models.ForeignKey(Indicator, on_delete=models.CASCADE, related_name="monthly_targets")
+    month = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
+    target = models.DecimalField(max_digits=14, decimal_places=2)
+
+    class Meta:
+        ordering: ClassVar = ["month"]
+        constraints: ClassVar = [
+            models.UniqueConstraint(fields=["indicator", "month"], name="unique_month_target")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.indicator} month {self.month}: {self.target}"
+
+
+class TargetChange(models.Model):
+    """Append-only history of target changes (who, old, new, reason). Never edited or deleted."""
+
+    indicator = models.ForeignKey(Indicator, on_delete=models.CASCADE, related_name="target_changes")
+    month = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Empty = the annual target.")
+    old_value = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    new_value = models.DecimalField(max_digits=14, decimal_places=2)
+    reason = models.CharField(max_length=500)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering: ClassVar = ["-created_at"]
+
+    def __str__(self) -> str:
+        which = "annual" if self.month is None else f"month {self.month}"
+        return f"{self.indicator} {which}: {self.old_value} -> {self.new_value}"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk:
+            raise PermissionError("Target history cannot be changed.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        raise PermissionError("Target history cannot be deleted.")
 
 
 class IndicatorValue(TimeStampedModel):
@@ -171,8 +295,12 @@ class IndicatorValue(TimeStampedModel):
                 )
 
     @property
+    def target(self) -> Decimal:
+        return self.indicator.target_for(self.period_start)
+
+    @property
     def progress(self) -> int | None:
-        return self.indicator.progress(self.value)
+        return self.indicator.progress(self.value, self.target)
 
 
 class DepartmentReport(TimeStampedModel):

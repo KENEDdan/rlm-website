@@ -1,113 +1,102 @@
-"""Create SUGGESTED M&E indicators for every department: ``manage.py seed_indicators``.
+"""DEMO ONLY: ``manage.py seed_indicators --demo`` creates clearly fake sample targets (ministry decision 4).
 
-Targets are placeholders for leadership to change (Targets screen of each department). Each indicator is linked
-to a dashboard figure (``auto_source``) so generating the monthly report fills the value in automatically.
-Idempotent: existing indicators (matched by department + name) are never changed.
+Real targets are set by leadership on the Performance targets screen or imported from a CSV file. These samples
+exist only to show the screens working: every name starts with "[DEMO]", every row is flagged ``is_demo`` and
+shows a "Demo" badge, and ``--remove`` deletes them all (with their actuals). Without ``--demo`` nothing happens.
+Idempotent.
 """
 
 from __future__ import annotations
 
+import datetime as dt
+from decimal import Decimal
 from typing import Any
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandParser
+from django.utils import timezone
 
-from portal.models import Department, Indicator
+from portal.indicators import ensure_monthly
+from portal.models import Department, Indicator, IndicatorValue
 
-# department: [(name, unit, target, higher_is_better, auto_source, description)]
-SUGGESTED: dict[str, list[tuple[str, str, int, bool, str, str]]] = {
+PREFIX = "[DEMO] "
+
+# department: [(category, name, unit, annual target, higher_is_better, auto_source)]
+SUGGESTED: dict[str, list[tuple[str, str, str, int, bool, str]]] = {
     "membership": [
-        ("Active members", "number", 200, True, "active_members", "Members with status Active at month end."),
-        ("New members per month", "number", 10, True, "new_in_period", "Members who joined in the month."),
-        ("Applications waiting", "number", 0, False, "pending_approvals", "Applications not yet decided."),
+        ("membership", "New members", "number", 120, True, "new_in_period"),
+        ("membership", "Applications waiting", "number", 0, False, "pending_approvals"),
     ],
     "finance": [
-        ("Income per month", "money", 5000, True, "income", "Posted income in the month."),
-        (
-            "Entries awaiting approval",
-            "number",
-            0,
-            False,
-            "awaiting_approval",
-            "Recorded but not yet approved.",
-        ),
+        ("finance", "Income", "money", 60000, True, "income"),
+        ("partnerships", "New partners", "number", 24, True, ""),
     ],
-    "logistics": [
-        (
-            "Late deliveries",
-            "number",
-            0,
-            False,
-            "late_deliveries",
-            "Orders past their expected delivery date.",
-        ),
-        (
-            "Purchases awaiting approval",
-            "number",
-            0,
-            False,
-            "pending_approvals",
-            "Budget confirmed, not approved.",
-        ),
-    ],
-    "media": [
-        ("Events without a coverage plan", "number", 0, False, "events_uncovered", "Next 30 days."),
-        (
-            "Social reach per month",
-            "number",
-            5000,
-            True,
-            "social_reach",
-            "Entered by hand from platform insights.",
-        ),
-    ],
+    "logistics": [("development", "Late deliveries", "number", 0, False, "late_deliveries")],
+    "media": [("media", "Social reach", "number", 60000, True, "social_reach")],
     "missions": [
-        ("Decisions for Christ per month", "number", 50, True, "decisions", "From field reports."),
-        ("People reached per month", "number", 1000, True, "people_reached", "From field reports."),
-        (
-            "Follow-up completion",
-            "percent",
-            60,
-            True,
-            "follow_up_rate",
-            "Converts enrolled in discipleship or beyond.",
-        ),
+        ("evangelism", "Decisions for Christ", "number", 600, True, "decisions"),
+        ("missions", "People reached", "number", 12000, True, "people_reached"),
+        ("missions", "Follow-up completion", "percent", 60, True, "follow_up_rate"),
     ],
     "discipleship": [
-        ("People enrolled", "number", 50, True, "enrolled", "Currently enrolled in a class."),
-        (
-            "Converts awaiting follow-up",
-            "number",
-            0,
-            False,
-            "awaiting_follow_up",
-            "Handed over, not yet visited.",
-        ),
+        ("discipleship", "People enrolled in classes", "number", 600, True, "enrolled"),
+        ("youth", "Youth fellowship attendance", "number", 2400, True, ""),
+        ("prayer", "Prayer meetings held", "number", 48, True, ""),
     ],
-    "development": [
-        ("Milestones overdue", "number", 0, False, "milestones_overdue", "Across active projects."),
-        ("Maintenance backlog", "number", 3, False, "maintenance_backlog", "Open maintenance requests."),
-    ],
+    "development": [("development", "Maintenance backlog", "number", 36, False, "maintenance_backlog")],
 }
 
 
 class Command(BaseCommand):
-    help = "Create suggested M&E indicators per department (placeholders; existing ones are left alone)."
+    help = "DEMO ONLY: create clearly fake sample targets (--demo) or remove them (--remove)."
+
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument("--demo", action="store_true", help="Create the fake sample targets and actuals.")
+        parser.add_argument("--remove", action="store_true", help="Delete every demo target and its actuals.")
 
     def handle(self, *args: Any, **options: Any) -> None:
+        if options["remove"]:
+            count = Indicator.objects.filter(is_demo=True).delete()[0]
+            self.stdout.write(self.style.SUCCESS(f"Removed {count} demo row(s)."))
+            return
+        if not options["demo"]:
+            self.stdout.write(
+                "Nothing done. Real targets are set by leadership under Performance targets (or imported from "
+                "CSV). Use --demo to create clearly fake sample targets for a demonstration."
+            )
+            return
+        today = timezone.localdate()
         created = 0
         for code, rows in SUGGESTED.items():
             department = Department.objects.get(code=code)
-            for name, unit, target, higher, source, description in rows:
-                _obj, made = Indicator.objects.get_or_create(
+            for category, name, unit, annual, higher, source in rows:
+                indicator, made = Indicator.objects.get_or_create(
                     department=department,
-                    name=name,
+                    name=PREFIX + name,
+                    year=today.year,
+                    branch=None,
                     defaults={
+                        "category": category,
                         "unit": unit,
-                        "target": target,
+                        "annual_target": Decimal(annual),
                         "higher_is_better": higher,
                         "auto_source": source,
-                        "description": f"{description} Suggested target: please review.",
+                        "is_demo": True,
+                        "description": "Fake sample target for demonstration only.",
                     },
                 )
                 created += made
-        self.stdout.write(self.style.SUCCESS(f"{created} suggested indicator(s) created."))
+                ensure_monthly(indicator)
+                targets = indicator.monthly_map()
+                for month in range(1, today.month):  # fake actuals around the target, last month left empty
+                    if month == today.month - 1 and month % 2:
+                        continue  # leave one overdue month to show the flag
+                    factor = Decimal(("0.6", "0.8", "0.95", "1.1")[month % 4])
+                    IndicatorValue.objects.get_or_create(
+                        indicator=indicator,
+                        period_start=dt.date(today.year, month, 1),
+                        defaults={
+                            "value": (targets[month] * factor).quantize(Decimal("1")),
+                            "note": "Demo figure",
+                        },
+                    )
+        self.stdout.write(self.style.SUCCESS(f"{created} demo target(s) created (names start with [DEMO])."))
