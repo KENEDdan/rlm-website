@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import csv
-from functools import wraps
 from typing import Any
 
 from django.contrib import messages
@@ -14,7 +13,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.http import url_has_allowed_host_and_scheme, urlencode
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
@@ -39,24 +38,8 @@ def _invite_rate(group: str, request: HttpRequest) -> str:
     return settings.INVITE_RATE
 
 
-def needs_reauth(view: Any) -> Any:
-    """Send the Super Admin through password + 2FA again before the screen (and its POST) is usable."""
-
-    @wraps(view)
-    def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        if not reauth.is_fresh(request):
-            target = (
-                request.get_full_path() if request.method == "GET" else request.META.get("HTTP_REFERER", "")
-            )
-            if not url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
-                target = reverse("portal:users")
-            return redirect(f"{reverse('portal:reauth')}?{urlencode({'next': target})}")
-        try:
-            return view(request, *args, **kwargs)
-        except reauth.ReauthRequired:
-            return redirect(f"{reverse('portal:reauth')}?{urlencode({'next': reverse('portal:users')})}")
-
-    return wrapper
+# Account screens send the Super Admin back to the account list after re-authenticating.
+needs_reauth = reauth.require_reauth("portal:users")
 
 
 def _user(pk: int) -> User:
@@ -97,13 +80,13 @@ def _row(user: User) -> dict[str, Any]:
 # ------------------------------------------------------------------------------------------- re-auth
 @sensitive_post_parameters("password", "code")
 @never_cache
-@portal_view(super_admin=True)
+@portal_view()  # any verified staff member: Super Admins (accounts) and approvers (finance) use it
 @login_ratelimit
 @require_http_methods(["GET", "POST"])
 def reauth_view(request: HttpRequest) -> HttpResponse:
-    nxt = request.GET.get("next") or reverse("portal:users")
+    nxt = request.GET.get("next") or reverse("portal:home")
     if not url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
-        nxt = reverse("portal:users")
+        nxt = reverse("portal:home")
     form = ReauthForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = request.user

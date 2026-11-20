@@ -7,9 +7,15 @@ only. Creating users, changing roles, resetting 2FA, forcing a password reset an
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
 
 from django.conf import settings
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 
 SESSION_KEY = "reauth_at"
 
@@ -31,3 +37,33 @@ def mark_fresh(request: HttpRequest) -> None:
 
 def clear(request: HttpRequest) -> None:
     request.session.pop(SESSION_KEY, None)
+
+
+def require_reauth(
+    fallback: str = "portal:home",
+) -> Callable[[Callable[..., HttpResponse]], Callable[..., HttpResponse]]:
+    """View decorator: password + 2FA again (within the window) before the screen or its POST runs.
+
+    GET requests come back to the same page afterwards; POSTs come back to the page they were sent from.
+    """
+
+    def decorator(view: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
+        @wraps(view)
+        def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+            if not is_fresh(request):
+                target = (
+                    request.get_full_path()
+                    if request.method == "GET"
+                    else request.META.get("HTTP_REFERER", "")
+                )
+                if not url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
+                    target = reverse(fallback)
+                return redirect(f"{reverse('portal:reauth')}?{urlencode({'next': target})}")
+            try:
+                return view(request, *args, **kwargs)
+            except ReauthRequired:
+                return redirect(f"{reverse('portal:reauth')}?{urlencode({'next': reverse(fallback)})}")
+
+        return wrapper
+
+    return decorator

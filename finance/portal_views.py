@@ -13,9 +13,10 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
+from accounts.reauth import require_reauth
 from audit.models import AuditLog
 from audit.services import log_event
-from portal.access import DEPARTMENT_ORDER, MEMBER, get_access, portal_view
+from portal.access import DEPARTMENT_ORDER, HEAD, MEMBER, get_access, portal_view
 from portal.views import post_action
 
 from . import services
@@ -61,6 +62,37 @@ def ledger_step(request: HttpRequest, pk: int, step: str) -> HttpResponse:
     except (ValidationError, PermissionDenied) as exc:
         _fail(request, exc)
     return redirect(resource.url("detail", entry))
+
+
+@never_cache
+@portal_view(DEPT, level=HEAD)
+@require_POST
+def year_close(request: HttpRequest, pk: int) -> HttpResponse:
+    resource, fy = post_action(request, DEPT, "financial-years", pk, "view")
+    try:
+        services.close_year(request, fy)
+    except ValidationError as exc:
+        _fail(request, exc)
+    else:
+        messages.success(request, f"{fy} is closed.")
+    return redirect(resource.url("detail", fy))
+
+
+@never_cache
+@portal_view(super_admin=True)
+@require_reauth("portal:home")
+@require_http_methods(["GET", "POST"])
+def year_reopen(request: HttpRequest, pk: int) -> HttpResponse:
+    resource, fy = post_action(request, DEPT, "financial-years", pk, "view")
+    if request.method == "POST":
+        try:
+            services.reopen_year(request, fy, request.POST.get("note", ""))
+        except ValidationError as exc:
+            _fail(request, exc)
+        else:
+            messages.success(request, f"{fy} is open again. This was recorded in the audit log.")
+            return redirect(resource.url("detail", fy))
+    return render(request, "finance/year_reopen.html", {"department": DEPT, "fy": fy})
 
 
 @never_cache

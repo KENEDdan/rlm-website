@@ -24,7 +24,7 @@ from core.admin_mixins import Echo, csv_safe
 
 from . import reports
 from .access import HEAD, MEMBER, get_access, portal_view
-from .dashboards import DASHBOARDS, KPI, Dashboard, read_filters
+from .dashboards import DASHBOARDS, KPI, PERIOD_CHOICES, Dashboard, financial_years, read_filters
 from .models import Department
 from .resources import Resource, format_value, get_resource, resources_for
 
@@ -69,6 +69,8 @@ def dashboard(request: HttpRequest, department: str) -> HttpResponse:
         "filters": filters,
         "branches": access.allowed_branches(department),
         "branch_fixed": access.branch_restricted_in(department),
+        "fy_choices": financial_years(),
+        "period_choices": PERIOD_CHOICES,
         "can_export": access.is_head(department),
         "indicators": reports.indicator_progress(department),
         "reports": reports.recent_reports(department),
@@ -126,7 +128,12 @@ def executive(request: HttpRequest) -> HttpResponse:
 
     access = get_access(request)
     filters = read_filters(request, access)
-    context = {"overview": build_overview(request, access, filters), "filters": filters}
+    context = {
+        "overview": build_overview(request, access, filters),
+        "filters": filters,
+        "fy_choices": financial_years(),
+        "period_choices": PERIOD_CHOICES,
+    }
     context["branches"] = access.allowed_branches()
     if is_htmx(request):
         return render(request, "portal/_executive_body.html", context)

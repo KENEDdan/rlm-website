@@ -306,3 +306,18 @@ report and "Our budget". Choices made:
 * Migration: existing department assignments of Branch Coordinators became single-branch for their branch, so
   nobody gained access. Finance budget lines and ledger entries gained an optional branch (empty =
   ministry-wide) so finance can be scoped and reported by branch.
+
+## D-027: Financial year (ministry decision 2)
+(2026-11-20) `finance.FinancialYear` (one row per calendar year, created on demand; the current year is the
+default). Budget lines and ledger entries are linked to their year; monthly reports carry their year.
+Dashboards and the Executive Overview filter by **financial year** and **whole year / quarter / month** (a free
+date range still works through links). Choices made:
+* A closed year accepts **no** new, changed, deleted or posted ledger entries and no budget changes, enforced in
+  the model (`ClosedYearError`), the forms and the approval service. Corrections to a closed year go into the
+  open year (reversals are dated today).
+* A year can only be closed when every entry in it is posted (no drafts, rejected or waiting entries), so nothing
+  is left stranded.
+* Closing: Finance head or Super Admin. Reopening: Super Admin only, after password + 2FA re-authentication, with
+  a written reason. Both are in the audit log (`year_closed`, `year_reopened`).
+* The re-authentication page is now available to every signed-in staff member (approvers need it); it only
+  confirms identity and grants nothing.

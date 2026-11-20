@@ -32,6 +32,7 @@ from .models import (
     Donor,
     FinanceSettings,
     FinanceVolunteer,
+    FinancialYear,
     GrantOpportunity,
     IncomeSource,
     LedgerEntry,
@@ -457,6 +458,56 @@ class SettingsResource(_Finance):
     def get_queryset(self, access: Access) -> QuerySet:
         FinanceSettings.load()
         return super().get_queryset(access)
+
+
+@register
+class FinancialYearResource(_Finance):
+    model = FinancialYear
+    slug = "financial-years"
+    label = "Financial years"
+    nav_group = "Accounts"
+    sensitive = False
+    description = "1 January to 31 December for every branch and department. A closed year accepts no new or changed entries."
+    list_fields: ClassVar = ["year", "status", "closed_at", "closed_by", "reopened_at"]
+    filters: ClassVar = ["status"]
+    fields: ClassVar = ["year", "notes"]
+    detail_fields: ClassVar = [
+        "year",
+        "status",
+        "closed_at",
+        "closed_by",
+        "reopened_at",
+        "reopened_by",
+        "notes",
+    ]
+    perms: ClassVar = {
+        "view": MEMBER,
+        "add": HEAD,
+        "change": FOUNDER + 1,
+        "delete": FOUNDER + 1,
+        "export": HEAD,
+    }
+
+    def actions(self, request: HttpRequest, access: Access, obj: Model) -> list[dict[str, Any]]:
+        fy: FinancialYear = obj  # type: ignore[assignment]
+        if not fy.is_closed and access.is_head(DEPT):
+            return [
+                {
+                    "label": "Close this year",
+                    "url": reverse("portal:finance:year_close", args=[fy.pk]),
+                    "style": "danger",
+                    "confirm": f"Close {fy}? Nothing can then be recorded, changed or posted in it.",
+                }
+            ]
+        if fy.is_closed and access.is_super_admin:
+            return [
+                {
+                    "label": "Reopen this year",
+                    "url": reverse("portal:finance:year_reopen", args=[fy.pk]),
+                    "method": "get",
+                }
+            ]
+        return []
 
 
 # ------------------------------------------------------------------------------------------ dashboard

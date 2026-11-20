@@ -235,6 +235,11 @@ class DepartmentReport(TimeStampedModel):
         super().save(*args, **kwargs)
 
     @property
+    def financial_year(self) -> int:
+        """Financial year = calendar year (ministry decision 2)."""
+        return self.period_start.year
+
+    @property
     def is_editable(self) -> bool:
         return self.status in (self.Status.DRAFT, self.Status.RETURNED)
 

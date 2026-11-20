@@ -16,7 +16,15 @@ from django.utils import timezone
 from audit.models import AuditLog
 from audit.services import log_event
 
-from .models import BudgetLine, Donor, FinanceSettings, FinanceVolunteer, LedgerEntry
+from .models import (
+    BudgetLine,
+    Donor,
+    FinanceSettings,
+    FinanceVolunteer,
+    FinancialYear,
+    LedgerEntry,
+    year_is_closed,
+)
 
 E = LedgerEntry.Status
 ZERO = Decimal("0")
@@ -42,10 +50,60 @@ def _next_number(entry: LedgerEntry) -> str:
     return f"{prefix}-{year}-{count:05d}"
 
 
+def ensure_open_year(day: date) -> None:
+    if year_is_closed(day.year):
+        raise ValidationError(
+            f"Financial year {day.year} is closed. Nothing can be recorded or posted in it."
+        )
+
+
+# ------------------------------------------------------------------------------------------ financial years
+@transaction.atomic
+def close_year(request: HttpRequest, fy: FinancialYear) -> None:
+    """Finance head or Super Admin (checked by the view). Unfinished entries must be resolved first."""
+    if fy.is_closed:
+        raise ValidationError("This financial year is already closed.")
+    unfinished = LedgerEntry.objects.filter(date__year=fy.year).exclude(status=E.POSTED).count()
+    if unfinished:
+        raise ValidationError(
+            f"{unfinished} entr{'y is' if unfinished == 1 else 'ies are'} in {fy.year} not yet posted "
+            "(draft, awaiting approval or rejected). Post or delete them first."
+        )
+    fy.status = FinancialYear.Status.CLOSED
+    fy.closed_at, fy.closed_by = timezone.now(), request.user
+    fy.save()
+    log_event(AuditLog.Action.YEAR_CLOSED, request=request, obj=fy, extra={"year": fy.year})
+
+
+@transaction.atomic
+def reopen_year(request: HttpRequest, fy: FinancialYear, reason: str) -> None:
+    """Super Admin only, after re-authentication (both checked here as well as in the view)."""
+    from accounts import reauth
+
+    if not getattr(request.user, "is_super_admin", False):
+        raise PermissionDenied("Only a Super Admin can reopen a financial year.")
+    if not reauth.is_fresh(request):
+        raise reauth.ReauthRequired
+    if not fy.is_closed:
+        raise ValidationError("This financial year is open.")
+    if not reason.strip():
+        raise ValidationError("Give the reason for reopening the year.")
+    fy.status = FinancialYear.Status.OPEN
+    fy.reopened_at, fy.reopened_by = timezone.now(), request.user
+    fy.save()
+    log_event(
+        AuditLog.Action.YEAR_REOPENED,
+        request=request,
+        obj=fy,
+        extra={"year": fy.year, "reason": reason[:300]},
+    )
+
+
 @transaction.atomic
 def submit(request: HttpRequest, entry: LedgerEntry) -> None:
     if entry.status not in (E.DRAFT, E.REJECTED):
         raise ValidationError("Only drafts can be submitted.")
+    ensure_open_year(entry.date)
     entry.full_clean()
     entry.status = E.SUBMITTED
     entry.submitted_at = timezone.now()
@@ -57,6 +115,7 @@ def submit(request: HttpRequest, entry: LedgerEntry) -> None:
 @transaction.atomic
 def approve(request: HttpRequest, entry: LedgerEntry) -> None:
     entry = LedgerEntry.objects.select_for_update().get(pk=entry.pk)
+    ensure_open_year(entry.date)
     allowed, reason = can_approve(request.user, entry)
     if not allowed:
         raise PermissionDenied(reason)

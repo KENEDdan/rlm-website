@@ -53,6 +53,8 @@ class AuditLog(models.Model):
         POST = "post", "Posted"
         REVERSE = "reverse", "Reversed"
         HANDOFF = "handoff", "Handed to another department"
+        YEAR_CLOSED = "year_closed", "Financial year closed"
+        YEAR_REOPENED = "year_reopened", "Financial year reopened"
 
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     actor_id = models.BigIntegerField(null=True, blank=True, db_index=True)

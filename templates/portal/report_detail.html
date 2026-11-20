@@ -3,7 +3,7 @@
 <section class="panel mb-6">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
-      <p class="text-sm">{{ obj.department.name }} · {{ obj.get_period_display }} report for <strong>{{ obj.period_label }}</strong></p>
+      <p class="text-sm">{{ obj.department.name }} · {{ obj.get_period_display }} report for <strong>{{ obj.period_label }}</strong> · Financial year {{ obj.financial_year }}</p>
       <p class="mt-1">{% include "portal/_status.html" with value=obj.status label=obj.get_status_display %}{% if obj.is_overdue %} {% include "portal/_status.html" with value="overdue" label="Overdue" %}{% endif %} <span class="text-xs text-rlm-grey">Due {{ obj.due_date|date:"j M Y" }}</span></p>
     </div>
     <button type="button" class="btn-outline btn-sm" data-print>Print / Save as PDF</button>

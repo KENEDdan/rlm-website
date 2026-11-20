@@ -1,0 +1,13 @@
+{% extends "portal/base.html" %}
+{% block title %}Reopen {{ fy }}{% endblock %}
+{% block content %}
+<div class="panel max-w-xl">
+  <p class="eyebrow"><a class="hover:underline" href="{% url 'portal:resource_detail' department 'financial-years' fy.pk %}">{{ fy }}</a></p>
+  <h1 class="portal-title">Reopen {{ fy }}</h1>
+  <p class="mt-2 text-sm">Reopening allows entries in {{ fy.year }} to be recorded, changed and posted again. Only do this to correct a real mistake, then close the year again. Your reason is recorded in the audit log.</p>
+  <form method="post" class="rlm-form mt-4 space-y-4">{% csrf_token %}
+    <div><label for="note">Reason (required)</label><textarea id="note" name="note" rows="3" maxlength="300" required></textarea></div>
+    <div class="flex gap-3"><button type="submit" class="btn-danger">Reopen the year</button><a class="btn-outline" href="{% url 'portal:resource_detail' department 'financial-years' fy.pk %}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}

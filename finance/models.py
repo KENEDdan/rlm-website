@@ -11,6 +11,7 @@ Controls (docs/DECISIONS.md D-019):
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 from typing import Any, ClassVar
 
@@ -73,8 +74,84 @@ def current_year() -> int:
     return timezone.localdate().year
 
 
+class ClosedYearError(PermissionError):
+    """Raised when something would be recorded, changed or posted in a closed financial year."""
+
+
+class FinancialYear(TimeStampedModel):
+    """1 January to 31 December, the same for every branch and department (ministry decision 2).
+
+    Quarters and months derive from the calendar year. A closed year accepts no new, changed or posted ledger
+    entries and no budget changes; only a Super Admin can reopen it (with re-authentication).
+    """
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        CLOSED = "closed", "Closed"
+
+    year = models.PositiveSmallIntegerField(unique=True, default=current_year)
+    status = models.CharField(max_length=6, choices=Status.choices, default=Status.OPEN, db_index=True)
+    closed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    reopened_at = models.DateTimeField(null=True, blank=True, editable=False)
+    reopened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering: ClassVar = ["-year"]
+
+    def __str__(self) -> str:
+        return f"FY {self.year}"
+
+    @property
+    def start(self) -> date:
+        return date(self.year, 1, 1)
+
+    @property
+    def end(self) -> date:
+        return date(self.year, 12, 31)
+
+    @property
+    def is_closed(self) -> bool:
+        return self.status == self.Status.CLOSED
+
+    @classmethod
+    def for_year(cls, year: int) -> FinancialYear:
+        obj, _ = cls.objects.get_or_create(year=year)
+        return obj
+
+    @classmethod
+    def for_date(cls, day: date | None) -> FinancialYear:
+        return cls.for_year((day or timezone.localdate()).year)
+
+    @classmethod
+    def current(cls) -> FinancialYear:
+        return cls.for_date(timezone.localdate())
+
+
+def year_is_closed(year: int) -> bool:
+    return FinancialYear.objects.filter(year=year, status=FinancialYear.Status.CLOSED).exists()
+
+
 class BudgetLine(TimeStampedModel):
     year = models.PositiveSmallIntegerField(default=current_year)
+    financial_year = models.ForeignKey(
+        FinancialYear, null=True, on_delete=models.PROTECT, related_name="budget_lines", editable=False
+    )
     department = models.ForeignKey("portal.Department", on_delete=models.PROTECT, related_name="budget_lines")
     branch = models.ForeignKey(
         "branches.Branch",
@@ -99,6 +176,21 @@ class BudgetLine(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.year} {self.department} - {self.name}"
+
+    def clean(self) -> None:
+        if self.year and year_is_closed(self.year):
+            raise ValidationError({"year": f"Financial year {self.year} is closed."})
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if year_is_closed(self.year):
+            raise ClosedYearError(f"Financial year {self.year} is closed; budgets cannot change.")
+        self.financial_year = FinancialYear.for_year(self.year)
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if year_is_closed(self.year):
+            raise ClosedYearError(f"Financial year {self.year} is closed; budgets cannot change.")
+        return super().delete(*args, **kwargs)
 
 
 class LedgerEntryQuerySet(models.QuerySet):
@@ -130,6 +222,9 @@ class LedgerEntry(TimeStampedModel):
     number = models.CharField(max_length=20, unique=True, null=True, blank=True, editable=False)
     kind = models.CharField(max_length=10, choices=Kind.choices)
     date = models.DateField(default=timezone.localdate, db_index=True)
+    financial_year = models.ForeignKey(
+        FinancialYear, null=True, on_delete=models.PROTECT, related_name="ledger_entries", editable=False
+    )
     amount = models.DecimalField(
         max_digits=14, decimal_places=2, help_text="Always positive (reversals are negative)."
     )
@@ -211,6 +306,10 @@ class LedgerEntry(TimeStampedModel):
         return self.reverses_id is not None
 
     def clean(self) -> None:
+        if self.date and year_is_closed(self.date.year):
+            raise ValidationError(
+                {"date": f"Financial year {self.date.year} is closed. Use a date in an open year."}
+            )
         if self.amount is not None and self.amount <= 0 and not self.is_reversal:
             raise ValidationError({"amount": "Enter an amount above zero."})
         if self.kind == self.Kind.EXPENSE and not self.category:
@@ -229,6 +328,11 @@ class LedgerEntry(TimeStampedModel):
             stored = type(self)._base_manager.filter(pk=self.pk).values_list("status", flat=True).first()
             if stored == self.Status.POSTED:
                 raise PermissionError("Posted ledger entries cannot be changed; record a reversing entry.")
+        if self.date and year_is_closed(self.date.year):
+            raise ClosedYearError(
+                f"Financial year {self.date.year} is closed; nothing can be recorded or posted in it."
+            )
+        self.financial_year = FinancialYear.for_date(self.date)
         if self.budget_line_id and not self.department_id:
             self.department_id = self.budget_line.department_id
         if self.budget_line_id and not self.branch_id:
@@ -236,6 +340,8 @@ class LedgerEntry(TimeStampedModel):
         super().save(*args, **kwargs)
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if self.date and year_is_closed(self.date.year):
+            raise ClosedYearError(f"Financial year {self.date.year} is closed.")
         if self.status == self.Status.POSTED:
             raise PermissionError("Posted ledger entries cannot be deleted; record a reversing entry.")
         return super().delete(*args, **kwargs)

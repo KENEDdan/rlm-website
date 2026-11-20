@@ -1,11 +1,11 @@
-<form method="get" action="{{ filter_url }}" class="portal-filters rlm-form" hx-get="{{ filter_url }}" hx-target="{{ target }}" hx-push-url="true" hx-trigger="change, submit">
+{% load portal_tags %}<form method="get" action="{{ filter_url }}" class="portal-filters rlm-form" hx-get="{{ filter_url }}" hx-target="{{ target }}" hx-push-url="true" hx-trigger="change, submit">
   <div>
-    <label for="f-from">From</label>
-    <input type="date" id="f-from" name="from" value="{{ filters.start|date:'Y-m-d' }}">
+    <label for="f-fy">Financial year</label>
+    <select id="f-fy" name="fy">{% for y in fy_choices %}<option value="{{ y }}" {% if filters.fy == y %}selected{% endif %}>{{ y }}</option>{% endfor %}</select>
   </div>
   <div>
-    <label for="f-to">To</label>
-    <input type="date" id="f-to" name="to" value="{{ filters.end|date:'Y-m-d' }}">
+    <label for="f-period">Period</label>
+    <select id="f-period" name="period">{% for code, label in period_choices %}<option value="{{ code }}" {% if filters.period == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
   </div>
   <div>
     <label for="f-branch">Branch</label>
@@ -19,4 +19,5 @@
     {% endif %}
   </div>
   <div class="flex items-end"><button type="submit" class="btn-dark btn-sm">Apply</button></div>
+  <p class="col-span-full text-xs text-rlm-grey lg:basis-full">Showing {{ filters.period_label }}: {{ filters.start|date:"j M Y" }} to {{ filters.end|date:"j M Y" }}{% if filters.branch_name %}, {{ filters.branch_name }}{% else %}, all branches{% endif %}.</p>
 </form>

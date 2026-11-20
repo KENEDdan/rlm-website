@@ -155,7 +155,7 @@ def test_other_roles_cannot_manage_accounts(role: str, make_staff, verified_clie
         "accounts/audit/",
         f"accounts/{target.pk}/",
         f"accounts/{target.pk}/roles/",
-        "accounts/confirm/",
+        # "accounts/confirm/" (re-authentication) is open to all staff: approvers need it; it grants nothing.
     ]
     for url in urls_get:
         assert client.get(P + url).status_code in (403, 404), url
