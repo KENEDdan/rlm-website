@@ -365,3 +365,15 @@ date range still works through links). Choices made:
   each old project expense became a DRAFT expenditure entry tagged with the project, with its old voucher number
   in `reference`. Finance checks these against the books and submits or deletes them; nothing was posted
   automatically, so nothing is counted twice.
+
+## D-030: Executive Finance page (ministry decision 1)
+(2026-11-20) `/portal/executive/finance/` (`finance/executive.py`), for Executive Leadership, the Founder /
+Super Admin and Finance staff. Every figure is an aggregate: income, expenditure and net for the chosen period;
+cash position (all posted income less all posted expenditure up to the period end: the ledger has no opening
+balances, so this is the ledger-derived position); outstanding pledges (total and count, no donors); approved
+budget for the financial year (approved lines + approved adjustments; drafts excluded); budget vs actual by
+department and by branch (lines and spending without a branch shown as "Ministry-wide"); monthly income and
+expenditure for the year; income by source; items waiting for executive approval and UNBUDGETED spending.
+Filters: financial year, quarter or month, branch. Drill-down: a department's category totals, never entries.
+No query on this page returns a ledger line, donor, voucher, receipt, payee or description; ledger, donors,
+pledges, donations and exports remain Finance + Founder only (tested). Each view is audit-logged.

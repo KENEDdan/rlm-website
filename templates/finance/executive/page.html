@@ -1,0 +1,14 @@
+{% extends "portal/base.html" %}
+{% block title %}Executive finance{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Founder &amp; leadership</p>
+    <h1 class="portal-title">Executive finance</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Ministry-wide totals only. Ledger lines, donors, vouchers and receipts stay with Finance and the Founder.</p>
+  </div>
+</div>
+{% url 'portal:finance:executive_finance' as filter_url %}
+{% include "portal/_filters.html" with target="#exec-finance-body" %}
+<div id="exec-finance-body">{% include "finance/executive/_body.html" %}</div>
+{% endblock %}

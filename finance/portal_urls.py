@@ -2,7 +2,7 @@ from django.urls import path, re_path
 
 from portal.access import DEPARTMENT_ORDER
 
-from . import approval_views
+from . import approval_views, executive_views
 from . import portal_views as views
 
 app_name = "finance"
@@ -10,6 +10,7 @@ DEPT = "(?P<department>" + "|".join(DEPARTMENT_ORDER) + ")"
 
 urlpatterns = [
     path("approvals/", approval_views.inbox, name="approvals"),
+    path("executive/finance/", executive_views.executive_finance, name="executive_finance"),
     path("approvals/<slug:kind>/<int:pk>/", approval_views.detail, name="approval_detail"),
     path("finance/budget/<int:pk>/submit/", views.budget_line_submit, name="budget_line_submit"),
     path("finance/ledger/<int:pk>/step/<slug:step>/", views.ledger_step, name="ledger_step"),

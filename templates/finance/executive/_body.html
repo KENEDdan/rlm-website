@@ -1,0 +1,53 @@
+{% with d=data %}
+<div data-focus tabindex="-1" class="sr-only">Figures updated.</div>
+<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="kpi"><p class="kpi-label">Income</p><p class="kpi-value tabular-nums">{{ d.income|floatformat:2 }}</p><p class="kpi-hint">Posted in {{ filters.period_label }}</p></div>
+  <div class="kpi"><p class="kpi-label">Expenditure</p><p class="kpi-value tabular-nums">{{ d.expenditure|floatformat:2 }}</p><p class="kpi-hint">Net {{ d.net|floatformat:2 }}</p></div>
+  <div class="kpi"><p class="kpi-label">Cash position</p><p class="kpi-value tabular-nums">{{ d.cash|floatformat:2 }}</p><p class="kpi-hint">All posted income less expenditure to {{ filters.end|date:"j M Y" }}</p></div>
+  <div class="kpi"><p class="kpi-label">Outstanding pledges</p><p class="kpi-value tabular-nums">{{ d.outstanding_pledges|floatformat:2 }}</p><p class="kpi-hint">{{ d.open_pledges }} open pledge{{ d.open_pledges|pluralize }}</p></div>
+  <div class="kpi"><p class="kpi-label">Approved budget {{ d.year }}</p><p class="kpi-value tabular-nums">{{ d.approved_budget|floatformat:2 }}</p><p class="kpi-hint">{% if d.budget_used_pct is not None %}{{ d.budget_used_pct }}% spent so far this year{% else %}No approved budget{% endif %}</p></div>
+  <div class="kpi"><p class="kpi-label">Waiting for executive approval</p><p class="kpi-value tabular-nums">{{ d.waiting }}</p>{% if d.waiting_unbudgeted %}<p class="kpi-hint"><span class="badge-unbudgeted">UNBUDGETED</span> {{ d.waiting_unbudgeted }}</p>{% endif %}</div>
+  <div class="kpi"><p class="kpi-label">Unbudgeted spending approved</p><p class="kpi-value tabular-nums">{{ d.unbudgeted_spent|floatformat:2 }}</p><p class="kpi-hint">Posted in the period</p></div>
+</div>
+
+<section class="panel mt-6" aria-labelledby="bva-dept">
+  <h2 class="panel-title" id="bva-dept">Budget vs actual by department</h2>
+  <p class="text-xs text-rlm-grey">Budget: approved for {{ d.year }} (with approved adjustments). Actual: posted spending in {{ filters.period_label }}. Choose a department to see its categories.</p>
+  <div class="table-wrap"><table class="table-rlm">
+    <thead><tr><th scope="col">Department</th><th scope="col">Budget</th><th scope="col">Actual</th><th scope="col">Remaining</th><th scope="col">Used</th></tr></thead>
+    <tbody>{% for r in d.by_department %}<tr>
+      <th scope="row">{% if r.code %}<a class="portal-link" href="?{{ query }}&amp;department={{ r.code|urlencode }}#drill">{{ r.label }}</a>{% else %}{{ r.label }}{% endif %}</th>
+      <td class="tabular-nums">{{ r.budget|floatformat:2 }}</td><td class="tabular-nums">{{ r.actual|floatformat:2 }}</td><td class="tabular-nums">{{ r.remaining|floatformat:2 }}</td>
+      <td>{% if r.percent is None %}—{% else %}{{ r.percent }}%{% endif %}{% if r.over %} {% include "portal/_status.html" with value="bad" label="Over budget" %}{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="5">No budget or spending for this period.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+{% if d.drill %}
+<section class="panel mt-6" aria-labelledby="drill-title" id="drill">
+  <h2 class="panel-title" id="drill-title">{{ d.drill.department }}: by category</h2>
+  <p class="text-xs text-rlm-grey">Category totals only. Income recorded against this department: {{ d.drill.income|floatformat:2 }}.</p>
+  <div class="table-wrap"><table class="table-rlm">
+    <thead><tr><th scope="col">Category</th><th scope="col">Budget</th><th scope="col">Actual</th><th scope="col">Remaining</th><th scope="col">Used</th></tr></thead>
+    <tbody>{% for r in d.drill.rows %}<tr><th scope="row">{{ r.label }}</th><td class="tabular-nums">{{ r.budget|floatformat:2 }}</td><td class="tabular-nums">{{ r.actual|floatformat:2 }}</td><td class="tabular-nums">{{ r.remaining|floatformat:2 }}</td><td>{% if r.percent is None %}—{% else %}{{ r.percent }}%{% endif %}{% if r.over %} {% include "portal/_status.html" with value="bad" label="Over budget" %}{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nothing recorded.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+
+<section class="panel mt-6" aria-labelledby="bva-branch">
+  <h2 class="panel-title" id="bva-branch">Budget vs actual by branch</h2>
+  <div class="table-wrap"><table class="table-rlm">
+    <thead><tr><th scope="col">Branch</th><th scope="col">Budget</th><th scope="col">Actual</th><th scope="col">Remaining</th><th scope="col">Used</th></tr></thead>
+    <tbody>{% for r in d.by_branch %}<tr><th scope="row">{{ r.label }}</th><td class="tabular-nums">{{ r.budget|floatformat:2 }}</td><td class="tabular-nums">{{ r.actual|floatformat:2 }}</td><td class="tabular-nums">{{ r.remaining|floatformat:2 }}</td><td>{% if r.percent is None %}—{% else %}{{ r.percent }}%{% endif %}{% if r.over %} {% include "portal/_status.html" with value="bad" label="Over budget" %}{% endif %}</td></tr>{% empty %}<tr><td colspan="5">No budget or spending for this period.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-2">
+  {% for chart in d.charts %}{% include "portal/charts/chart.html" %}{% endfor %}
+</div>
+
+<section class="panel mt-6" aria-labelledby="src-title">
+  <h2 class="panel-title" id="src-title">Income by source ({{ filters.period_label }})</h2>
+  <div class="table-wrap"><table class="table-rlm"><tbody>{% for label, total in d.income_by_source %}<tr><th scope="row">{{ label }}</th><td class="tabular-nums">{{ total|floatformat:2 }}</td></tr>{% empty %}<tr><td>No income posted.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endwith %}
