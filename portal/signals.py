@@ -14,7 +14,12 @@ def _membership_saved(
 ) -> None:
     if raw:
         return
-    change = {"department": instance.department.name, "is_head": instance.is_head, "created": created}
+    change = {
+        "department": instance.department.name,
+        "is_head": instance.is_head,
+        "scope": instance.scope_label,
+        "created": created,
+    }
     record_change(instance.user, {"department_membership": change}, kind="department_membership")
 
 

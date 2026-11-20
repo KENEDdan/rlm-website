@@ -69,8 +69,8 @@ def _has_2fa(user: User) -> bool:
 
 def _row(user: User) -> dict[str, Any]:
     memberships = [
-        f"{m.department.name}{' (head)' if m.is_head else ''}"
-        for m in user.memberships.select_related("department")
+        f"{m.department.name}{' (head)' if m.is_head else ''}{f' [{m.branch} only]' if m.branch_id else ''}"
+        for m in user.memberships.select_related("department", "branch")
     ]
     roles = list(user.groups.values_list("name", flat=True))
     if user.deleted_at:

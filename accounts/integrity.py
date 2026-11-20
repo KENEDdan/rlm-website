@@ -44,7 +44,7 @@ def compute_fingerprint() -> str:
     )
     memberships = list(
         DepartmentMembership.objects.order_by("user_id", "department_id").values_list(
-            "user_id", "department_id", "is_head"
+            "user_id", "department_id", "is_head", "branch_id"
         )
     )
     payload = json.dumps([users, groups, perms, group_perms, memberships], default=str, separators=(",", ":"))

@@ -44,6 +44,15 @@ class DepartmentMembership(TimeStampedModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="memberships")
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="memberships")
     is_head = models.BooleanField(default=False, help_text="Department head: approvals, exports, reports.")
+    branch = models.ForeignKey(
+        "branches.Branch",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="department_memberships",
+        help_text="Scope of this role: empty = all branches (department leaders); a branch = only that branch's "
+        "records in this department (a Branch Coordinator who also serves here).",
+    )
 
     class Meta:
         ordering: ClassVar = ["department__order", "-is_head"]
@@ -52,7 +61,12 @@ class DepartmentMembership(TimeStampedModel):
         ]
 
     def __str__(self) -> str:
-        return f"{self.department} ({'head' if self.is_head else 'member'})"
+        role = "head" if self.is_head else "member"
+        return f"{self.department} ({role}, {self.scope_label})"
+
+    @property
+    def scope_label(self) -> str:
+        return f"{self.branch} only" if self.branch_id else "all branches"
 
     @property
     def audit_label(self) -> str:

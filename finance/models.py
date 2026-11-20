@@ -76,6 +76,14 @@ def current_year() -> int:
 class BudgetLine(TimeStampedModel):
     year = models.PositiveSmallIntegerField(default=current_year)
     department = models.ForeignKey("portal.Department", on_delete=models.PROTECT, related_name="budget_lines")
+    branch = models.ForeignKey(
+        "branches.Branch",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="budget_lines",
+        help_text="Empty = ministry-wide line of the department.",
+    )
     category = models.CharField(max_length=20, choices=Category.choices)
     name = models.CharField(max_length=160)
     amount = models.DecimalField(
@@ -133,6 +141,14 @@ class LedgerEntry(TimeStampedModel):
         on_delete=models.PROTECT,
         related_name="ledger_entries",
         help_text="Which department spent (or raised) it.",
+    )
+    branch = models.ForeignKey(
+        "branches.Branch",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="ledger_entries",
+        help_text="Empty = ministry-wide.",
     )
     budget_line = models.ForeignKey(
         BudgetLine, null=True, blank=True, on_delete=models.PROTECT, related_name="entries"
@@ -215,6 +231,8 @@ class LedgerEntry(TimeStampedModel):
                 raise PermissionError("Posted ledger entries cannot be changed; record a reversing entry.")
         if self.budget_line_id and not self.department_id:
             self.department_id = self.budget_line.department_id
+        if self.budget_line_id and not self.branch_id:
+            self.branch_id = self.budget_line.branch_id
         super().save(*args, **kwargs)
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:

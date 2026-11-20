@@ -51,7 +51,8 @@ EXTRA_ROLES = {BRANCH_COORDINATOR, EXECUTIVE}
 
 @dataclass
 class RoleSpec:
-    departments: dict[str, bool]  # department code -> is_head
+    # department code -> is_head, or (is_head, branch id) for a single-branch assignment (None = all branches)
+    departments: dict[str, Any]
     extra_roles: set[str]  # Branch Coordinator / Executive Leadership
     branch_id: int | None
     super_admin: bool = False
@@ -105,7 +106,20 @@ def _authorised(request: HttpRequest, reason: str, *, needs_reauth: bool = True)
 
 
 # ------------------------------------------------------------------------------------------- roles
+def department_roles(spec: RoleSpec) -> dict[str, tuple[bool, int | None]]:
+    """Normalise ``spec.departments`` to code -> (is_head, branch id or None)."""
+    out = {}
+    for code, value in spec.departments.items():
+        out[code] = (bool(value[0]), value[1]) if isinstance(value, tuple) else (bool(value), None)
+    return out
+
+
 def _validate_spec(spec: RoleSpec) -> None:
+    from branches.models import Branch
+
+    for _is_head, branch_id in department_roles(spec).values():
+        if branch_id is not None and not Branch.objects.filter(pk=branch_id).exists():
+            raise AccountError("Unknown branch.")
     unknown = set(spec.departments) - set(GROUP_FOR_CODE)
     if unknown:
         raise AccountError("Unknown department.")
@@ -119,17 +133,19 @@ def _apply_roles(user: User, spec: RoleSpec) -> None:
     from portal.models import Department, DepartmentMembership
 
     departments = {d.code: d for d in Department.objects.all()}
-    wanted = {code: is_head for code, is_head in spec.departments.items() if code in departments}
+    wanted = {code: role for code, role in department_roles(spec).items() if code in departments}
     for membership in DepartmentMembership.objects.filter(user=user).select_related("department"):
         code = membership.department.code
         if code not in wanted:
             membership.delete()
-        elif membership.is_head != wanted[code]:
-            membership.is_head = wanted[code]
+        elif (membership.is_head, membership.branch_id) != wanted[code]:
+            membership.is_head, membership.branch_id = wanted[code]
             membership.save()
         wanted.pop(code, None)
-    for code, is_head in wanted.items():
-        DepartmentMembership.objects.create(user=user, department=departments[code], is_head=is_head)
+    for code, (is_head, branch_id) in wanted.items():
+        DepartmentMembership.objects.create(
+            user=user, department=departments[code], is_head=is_head, branch_id=branch_id
+        )
 
     group_names = {GROUP_FOR_CODE[c] for c in spec.departments} | set(spec.extra_roles)
     if spec.super_admin:
@@ -145,7 +161,9 @@ def _apply_roles(user: User, spec: RoleSpec) -> None:
 def current_spec(user: User) -> RoleSpec:
     names = set(user.groups.values_list("name", flat=True))
     return RoleSpec(
-        departments={m.department.code: m.is_head for m in user.memberships.select_related("department")},
+        departments={
+            m.department.code: (m.is_head, m.branch_id) for m in user.memberships.select_related("department")
+        },
         extra_roles=names & EXTRA_ROLES,
         branch_id=user.branch_id,
         super_admin=user.is_superuser,

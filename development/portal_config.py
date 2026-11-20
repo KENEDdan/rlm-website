@@ -68,6 +68,7 @@ class ProjectForm(forms.ModelForm):
 class ProjectResource(_Development):
     model = Project
     slug = "projects"
+    branch_lookup = "branch"
     label = "Project register"
     nav_group = "Projects"
     list_fields: ClassVar = ["name", "kind", "phase", "budget", "spent_display", "progress", "target_end"]
@@ -113,6 +114,7 @@ class _ProjectChild(_Development):
 class MilestoneResource(_ProjectChild):
     model = Milestone
     slug = "milestones"
+    branch_lookup = "project__branch"
     list_fields: ClassVar = ["title", "due_date", "completed_on", "status_text"]
     fields: ClassVar = ["project", "title", "due_date", "completed_on", "notes"]
 
@@ -128,6 +130,7 @@ class MilestoneResource(_ProjectChild):
 class ExpenseResource(_ProjectChild):
     model = ProjectExpense
     slug = "project-costs"
+    branch_lookup = "project__branch"
     list_fields: ClassVar = ["date", "description", "amount", "reference"]
     fields: ClassVar = ["project", "date", "description", "amount", "reference"]
 
@@ -136,6 +139,7 @@ class ExpenseResource(_ProjectChild):
 class DocumentResource(_ProjectChild):
     model = ProjectDocument
     slug = "project-documents"
+    branch_lookup = "project__branch"
     list_fields: ClassVar = ["title", "kind", "issued_on"]
     fields: ClassVar = ["project", "kind", "title", "issued_on", "file"]
     sensitive = True
@@ -145,6 +149,7 @@ class DocumentResource(_ProjectChild):
 class SiteVisitResource(_ProjectChild):
     model = SiteVisit
     slug = "site-visits"
+    branch_lookup = "project__branch"
     list_fields: ClassVar = ["date", "progress_percent", "visited_by"]
     fields: ClassVar = ["project", "date", "progress_percent", "summary", "quality_concerns"]
     children: ClassVar = [("photos", "site-photos", "Photos")]
@@ -159,6 +164,7 @@ class SiteVisitResource(_ProjectChild):
 class SitePhotoResource(_Development):
     model = SitePhoto
     slug = "site-photos"
+    branch_lookup = "visit__project__branch"
     nav = False
     parent_field = "visit"
     list_fields: ClassVar = ["caption", "created_at"]
@@ -169,6 +175,7 @@ class SitePhotoResource(_Development):
 class RiskResource(_ProjectChild):
     model = ProjectRisk
     slug = "risks"
+    branch_lookup = "project__branch"
     list_fields: ClassVar = ["description", "kind", "severity", "status", "owner"]
     filters: ClassVar = ["kind", "severity", "status"]
     fields: ClassVar = ["project", "kind", "description", "severity", "mitigation", "owner", "status"]
@@ -178,6 +185,7 @@ class RiskResource(_ProjectChild):
 class ProposalResource(_ProjectChild):
     model = CapitalProposal
     slug = "capital-proposals"
+    branch_lookup = "project__branch"
     nav = True
     label = "Capital proposals"
     nav_group = "Projects"
@@ -211,6 +219,7 @@ class ProposalResource(_ProjectChild):
 class PropertyResource(_Development):
     model = Property
     slug = "properties"
+    branch_lookup = "branch"
     label = "Property & land register"
     nav_group = "Facilities"
     list_fields: ClassVar = ["name", "kind", "location", "tenure", "branch"]
@@ -239,6 +248,7 @@ class PropertyResource(_Development):
 class MaintenanceResource(_Development):
     model = MaintenanceRequest
     slug = "maintenance"
+    branch_lookup = "site__branch"
     label = "Maintenance requests & schedule"
     nav_group = "Facilities"
     parent_field = "site"
@@ -284,7 +294,7 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
     overdue = Milestone.objects.filter(
         project__in=projects, completed_on__isnull=True, due_date__lt=today
     ).select_related("project")
-    backlog = MaintenanceRequest.objects.filter(status__in=MaintenanceRequest.OPEN_STATES)
+    backlog = MaintenanceResource().get_queryset(access).filter(status__in=MaintenanceRequest.OPEN_STATES)
     if filters.branch_id:
         backlog = backlog.filter(site__branch_id=filters.branch_id)
     budget = sum((p.budget for p in active), Decimal("0"))

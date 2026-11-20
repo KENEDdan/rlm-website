@@ -19,7 +19,7 @@ from portal.access import DEPARTMENT_ORDER, MEMBER, get_access, portal_view
 from portal.views import post_action
 
 from . import services
-from .models import LedgerEntry
+from .models import BudgetLine, LedgerEntry
 from .portal_config import DEPT, DonorResource, LedgerResource, VolunteerResource
 
 
@@ -133,10 +133,14 @@ def department_budget(request: HttpRequest, department: str) -> HttpResponse:
         year = int(request.GET.get("year", timezone.localdate().year))
     except ValueError:
         year = timezone.localdate().year
-    rows = services.budget_vs_actual(year, department)
+    access = get_access(request)
+    # A single-branch assignment sees only its branch's budget lines and spending (D-026).
+    lines = access.restrict_branch(BudgetLine.objects.all(), "branch", department)
+    entries = access.restrict_branch(LedgerEntry.objects.all(), "branch", department)
+    rows = services.budget_vs_actual(year, department, lines=lines, entries=entries)
     budget = sum((r["budget"] for r in rows), Decimal("0"))
     actual = sum((r["actual"] for r in rows), Decimal("0"))
-    pending = LedgerEntry.objects.filter(
+    pending = entries.filter(
         department__code=department, kind="expense", status="submitted", date__year=year
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
     context = {

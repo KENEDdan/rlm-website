@@ -7,7 +7,8 @@
   {% if form.email %}{% include "includes/field.html" with field=form.full_name %}{% include "includes/field.html" with field=form.email %}
   <p class="text-xs text-rlm-grey">The person receives a single-use link (valid {{ invite_hours|default:"48" }} hours) to choose their own password and set up two-step sign-in. No password is ever emailed or shown.</p>{% endif %}
   <fieldset class="space-y-3"><legend class="text-sm font-bold">Departments</legend>
-    <div class="grid gap-3 sm:grid-cols-2">{% for field in form.department_fields %}{% include "includes/field.html" %}{% endfor %}</div>
+    <p class="text-xs text-rlm-grey">Department leaders normally work across all branches. Choose one branch for a Branch Coordinator who also serves in a department: they will see only that branch's records there.</p>
+    <div class="grid gap-3 sm:grid-cols-2">{% for role, scope in form.department_rows %}<div class="rounded-xl border border-rlm-line p-3 space-y-2">{% include "includes/field.html" with field=role %}{% include "includes/field.html" with field=scope %}</div>{% endfor %}</div>
   </fieldset>
   <fieldset class="space-y-3"><legend class="text-sm font-bold">Other roles</legend>
     {% for field in form.other_fields %}{% include "includes/field.html" %}{% endfor %}

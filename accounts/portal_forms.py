@@ -32,11 +32,20 @@ class RoleFieldsMixin(forms.Form):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        branch_choices = [("", "All branches")] + [
+            (str(b.pk), f"{b.name} only") for b in Branch.objects.all()
+        ]
         for code, name in DEPARTMENTS:
             self.fields[f"dept_{code}"] = forms.ChoiceField(choices=DEPT_CHOICES, required=False, label=name)
+            self.fields[f"scope_{code}"] = forms.ChoiceField(
+                choices=branch_choices, required=False, label=f"{name}: which branches"
+            )
 
     def department_fields(self) -> list[Any]:
         return [self[f"dept_{code}"] for code, _ in DEPARTMENTS]
+
+    def department_rows(self) -> list[tuple[Any, Any]]:
+        return [(self[f"dept_{code}"], self[f"scope_{code}"]) for code, _ in DEPARTMENTS]
 
     def other_fields(self) -> list[Any]:
         return [self[n] for n in ("branch", "branch_coordinator", "executive", "super_admin")]
@@ -50,7 +59,12 @@ class RoleFieldsMixin(forms.Form):
     def spec(self) -> RoleSpec:
         data = self.cleaned_data
         departments = {
-            code: data[f"dept_{code}"] == "head" for code, _ in DEPARTMENTS if data.get(f"dept_{code}")
+            code: (
+                data[f"dept_{code}"] == "head",
+                int(data[f"scope_{code}"]) if data.get(f"scope_{code}") else None,
+            )
+            for code, _ in DEPARTMENTS
+            if data.get(f"dept_{code}")
         }
         extra = set()
         if data.get("branch_coordinator"):
@@ -73,8 +87,11 @@ class RoleFieldsMixin(forms.Form):
             "executive": EXECUTIVE in spec.extra_roles,
             "super_admin": spec.super_admin,
         }
-        for code, is_head in spec.departments.items():
+        from .services import department_roles
+
+        for code, (is_head, branch_id) in department_roles(spec).items():
             initial[f"dept_{code}"] = "head" if is_head else "member"
+            initial[f"scope_{code}"] = str(branch_id) if branch_id else ""
         return initial
 
 

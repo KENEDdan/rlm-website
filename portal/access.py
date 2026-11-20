@@ -5,11 +5,13 @@ Levels per department (higher includes lower):
 * ``FOUNDER``  Super Admin: everything, everywhere.
 * ``HEAD``     Department head: the whole department, plus approvals, exports and reports.
 * ``MEMBER``   Department member: day-to-day records of that department.
-* ``BRANCH``   Branch Coordinator: read (and some field entry) in Membership, Missions and Discipleship,
-               ONLY for their own branch.
+* ``BRANCH``   Branch Coordinator (role without a department): read and some field entry in Membership,
+               Missions and Discipleship, ONLY for their own branch.
 
-A user may belong to several departments. Branch Coordinators are limited to their branch in every
-department they can enter (a coordinator without a branch sees nothing that is tied to a branch).
+Branch scope belongs to EACH role assignment (docs/DECISIONS.md D-026): a ``DepartmentMembership`` is either
+"all branches" (``branch`` empty, department leaders) or "single branch" (a Branch Coordinator who also serves in
+that department). Inside a department, a single-branch assignment sees only records of that branch: records
+without a branch (or of other branches) are hidden. The coordinator-only role is scoped to ``user.branch``.
 """
 
 from __future__ import annotations
@@ -45,9 +47,14 @@ class Access:
         self.is_branch_coordinator = (not self.is_super_admin) and BRANCH_COORDINATOR in groups
         self.branch_id: int | None = user.branch_id if self.is_branch_coordinator else None
         self.levels: dict[str, int] = {}
+        # department code -> branch id for single-branch assignments; None = all branches
+        self.scopes: dict[str, int | None] = {}
         if authed and not self.is_super_admin:
-            for code, is_head in user.memberships.values_list("department__code", "is_head"):
+            for code, is_head, branch_id in user.memberships.values_list(
+                "department__code", "is_head", "branch_id"
+            ):
                 self.levels[code] = HEAD if is_head else MEMBER
+                self.scopes[code] = branch_id
 
     # ------------------------------------------------------------------ department levels
     def level(self, department: str) -> int:
@@ -77,24 +84,36 @@ class Access:
     def has_any_access(self) -> bool:
         return self.is_super_admin or self.is_executive or bool(self.departments())
 
-    # ------------------------------------------------------------------ branch scoping
-    @property
-    def branch_restricted(self) -> bool:
-        return self.is_branch_coordinator
+    # ------------------------------------------------------------------ branch scoping (per department)
+    def branch_scope(self, department: str | None) -> tuple[bool, int | None]:
+        """(restricted, branch id) for this department. Restricted with branch None means: nothing."""
+        if self.is_super_admin or department is None:
+            return False, None
+        if department in self.scopes:
+            branch_id = self.scopes[department]
+            return branch_id is not None, branch_id
+        if self.level(department) == BRANCH:  # coordinator-only access
+            return True, self.branch_id
+        return False, None
 
-    def restrict_branch(self, qs: QuerySet, lookup: str | None) -> QuerySet:
-        if not self.branch_restricted or lookup is None:
+    def branch_restricted_in(self, department: str | None) -> bool:
+        return self.branch_scope(department)[0]
+
+    def restrict_branch(self, qs: QuerySet, lookup: str | None, department: str | None) -> QuerySet:
+        restricted, branch_id = self.branch_scope(department)
+        if not restricted:
             return qs
-        if not self.branch_id:
-            return qs.none()
-        return qs.filter(**{lookup: self.branch_id})
+        if lookup is None or not branch_id:
+            return qs.none()  # records without a branch are never visible to a single-branch assignment
+        return qs.filter(**{lookup: branch_id})
 
-    def allowed_branches(self) -> QuerySet:
+    def allowed_branches(self, department: str | None = None) -> QuerySet:
         from branches.models import Branch
 
         qs = Branch.objects.all()
-        if self.branch_restricted:
-            return qs.filter(pk=self.branch_id) if self.branch_id else qs.none()
+        restricted, branch_id = self.branch_scope(department)
+        if restricted:
+            return qs.filter(pk=branch_id) if branch_id else qs.none()
         return qs
 
     # ------------------------------------------------------------------ landing page

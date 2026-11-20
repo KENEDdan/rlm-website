@@ -73,9 +73,9 @@ def test_branch_coordinator_gets_branch_level_in_three_departments(make_staff) -
     access = Access(make_staff(BRANCH_COORDINATOR, branch=juba))
     assert access.departments() == ["membership", "missions", "discipleship"]
     assert not access.can_enter("finance")
-    assert list(access.allowed_branches()) == [juba]
+    assert list(access.allowed_branches("membership")) == [juba]
     no_branch = Access(make_staff(BRANCH_COORDINATOR))
-    assert not no_branch.allowed_branches().exists()
+    assert not no_branch.allowed_branches("membership").exists()
 
 
 def test_dashboard_branch_filter_cannot_be_widened_by_a_coordinator(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]

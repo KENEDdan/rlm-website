@@ -37,6 +37,7 @@ def make_staff(db: Any, django_user_model: Any):  # type: ignore[no-untyped-def]
 
     Department groups also create the matching department membership; pass ``heads={"finance"}`` to make
     the user head of those departments, or ``members={"media"}`` for a membership without the group.
+    ``scoped={"membership": juba}`` makes that assignment single-branch (D-026).
     """
     from accounts.guard import sanctioned
     from accounts.roles import DEPARTMENTS
@@ -45,7 +46,7 @@ def make_staff(db: Any, django_user_model: Any):  # type: ignore[no-untyped-def]
     code_for = {name: code for code, name in DEPARTMENTS}
     counter = {"n": 0}
 
-    def _make(*groups: str, superuser: bool = False, branch: Any = None, heads: Any = (), members: Any = (), **kw: Any):  # type: ignore[no-untyped-def]
+    def _make(*groups: str, superuser: bool = False, branch: Any = None, heads: Any = (), members: Any = (), scoped: Any = None, **kw: Any):  # type: ignore[no-untyped-def]
         counter["n"] += 1
         email = kw.pop("email", f"staff{counter['n']}@example.test")
         factory = (
@@ -61,7 +62,10 @@ def make_staff(db: Any, django_user_model: Any):  # type: ignore[no-untyped-def]
                 user.groups.add(Group.objects.get(name=name))
             for code in codes:
                 DepartmentMembership.objects.create(
-                    user=user, department=Department.objects.get(code=code), is_head=code in set(heads)
+                    user=user,
+                    department=Department.objects.get(code=code),
+                    is_head=code in set(heads),
+                    branch=(scoped or {}).get(code),
                 )
         return user
 

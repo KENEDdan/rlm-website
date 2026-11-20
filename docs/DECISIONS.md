@@ -290,3 +290,19 @@ chosen where a decision left something open, are in D-026 to D-033 below.
 8. APPLICATION RETENTION
 - Applications (membership, discipleship, partnership, finance-volunteer) have statuses: pending, approved (successful), unsuccessful. Successful applications are converted into the proper ministry records (member register, discipleship cohort, partner pipeline, vetted finance-volunteer list) and the application keeps only a reference.
 - Unsuccessful applications are retained for 365 days from the decision date, then automatically anonymized or deleted by a scheduled Celery job: delete personal data, encrypted essays and contact details, keeping only non-identifying statistics (type, branch, month, outcome) for reporting. Make the retention period a setting, log each purge run in the audit log, and give Super Admin a dry-run preview. Support early deletion on a person's valid request and a legal-hold flag that pauses deletion. Show the retention deadline in the application screen and send the department head a monthly report of applications nearing purge. Tell applicants about the retention period on the form and in the privacy policy, and update the privacy policy accordingly. Apply the same rules to any minors' data (stricter visibility, never kept longer than needed).
+
+## D-026: Branch scope per role assignment (ministry decision 5)
+(2026-11-20) `DepartmentMembership.branch`: empty = all branches, a branch = single-branch assignment. The
+Super Admin sets it per department on the roles screen. `Access.branch_scope(department)` drives every
+queryset (`Resource.get_queryset`), dropdown, export, file download, search, dashboard figure, chart, monthly
+report and "Our budget". Choices made:
+* A single-branch assignment sees only records **of that branch**: records with no branch (ministry-wide) or of
+  other branches are hidden, and screens whose records have no branch at all (e.g. the media content calendar,
+  donors, suppliers) show nothing. Safe default; open a question if a department needs ministry-wide records.
+* The coordinator-only role (Branch Coordinator without a department) keeps branch-level read access to
+  Membership, Missions and Discipleship for `user.branch`.
+* Requests shared with requesting departments (purchases, design requests): an all-branches assignment sees its
+  department's requests; a single-branch assignment sees only the requests it filed itself.
+* Migration: existing department assignments of Branch Coordinators became single-branch for their branch, so
+  nobody gained access. Finance budget lines and ledger entries gained an optional branch (empty =
+  ministry-wide) so finance can be scoped and reported by branch.

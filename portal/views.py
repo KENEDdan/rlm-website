@@ -61,13 +61,14 @@ def build_dashboard(request: HttpRequest, department: str, filters: Any) -> Dash
 @portal_view(level=1)
 def dashboard(request: HttpRequest, department: str) -> HttpResponse:
     access = get_access(request)
-    filters = read_filters(request, access)
+    filters = read_filters(request, access, department)
     board = build_dashboard(request, department, filters)
     context = {
         "department": department,
         "board": board,
         "filters": filters,
-        "branches": access.allowed_branches(),
+        "branches": access.allowed_branches(department),
+        "branch_fixed": access.branch_restricted_in(department),
         "can_export": access.is_head(department),
         "indicators": reports.indicator_progress(department),
         "reports": reports.recent_reports(department),
@@ -81,7 +82,7 @@ def dashboard(request: HttpRequest, department: str) -> HttpResponse:
 @portal_view(level=HEAD)
 def dashboard_export(request: HttpRequest, department: str, fmt: str) -> HttpResponse:
     access = get_access(request)
-    filters = read_filters(request, access)
+    filters = read_filters(request, access, department)
     board = build_dashboard(request, department, filters)
     log_event(
         AuditLog.Action.EXPORT,

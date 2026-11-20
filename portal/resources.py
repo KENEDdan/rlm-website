@@ -21,7 +21,7 @@ from typing import Any, ClassVar
 from django import forms
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
-from django.db.models import Model, QuerySet
+from django.db.models import Model, Q, QuerySet
 from django.forms import modelform_factory
 from django.http import HttpRequest
 from django.urls import reverse
@@ -156,9 +156,16 @@ class Resource:
         qs = self.model._default_manager.all()
         level = self.effective_level(access)
         if level >= BRANCH:
-            qs = access.restrict_branch(qs, self.branch_lookup)
+            qs = access.restrict_branch(qs, self.branch_lookup, self.department)
         elif self.requester_mode(access):
-            qs = qs.filter(**{f"{self.requester_field}__code__in": access.member_departments()})
+            # Requests filed by the user's own departments. A single-branch assignment only sees the
+            # requests it filed itself (requests have no reliable branch of their own).
+            wide = [c for c in access.member_departments() if not access.branch_restricted_in(c)]
+            narrow = [c for c in access.member_departments() if access.branch_restricted_in(c)]
+            qs = qs.filter(
+                Q(**{f"{self.requester_field}__code__in": wide})
+                | Q(**{f"{self.requester_field}__code__in": narrow, "requested_by": access.user})
+            )
         else:
             return qs.none()
         qs = self.scope(access, qs)
@@ -227,7 +234,7 @@ class Resource:
         if label == "accounts.user":
             return related._default_manager.filter(is_active=True, is_staff=True, deleted_at__isnull=True)
         if label == "branches.branch":
-            return access.allowed_branches()
+            return access.allowed_branches(self.department)
         if (
             label == "portal.department"
             and field_name == self.requester_field
@@ -235,7 +242,7 @@ class Resource:
         ):
             return related._default_manager.filter(code__in=access.member_departments())
         if label == "events.event":
-            return access.restrict_branch(related._default_manager.all(), "branch_id")
+            return access.restrict_branch(related._default_manager.all(), "branch_id", self.department)
         if label in PUBLIC_FK_MODELS:
             return related._default_manager.all()
         resource = BY_MODEL.get(related)
@@ -250,8 +257,9 @@ class Resource:
             for name in ("created_by", "recorded_by", "requested_by", "submitted_by", "entered_by", "author"):
                 if hasattr(obj, f"{name}_id") and getattr(obj, f"{name}_id") is None:
                     setattr(obj, name, user)
-        if access.branch_restricted and hasattr(obj, "branch_id") and not obj.branch_id:
-            obj.branch_id = access.branch_id
+        restricted, branch_id = access.branch_scope(self.department)
+        if restricted and hasattr(obj, "branch_id") and not obj.branch_id:
+            obj.branch_id = branch_id
 
     def after_save(self, request: HttpRequest, access: Access, obj: Model, created: bool) -> None:
         """Side effects after a successful save (override)."""

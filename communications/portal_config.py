@@ -105,6 +105,7 @@ class DesignResource(_Media):
 class CoverageResource(_Media):
     model = EventCoverage
     slug = "coverage"
+    branch_lookup = "event__branch"
     label = "Event coverage"
     nav_group = "Publishing"
     list_fields: ClassVar = ["event", "photographer", "videographer", "live_stream", "status"]
@@ -133,6 +134,7 @@ class ReachResource(_Media):
 class AlbumResource(_Media):
     model = Album
     slug = "albums"
+    branch_lookup = "branch"
     label = "Photo albums"
     nav_group = "Media archive (public site)"
     list_fields: ClassVar = ["title", "branch", "event", "is_published", "photo_count"]
@@ -160,6 +162,7 @@ class AlbumResource(_Media):
 class PhotoResource(_Media):
     model = Photo
     slug = "photos"
+    branch_lookup = "album__branch"
     nav = False
     parent_field = "album"
     list_fields: ClassVar = ["alt_text", "caption", "is_published"]
@@ -170,6 +173,7 @@ class PhotoResource(_Media):
 class VideoResource(_Media):
     model = Video
     slug = "videos"
+    branch_lookup = "album__branch"
     nav_group = "Media archive (public site)"
     list_fields: ClassVar = ["title", "album", "is_published"]
     filters: ClassVar = ["is_published"]
@@ -180,6 +184,7 @@ class VideoResource(_Media):
 class TestimonyResource(_Media):
     model = Testimony
     slug = "testimonies"
+    branch_lookup = "branch"
     label = "Testimonies"
     nav_group = "Media archive (public site)"
     description = "Only consented, approved testimonies of adults appear on the website."
@@ -253,9 +258,9 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
     if filters.branch_id:
         upcoming = upcoming.filter(branch_id=filters.branch_id)
     uncovered = upcoming.exclude(coverage__isnull=False)
-    pending_t = Testimony.objects.filter(is_approved=False)
-    archive = Photo.objects.count() + Video.objects.count()
-    reach = SocialReach.objects.filter(month__gte=filters.start, month__lte=filters.end)
+    pending_t = TestimonyResource().get_queryset(access).filter(is_approved=False)
+    archive = PhotoResource().get_queryset(access).count() + VideoResource().get_queryset(access).count()
+    reach = ReachResource().get_queryset(access).filter(month__gte=filters.start, month__lte=filters.end)
     curl = ContentResource().url("list")
     kpis = [
         KPI(
@@ -311,7 +316,9 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         Chart(
             "Social reach per month (manual)",
             "line",
-            monthly_series(SocialReach.objects.all(), "month", filters.start, filters.end, sum_field="reach"),
+            monthly_series(
+                ReachResource().get_queryset(access), "month", filters.start, filters.end, sum_field="reach"
+            ),
         ),
     ]
     attention = [

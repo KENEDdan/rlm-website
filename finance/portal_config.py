@@ -68,6 +68,7 @@ class _Finance(Resource):
 class LedgerResource(_Finance):
     model = LedgerEntry
     slug = "ledger"
+    branch_lookup = "branch"
     label = "Income & expenditure ledger"
     nav_group = "Accounts"
     icon = "ledger"
@@ -84,6 +85,7 @@ class LedgerResource(_Finance):
         "amount",
         "currency",
         "department",
+        "branch",
         "budget_line",
         "category",
         "income_source",
@@ -157,13 +159,14 @@ class LedgerResource(_Finance):
 class BudgetResource(_Finance):
     model = BudgetLine
     slug = "budget"
+    branch_lookup = "branch"
     label = "Annual budget"
     nav_group = "Accounts"
     sensitive = False
     list_fields: ClassVar = ["year", "department", "category", "name", "amount", "spent"]
     filters: ClassVar = ["department", "category"]
     search_fields: ClassVar = ["name"]
-    fields: ClassVar = ["year", "department", "category", "name", "amount", "notes"]
+    fields: ClassVar = ["year", "department", "branch", "category", "name", "amount", "notes"]
     ordering: ClassVar = ["-year", "department__order", "name"]
     perms: ClassVar = {"add": HEAD, "change": HEAD, "delete": HEAD}
 
@@ -464,20 +467,28 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
     in_period = services.totals(period)
     all_time = services.totals(ledger)
     year = filters.end.year
-    budget_rows = services.budget_vs_actual(year)
+    budget_rows = services.budget_vs_actual(year, lines=BudgetResource().get_queryset(access), entries=ledger)
     total_budget = sum((r["budget"] for r in budget_rows), Decimal("0"))
     total_actual = sum((r["actual"] for r in budget_rows), Decimal("0"))
     burn = services.burn_rate()
     cash = all_time["net"]
     months_of_cash = f"{cash / burn:.1f} months" if burn > 0 else "—"
-    pledges = Pledge.objects.exclude(status__in=[Pledge.Status.FULFILLED, Pledge.Status.CANCELLED])
+    pledges = (
+        PledgeResource()
+        .get_queryset(access)
+        .exclude(status__in=[Pledge.Status.FULFILLED, Pledge.Status.CANCELLED])
+    )
     outstanding = sum((p.outstanding for p in pledges), Decimal("0"))
     awaiting = ledger.filter(status=E.SUBMITTED)
     today = timezone.localdate()
-    deadlines = GrantOpportunity.objects.filter(
-        deadline__gte=today,
-        deadline__lte=today + timedelta(days=30),
-        status__in=[GrantOpportunity.Status.IDENTIFIED, GrantOpportunity.Status.DRAFTING],
+    deadlines = (
+        GrantResource()
+        .get_queryset(access)
+        .filter(
+            deadline__gte=today,
+            deadline__lte=today + timedelta(days=30),
+            status__in=[GrantOpportunity.Status.IDENTIFIED, GrantOpportunity.Status.DRAFTING],
+        )
     )
     lurl = LedgerResource().url("list")
     kpis = [
@@ -578,8 +589,10 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         Item(f"Pledge overdue: {p}", str(p.donor), PledgeResource().url("detail", p), "bad")
         for p in pledges.filter(expected_by__lt=today)[:5]
     ]
-    unconfirmed = Donation.objects.filter(
-        status=Donation.Status.PLEDGED, created_at__lt=timezone.now() - timedelta(days=7)
+    unconfirmed = (
+        DonationResource()
+        .get_queryset(access)
+        .filter(status=Donation.Status.PLEDGED, created_at__lt=timezone.now() - timedelta(days=7))
     )
     if unconfirmed.exists():
         attention.append(

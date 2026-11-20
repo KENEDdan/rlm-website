@@ -9,7 +9,7 @@
   </div>
   <div>
     <label for="f-branch">Branch</label>
-    {% if access_branch_fixed or portal_nav.access.branch_restricted %}
+    {% if branch_fixed %}
       <p class="py-3 text-sm font-semibold">{{ filters.branch_name|default:"No branch assigned" }}</p>
     {% else %}
     <select id="f-branch" name="branch">

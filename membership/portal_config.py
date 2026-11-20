@@ -243,6 +243,7 @@ class AttendanceResource(_Membership):
 class AnnouncementResource(_Membership):
     model = Announcement
     slug = "announcements"
+    branch_lookup = "branch"
     nav_group = "Communications"
     list_fields: ClassVar = ["title", "published_on", "branch"]
     fields: ClassVar = ["title", "body", "branch", "published_on"]
@@ -279,6 +280,7 @@ class CorrespondenceResource(_Membership):
 class BulkMessageResource(_Membership):
     model = BulkMessage
     slug = "messages"
+    branch_lookup = "branch"
     label = "Messages to members"
     nav_group = "Communications"
     description = (

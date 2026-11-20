@@ -207,10 +207,25 @@ def totals(entries: QuerySet) -> dict[str, Decimal]:
     return {"income": income, "expense": expense, "net": income - expense}
 
 
-def budget_vs_actual(year: int, department_code: str | None = None) -> list[dict[str, Any]]:
-    """Per department (or per line for one department): budget, posted spend, remaining, percent used."""
-    lines = BudgetLine.objects.filter(year=year).select_related("department")
-    spend = LedgerEntry.objects.filter(status=E.POSTED, kind=LedgerEntry.Kind.EXPENSE, date__year=year)
+def budget_vs_actual(
+    year: int,
+    department_code: str | None = None,
+    *,
+    lines: QuerySet | None = None,
+    entries: QuerySet | None = None,
+) -> list[dict[str, Any]]:
+    """Per department (or per line for one department): budget, posted spend, remaining, percent used.
+
+    Pass ``lines``/``entries`` already scoped for the viewer (branch scope); defaults are ministry-wide.
+    """
+    lines = (
+        (lines if lines is not None else BudgetLine.objects.all())
+        .filter(year=year)
+        .select_related("department")
+    )
+    spend = (entries if entries is not None else LedgerEntry.objects.all()).filter(
+        status=E.POSTED, kind=LedgerEntry.Kind.EXPENSE, date__year=year
+    )
     if department_code:
         lines = lines.filter(department__code=department_code)
         spend = spend.filter(department__code=department_code)

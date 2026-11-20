@@ -64,6 +64,7 @@ class _Logistics(Resource):
 class RequestResource(_Logistics):
     model = PurchaseRequest
     slug = "requests"
+    branch_lookup = "branch"
     label = "Purchase requests"
     nav_group = "Procurement"
     description = (
@@ -151,6 +152,7 @@ class RequestResource(_Logistics):
 class QuotationResource(_Logistics):
     model = Quotation
     slug = "quotations"
+    branch_lookup = "request__branch"
     nav = False
     parent_field = "request"
     list_fields: ClassVar = ["supplier", "amount", "delivery_days", "valid_until"]
@@ -170,6 +172,7 @@ class QuotationResource(_Logistics):
 class OrderResource(_Logistics):
     model = PurchaseOrder
     slug = "orders"
+    branch_lookup = "request__branch"
     label = "Purchase orders"
     nav_group = "Procurement"
     list_fields: ClassVar = ["number", "supplier", "amount", "issued_on", "expected_delivery", "late"]
@@ -217,6 +220,7 @@ class OrderResource(_Logistics):
 class DeliveryResource(_Logistics):
     model = DeliveryNote
     slug = "deliveries"
+    branch_lookup = "order__request__branch"
     nav = False
     parent_field = "order"
     list_fields: ClassVar = ["delivered_on", "note_number", "is_complete", "received_by"]
@@ -264,6 +268,7 @@ class SupplierResource(_Logistics):
 class InventoryResource(_Logistics):
     model = InventoryItem
     slug = "inventory"
+    branch_lookup = "branch"
     label = "Assets & inventory"
     nav_group = "Assets"
     list_fields: ClassVar = [
@@ -316,6 +321,7 @@ class InventoryResource(_Logistics):
 class LoanResource(_Logistics):
     model = AssetLoan
     slug = "check-outs"
+    branch_lookup = "item__branch"
     label = "Check-in / check-out"
     nav_group = "Assets"
     parent_field = "item"
@@ -339,6 +345,7 @@ class LoanResource(_Logistics):
 class MaintenanceResource(_Logistics):
     model = MaintenanceRecord
     slug = "maintenance"
+    branch_lookup = "item__branch"
     nav = False
     parent_field = "item"
     list_fields: ClassVar = ["date", "item", "description", "cost"]
@@ -349,6 +356,7 @@ class MaintenanceResource(_Logistics):
 class PlanResource(_Logistics):
     model = LogisticsPlan
     slug = "event-logistics"
+    branch_lookup = "branch"
     label = "Event logistics plans"
     nav_group = "Events"
     description = (
@@ -382,6 +390,7 @@ class PlanResource(_Logistics):
 class TaskResource(_Logistics):
     model = LogisticsTask
     slug = "plan-tasks"
+    branch_lookup = "plan__branch"
     nav = False
     parent_field = "plan"
     list_fields: ClassVar = ["category", "description", "quantity", "responsible", "due", "done"]
@@ -405,6 +414,7 @@ class ProcurementBudgetResource(Resource):
     model = PurchaseRequest
     department = "finance"
     slug = "procurement"
+    branch_lookup = "branch"
     label = "Purchases: budget confirmation"
     nav_group = "Accounts"
     list_fields: ClassVar = ["number", "title", "requesting_department", "status", "recommended_amount"]
@@ -466,7 +476,7 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         for o in orders.filter(expected_delivery__lt=timezone.localdate()).select_related("supplier")
         if o.is_late
     ]
-    items = InventoryItem.objects.all()
+    items = InventoryResource().get_queryset(access)
     if filters.branch_id:
         items = items.filter(branch_id=filters.branch_id)
     low = [i for i in items.filter(kind=InventoryItem.Kind.CONSUMABLE) if i.is_low]
@@ -549,7 +559,9 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         for i in due_maintenance[:5]
     ]
     overdue_loans = list(
-        AssetLoan.objects.filter(returned_on__isnull=True, due_back__lt=timezone.localdate())[:5]
+        LoanResource()
+        .get_queryset(access)
+        .filter(returned_on__isnull=True, due_back__lt=timezone.localdate())[:5]
     )
     attention += [
         Item(
@@ -566,7 +578,12 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         Item(str(r), r.get_status_display(), RequestResource().url("detail", r))
         for r in requests.order_by("-updated_at")[:6]
     ]
-    upcoming = LogisticsPlan.objects.filter(start_date__gte=timezone.localdate()).order_by("start_date")[:6]
+    upcoming = (
+        PlanResource()
+        .get_queryset(access)
+        .filter(start_date__gte=timezone.localdate())
+        .order_by("start_date")[:6]
+    )
     sections = [
         {
             "title": "Upcoming event logistics",

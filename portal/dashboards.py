@@ -95,7 +95,7 @@ def default_start(today: dt.date) -> dt.date:
     return dt.date(year, month, 1)
 
 
-def read_filters(request: HttpRequest, access: Access) -> Filters:
+def read_filters(request: HttpRequest, access: Access, department: str | None = None) -> Filters:
     today = timezone.localdate()
     start = parse_date(request.GET.get("from")) or default_start(today)
     end = parse_date(request.GET.get("to")) or today
@@ -106,9 +106,10 @@ def read_filters(request: HttpRequest, access: Access) -> Filters:
     branch_id: int | None = None
     branch_name = ""
     raw = request.GET.get("branch", "")
-    allowed = access.allowed_branches()
-    if access.branch_restricted:
-        branch_id = access.branch_id
+    allowed = access.allowed_branches(department)
+    restricted, scope_branch = access.branch_scope(department)
+    if restricted:
+        branch_id = scope_branch
     elif raw.isdigit() and allowed.filter(pk=int(raw)).exists():
         branch_id = int(raw)
     if branch_id:
