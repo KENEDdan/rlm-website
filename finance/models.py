@@ -31,12 +31,14 @@ from core.validators import validate_safe_link
 
 
 class FinanceSettings(SingletonModel):
+    """There is deliberately NO approval threshold: every expenditure and commitment needs executive approval
+    (ministry decision 3)."""
+
     currency = models.CharField(max_length=3, default="USD")
-    approval_threshold = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("1000.00"),
-        help_text="Entries above this amount must be approved by a Super Admin (Founder).",
+    unbudgeted_requires_adjustment = models.BooleanField(
+        default=False,
+        help_text="When on, approving UNBUDGETED spending also requires a budget reallocation or a supplementary "
+        "budget for the shortfall (besides the written justification, which is always required).",
     )
 
     class Meta:
@@ -161,12 +163,39 @@ class BudgetLine(TimeStampedModel):
         related_name="budget_lines",
         help_text="Empty = ministry-wide line of the department.",
     )
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Awaiting executive approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Not approved"
+
     category = models.CharField(max_length=20, choices=Category.choices)
     name = models.CharField(max_length=160)
     amount = models.DecimalField(
         max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal("0"))]
     )
     notes = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.DRAFT, db_index=True, editable=False
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    approved_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         ordering: ClassVar = ["-year", "department__order", "name"]
@@ -286,6 +315,38 @@ class LedgerEntry(TimeStampedModel):
         related_name="ledger_entry",
         editable=False,
     )
+    # One ledger, referenced everywhere (ministry decision 6): what this money was for.
+    project = models.ForeignKey(
+        "development.Project", null=True, blank=True, on_delete=models.PROTECT, related_name="ledger_entries"
+    )
+    purchase_order = models.ForeignKey(
+        "logistics.PurchaseOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="ledger_entries",
+    )
+    campaign = models.ForeignKey(
+        "missions.Campaign",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="ledger_entries",
+        verbose_name="outreach campaign / mission trip",
+    )
+    logistics_plan = models.ForeignKey(
+        "logistics.LogisticsPlan",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="ledger_entries",
+        verbose_name="event (logistics plan)",
+    )
+    unbudgeted = models.BooleanField(
+        default=False,
+        editable=False,
+        help_text="No approved budget line, or more than its remaining balance.",
+    )
 
     objects = LedgerEntryQuerySet.as_manager()
 
@@ -345,6 +406,166 @@ class LedgerEntry(TimeStampedModel):
         if self.status == self.Status.POSTED:
             raise PermissionError("Posted ledger entries cannot be deleted; record a reversing entry.")
         return super().delete(*args, **kwargs)
+
+
+# ------------------------------------------------------------------------------------------ approvals
+class Approver(TimeStampedModel):
+    """Who may give executive approval (ministry decision 3). Managed by the Super Admin only."""
+
+    class Role(models.TextChoices):
+        FOUNDER = "founder", "Founder"
+        EXECUTIVE_DIRECTOR = "executive_director", "Executive Director"
+        ACTING = "acting", "Acting approver (while the Founder is away)"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="approver_roles"
+    )
+    role = models.CharField(max_length=20, choices=Role.choices)
+    starts_on = models.DateField(null=True, blank=True, help_text="Required for an acting approver.")
+    ends_on = models.DateField(null=True, blank=True, help_text="Required for an acting approver.")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering: ClassVar = ["role", "starts_on"]
+
+    def __str__(self) -> str:
+        return f"{self.get_role_display()}: {self.user}"
+
+    def clean(self) -> None:
+        if self.role == self.Role.ACTING and not (self.starts_on and self.ends_on):
+            raise ValidationError("An acting approver needs a start date and an end date.")
+        if self.starts_on and self.ends_on and self.ends_on < self.starts_on:
+            raise ValidationError({"ends_on": "The end date is before the start date."})
+
+
+class BudgetApproval(models.Model):
+    """Executive approval of a budget owned by another department (campaign, mission trip, event)."""
+
+    class BudgetStatus(models.TextChoices):
+        NOT_SUBMITTED = "not_submitted", "Not submitted"
+        SUBMITTED = "submitted", "Awaiting executive approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Not approved"
+
+    budget_line = models.ForeignKey(
+        "finance.BudgetLine",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+        help_text="The approved budget line this is paid from.",
+    )
+    budget_status = models.CharField(
+        max_length=15, choices=BudgetStatus.choices, default=BudgetStatus.NOT_SUBMITTED, editable=False
+    )
+    budget_unbudgeted = models.BooleanField(default=False, editable=False)
+    budget_submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    budget_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    budget_approved_at = models.DateTimeField(null=True, blank=True, editable=False)
+    budget_decision_note = models.CharField(max_length=300, blank=True, editable=False)
+
+    class Meta:
+        abstract = True
+
+    @property
+    def budget_is_approved(self) -> bool:
+        return self.budget_status == self.BudgetStatus.APPROVED
+
+
+class BudgetAdjustment(TimeStampedModel):
+    """Reallocation between lines, or a supplementary budget, made while approving unbudgeted spending."""
+
+    class Kind(models.TextChoices):
+        REALLOCATION = "reallocation", "Reallocation from another line"
+        SUPPLEMENTARY = "supplementary", "Supplementary budget"
+
+    kind = models.CharField(max_length=15, choices=Kind.choices)
+    from_line = models.ForeignKey(
+        BudgetLine, null=True, blank=True, on_delete=models.PROTECT, related_name="adjustments_out"
+    )
+    to_line = models.ForeignKey(BudgetLine, on_delete=models.PROTECT, related_name="adjustments_in")
+    amount = models.DecimalField(
+        max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
+    )
+    justification = models.TextField()
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering: ClassVar = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()}: {self.amount:,.2f} to {self.to_line}"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk:
+            raise PermissionError("Budget adjustments cannot be changed.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        raise PermissionError("Budget adjustments cannot be deleted.")
+
+
+class ApprovalDecisionQuerySet(models.QuerySet):
+    def update(self, **kwargs: Any) -> int:
+        raise PermissionError("Approval decisions are permanent.")
+
+    def delete(self) -> tuple[int, dict[str, int]]:
+        raise PermissionError("Approval decisions are permanent.")
+
+
+class ApprovalDecision(models.Model):
+    """Permanent record of every executive approval, rejection and budget override (append-only)."""
+
+    class Decision(models.TextChoices):
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Not approved"
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    kind = models.CharField(max_length=20)
+    object_id = models.PositiveBigIntegerField()
+    reference = models.CharField(max_length=120)
+    department = models.ForeignKey("portal.Department", null=True, on_delete=models.PROTECT, related_name="+")
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    decision = models.CharField(max_length=10, choices=Decision.choices)
+    unbudgeted = models.BooleanField(default=False)
+    override = models.BooleanField(default=False, help_text="Approved although unbudgeted (budget override).")
+    justification = models.TextField(blank=True)
+    approver = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    approver_role = models.CharField(max_length=40, blank=True)
+
+    objects = ApprovalDecisionQuerySet.as_manager()
+
+    class Meta:
+        ordering: ClassVar = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.get_decision_display()}: {self.reference}"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk:
+            raise PermissionError("Approval decisions are permanent.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        raise PermissionError("Approval decisions are permanent.")
 
 
 # ------------------------------------------------------------------------------------------ resource mobilization

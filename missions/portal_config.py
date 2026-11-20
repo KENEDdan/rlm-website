@@ -6,10 +6,12 @@ from datetime import timedelta
 from typing import Any, ClassVar
 
 from django import forms
-from django.db.models import Count, QuerySet, Sum
+from django.db.models import Count, Model, QuerySet, Sum
 from django.http import HttpRequest
+from django.urls import reverse
 from django.utils import timezone
 
+from finance.models import BudgetLine
 from portal.access import HEAD, Access
 from portal.charts import Chart, grouped_counts, monthly_series
 from portal.dashboards import KPI, Action, Dashboard, Filters, Item, dashboard, executive_summary
@@ -69,9 +71,80 @@ class CampaignResource(_Missions):
         "coordinator",
         "objectives",
         "budget_request",
+        "budget_line",
         "materials",
         "status",
     ]
+    detail_fields: ClassVar = [
+        "title",
+        "kind",
+        "community",
+        "location",
+        "branch",
+        "start_date",
+        "end_date",
+        "team",
+        "coordinator",
+        "objectives",
+        "budget_request",
+        "budget_line",
+        "budget_status",
+        "budget_unbudgeted",
+        "budget_decision_note",
+        "materials",
+        "status",
+        "spent",
+    ]
+    fk_querysets: ClassVar = {
+        "budget_line": lambda access: BudgetLine.objects.filter(
+            department__code=DEPT, status=BudgetLine.Status.APPROVED
+        ),
+    }
+
+    def spent(self, obj: Campaign) -> str:
+        from finance.approvals import _paid
+
+        return f"{_paid(obj.ledger_entries.all()):,.2f}"
+
+    spent.short_description = "Spent (posted in the Finance ledger)"  # type: ignore[attr-defined]
+
+    def get_form_class(self, access: Access, obj: Model | None = None):  # type: ignore[no-untyped-def]
+        base = super().get_form_class(access, obj)
+
+        class CampaignForm(base):  # type: ignore[valid-type, misc]
+            def clean(self) -> dict[str, Any]:
+                cleaned = super().clean()
+                needs = cleaned.get("budget_request")
+                approved = self.instance.budget_is_approved if self.instance.pk else False
+                if (
+                    needs
+                    and not approved
+                    and cleaned.get("status") in ("approved", "in_progress", "completed")
+                ):
+                    self.add_error(
+                        "status",
+                        "This campaign has a budget: it can only go ahead once the budget is approved.",
+                    )
+                return cleaned
+
+        return CampaignForm
+
+    def actions(self, request: HttpRequest, access: Access, obj: Model) -> list[dict[str, Any]]:
+        campaign: Campaign = obj  # type: ignore[assignment]
+        if (
+            self.can(access, "change", campaign)
+            and campaign.budget_request
+            and campaign.budget_status in ("not_submitted", "rejected")
+        ):
+            return [
+                {
+                    "label": "Submit budget for executive approval",
+                    "url": reverse("portal:missions:budget_submit", args=[campaign.pk]),
+                    "style": "primary",
+                }
+            ]
+        return []
+
     children: ClassVar = [
         ("reports", "field-reports", "Field reports"),
         ("converts", "converts", "New converts"),

@@ -11,6 +11,7 @@ from django.http import HttpRequest
 from django.urls import reverse
 from django.utils import timezone
 
+from finance.models import BudgetLine
 from portal.access import FOUNDER, HEAD, MEMBER, Access
 from portal.charts import Chart, grouped_counts, monthly_series
 from portal.dashboards import (
@@ -133,8 +134,18 @@ class RequestResource(_Logistics):
         out = []
         if pr.status == S.DRAFT and (logistics or pr.requested_by_id == access.user.pk):
             out.append(_step(pr.pk, "submit", "Submit request", "primary"))
-        if pr.status == S.BUDGET_CONFIRMED and access.is_head(DEPT) and pr.requested_by_id != access.user.pk:
-            out.append(_step(pr.pk, "approve", "Approve purchase", "primary"))
+        if pr.status == S.BUDGET_CONFIRMED:
+            from finance.approvals import KINDS, is_approver
+
+            if is_approver(access.user) and pr.requested_by_id != access.user.pk:
+                out.append(
+                    {
+                        "label": "Review for executive approval",
+                        "url": KINDS["purchase"].detail_url(pr),
+                        "method": "get",
+                        "style": "primary",
+                    }
+                )
         if (
             logistics
             and pr.status in (S.SUBMITTED, S.RECOMMENDED, S.BUDGET_CONFIRMED)
@@ -375,7 +386,30 @@ class PlanResource(_Logistics):
         "expected_attendance",
         "coordinator",
         "status",
+        "budget_amount",
+        "budget_line",
     ]
+    detail_fields: ClassVar = [*fields, "budget_status", "budget_unbudgeted", "budget_decision_note"]
+    fk_querysets: ClassVar = {
+        "budget_line": lambda access: BudgetLine.objects.filter(status=BudgetLine.Status.APPROVED),
+    }
+
+    def actions(self, request: HttpRequest, access: Access, obj: Model) -> list[dict[str, Any]]:
+        plan: LogisticsPlan = obj  # type: ignore[assignment]
+        if (
+            self.can(access, "change", plan)
+            and plan.budget_amount
+            and plan.budget_status in ("not_submitted", "rejected")
+        ):
+            return [
+                {
+                    "label": "Submit event budget for executive approval",
+                    "url": reverse("portal:logistics:plan_budget_submit", args=[plan.pk]),
+                    "style": "primary",
+                }
+            ]
+        return []
+
     children: ClassVar = [("tasks", "plan-tasks", "Checklist")]
     date_field = "start_date"
     ordering: ClassVar = ["start_date"]
@@ -461,7 +495,7 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         requests = requests.filter(branch_id=filters.branch_id)
     open_requests = requests.filter(status__in=PurchaseRequest.OPEN)
     awaiting_finance = requests.filter(status=S.RECOMMENDED)
-    awaiting_approval = requests.filter(status=S.BUDGET_CONFIRMED)
+    awaiting_approval = requests.filter(status=S.BUDGET_CONFIRMED)  # waiting for executive approval
     orders = PurchaseOrder.objects.filter(request__in=requests)
     period_orders = orders.filter(issued_on__gte=filters.start, issued_on__lte=filters.end)
     spend = period_orders.aggregate(t=Sum("amount"))["t"] or Decimal("0")

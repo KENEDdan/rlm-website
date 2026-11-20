@@ -321,3 +321,27 @@ date range still works through links). Choices made:
   a written reason. Both are in the audit log (`year_closed`, `year_reopened`).
 * The re-authentication page is now available to every signed-in staff member (approvers need it); it only
   confirms identity and grants nothing.
+
+## D-028: Executive approval of every expenditure and commitment (ministry decision 3)
+(2026-11-20) `finance/approvals.py` holds the single approval path; `/portal/approvals/` is the inbox.
+* **What needs approval:** expenditure ledger entries (any payment: project payments, reimbursements,
+  purchase-order payments, reversals of expenditure), purchase requests (after Finance has checked the budget),
+  outreach campaign and mission-trip budgets, event (logistics plan) budgets, and budget lines themselves. The
+  Logistics head no longer approves purchases and Finance no longer approves expenditure; the approval
+  threshold was removed. Income is still approved inside Finance by someone other than the recorder.
+* **Approvers:** `finance.Approver` rows (Founder, Executive Director, acting approver with start and end dates),
+  managed only by the Super Admin with re-authentication. Until the first row exists, active Super Admins
+  approve; once any row exists, only current rows count.
+* **Segregation:** the recorder, requester, budget submitter, or the Finance person who checked a purchase's
+  budget can never decide that item, even when they are an approver.
+* **UNBUDGETED** = no budget line, a line not yet approved, more than the line's remaining balance (budget +
+  adjustments − posted spending − open approved commitments), or a payment larger than what is left of the
+  approved commitment it belongs to. Approving it needs a written justification; when Finance settings switch on
+  "requires adjustment", also a reallocation from another approved line with enough balance or a supplementary
+  budget covering the shortfall (`BudgetAdjustment`, permanent). Shown first in the inbox and on the Finance
+  dashboard and Executive Overview.
+* **Records:** every decision is written to the append-only `ApprovalDecision` table (approved / not approved,
+  unbudgeted, override, justification, approver and role) and the audit log; the requester gets an email with the
+  item type and number only.
+* Campaigns with a budget cannot be marked approved/in progress/completed until the budget is approved; approval
+  moves a planned campaign to approved. Existing budget lines were migrated as approved; new ones start as drafts.

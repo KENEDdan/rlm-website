@@ -30,14 +30,17 @@ def _fail(request: HttpRequest, exc: Exception) -> None:
 @portal_view()
 @require_http_methods(["GET", "POST"])
 def request_step(request: HttpRequest, pk: int, step: str) -> HttpResponse:
-    """submit (requester or Logistics) | approve (Logistics head, not requester) | reject | order | close."""
+    """submit (requester or Logistics) | reject (Logistics head) | order | close.
+
+    Approval itself is executive approval (Founder / Executive Director) under Approvals (decision 3).
+    """
     access = get_access(request)
     resource, pr = post_action(request, DEPT, "requests", pk, "view")
     logistics = resource.effective_level(access) >= MEMBER
     if step == "submit":
         if not (logistics or pr.requested_by_id == request.user.pk):
             raise PermissionDenied
-    elif step in ("approve", "reject"):
+    elif step == "reject":
         if not access.is_head(DEPT):
             raise PermissionDenied
     elif step in ("order", "close"):
@@ -52,8 +55,6 @@ def request_step(request: HttpRequest, pk: int, step: str) -> HttpResponse:
     try:
         if step == "submit":
             services.submit(request, pr)
-        elif step == "approve":
-            services.approve(request, pr)
         elif step == "reject":
             services.reject(request, pr, request.POST.get("note", ""))
         elif step == "order":
@@ -85,7 +86,11 @@ def recommend(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 class BudgetForm(forms.Form):
-    budget_line = forms.ModelChoiceField(queryset=BudgetLine.objects.none())
+    budget_line = forms.ModelChoiceField(
+        queryset=BudgetLine.objects.none(),
+        required=False,
+        empty_label="No suitable budget line (UNBUDGETED: the approver must justify it)",
+    )
 
 
 @never_cache
@@ -95,7 +100,7 @@ def confirm_budget(request: HttpRequest, pk: int) -> HttpResponse:
     _resource, pr = post_action(request, "finance", "procurement", pk, "view")
     form = BudgetForm(request.POST or None)
     form.fields["budget_line"].queryset = BudgetLine.objects.filter(
-        department=pr.requesting_department, year=timezone.localdate().year
+        department=pr.requesting_department, year=timezone.localdate().year, status=BudgetLine.Status.APPROVED
     )
     if request.method == "POST" and form.is_valid():
         try:
@@ -103,7 +108,7 @@ def confirm_budget(request: HttpRequest, pk: int) -> HttpResponse:
         except ValidationError as exc:
             _fail(request, exc)
         else:
-            messages.success(request, "Budget confirmed. Logistics can now get the purchase approved.")
+            messages.success(request, "Budget checked. The purchase now waits for executive approval.")
             return redirect(ProcurementBudgetResource().url("detail", pr))
     return render(
         request,
@@ -133,3 +138,19 @@ def receive(request: HttpRequest, pk: int) -> HttpResponse:
             messages.success(request, "Added to inventory.")
             return redirect(InventoryResource().url("detail", item))
     return render(request, "logistics/receive.html", {"department": DEPT, "order": order, "form": form})
+
+
+@never_cache
+@portal_view(DEPT, level=MEMBER)
+@require_http_methods(["POST"])
+def plan_budget_submit(request: HttpRequest, pk: int) -> HttpResponse:
+    from finance.approvals import submit_budget
+
+    resource, plan = post_action(request, DEPT, "event-logistics", pk, "change")
+    try:
+        submit_budget(request, plan, plan.budget_amount)
+    except ValidationError as exc:
+        _fail(request, exc)
+    else:
+        messages.success(request, "Event budget submitted for executive approval.")
+    return redirect(resource.url("detail", plan))

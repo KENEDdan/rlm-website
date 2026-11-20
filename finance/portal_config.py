@@ -28,6 +28,8 @@ from portal.resources import Resource, register
 
 from . import services
 from .models import (
+    ApprovalDecision,
+    Approver,
     BudgetLine,
     Donor,
     FinanceSettings,
@@ -58,6 +60,13 @@ def _step(
         "method": method,
         "confirm": confirm,
     }
+
+
+def _all(label: str) -> Any:
+    """Dropdown of every record of another app's model (Finance tags payments with what they paid for)."""
+    from django.apps import apps
+
+    return lambda access: apps.get_model(label).objects.all()
 
 
 class _Finance(Resource):
@@ -94,6 +103,10 @@ class LedgerResource(_Finance):
         "counterparty",
         "reference",
         "receipt",
+        "project",
+        "purchase_order",
+        "campaign",
+        "logistics_plan",
     ]
     detail_fields: ClassVar = [
         "number",
@@ -105,6 +118,7 @@ class LedgerResource(_Finance):
         "posted_at",
         "rejection_note",
         "reverses",
+        "unbudgeted",
     ]
     export_fields: ClassVar = [
         "number",
@@ -122,6 +136,14 @@ class LedgerResource(_Finance):
     date_field = "date"
     perms: ClassVar = {"view": MEMBER, "add": MEMBER, "change": MEMBER, "delete": MEMBER, "export": HEAD}
 
+    fk_querysets: ClassVar = {
+        # Finance links a payment to what it was for (decision 6); these lists show labels only.
+        "project": _all("development.Project"),
+        "purchase_order": _all("logistics.PurchaseOrder"),
+        "campaign": _all("missions.Campaign"),
+        "logistics_plan": _all("logistics.LogisticsPlan"),
+    }
+
     def object_allows(self, access: Access, action: str, obj: Model) -> bool:
         entry: LedgerEntry = obj  # type: ignore[assignment]
         if action in ("change", "delete"):
@@ -136,7 +158,19 @@ class LedgerResource(_Finance):
             entry.recorded_by_id == access.user.pk or access.is_head(DEPT)
         ):
             out.append(_step("submit", entry.pk, "Submit for approval", style="primary"))
-        if entry.status == E.SUBMITTED:
+        if entry.status == E.SUBMITTED and entry.kind == LedgerEntry.Kind.EXPENSE:
+            from .approvals import KINDS, is_approver
+
+            if is_approver(access.user) and entry.recorded_by_id != access.user.pk:
+                out.append(
+                    {
+                        "label": "Review for executive approval",
+                        "url": KINDS["expense"].detail_url(entry),
+                        "method": "get",
+                        "style": "primary",
+                    }
+                )
+        if entry.status == E.SUBMITTED and entry.kind == LedgerEntry.Kind.INCOME:
             allowed, _reason = services.can_approve(access.user, entry)
             if allowed:
                 out.append(
@@ -164,12 +198,36 @@ class BudgetResource(_Finance):
     label = "Annual budget"
     nav_group = "Accounts"
     sensitive = False
-    list_fields: ClassVar = ["year", "department", "category", "name", "amount", "spent"]
-    filters: ClassVar = ["department", "category"]
+    list_fields: ClassVar = ["year", "department", "branch", "name", "amount", "status", "spent", "remaining"]
+    filters: ClassVar = ["department", "category", "status"]
     search_fields: ClassVar = ["name"]
     fields: ClassVar = ["year", "department", "branch", "category", "name", "amount", "notes"]
     ordering: ClassVar = ["-year", "department__order", "name"]
     perms: ClassVar = {"add": HEAD, "change": HEAD, "delete": HEAD}
+
+    def object_allows(self, access: Access, action: str, obj: Model) -> bool:
+        if action in ("change", "delete"):
+            return obj.status in (BudgetLine.Status.DRAFT, BudgetLine.Status.REJECTED)  # type: ignore[attr-defined]
+        return True
+
+    def actions(self, request: HttpRequest, access: Access, obj: Model) -> list[dict[str, Any]]:
+        line: BudgetLine = obj  # type: ignore[assignment]
+        if access.is_head(DEPT) and line.status in (BudgetLine.Status.DRAFT, BudgetLine.Status.REJECTED):
+            return [
+                {
+                    "label": "Submit for executive approval",
+                    "url": reverse("portal:finance:budget_line_submit", args=[line.pk]),
+                    "style": "primary",
+                }
+            ]
+        return []
+
+    def remaining(self, obj: BudgetLine) -> str:
+        from .approvals import line_position
+
+        return money(line_position(obj).remaining)
+
+    remaining.short_description = "Remaining (after commitments)"  # type: ignore[attr-defined]
 
     def spent(self, obj: BudgetLine) -> str:
         total = obj.entries.filter(status=E.POSTED).aggregate(t=Sum("amount"))["t"]
@@ -445,8 +503,8 @@ class SettingsResource(_Finance):
     label = "Finance settings"
     nav_group = "Accounts"
     sensitive = False
-    list_fields: ClassVar = ["currency", "approval_threshold"]
-    fields: ClassVar = ["currency", "approval_threshold"]
+    list_fields: ClassVar = ["currency", "unbudgeted_requires_adjustment"]
+    fields: ClassVar = ["currency", "unbudgeted_requires_adjustment"]
     perms: ClassVar = {
         "view": HEAD,
         "add": FOUNDER + 1,
@@ -458,6 +516,62 @@ class SettingsResource(_Finance):
     def get_queryset(self, access: Access) -> QuerySet:
         FinanceSettings.load()
         return super().get_queryset(access)
+
+
+@register
+class ApproverResource(_Finance):
+    """Who gives executive approval. Super Admin only, with re-authentication for every change."""
+
+    model = Approver
+    slug = "approvers"
+    label = "Executive approvers"
+    nav_group = "Accounts"
+    sensitive = False
+    reauth_required = True
+    description = (
+        "The Founder, the Executive Director and, when the Founder is away, an acting approver with start and end "
+        "dates. If this list is empty the Super Admins approve."
+    )
+    list_fields: ClassVar = ["user", "role", "starts_on", "ends_on", "is_active"]
+    filters: ClassVar = ["role", "is_active"]
+    fields: ClassVar = ["user", "role", "starts_on", "ends_on", "is_active"]
+    perms: ClassVar = {
+        "view": FOUNDER,
+        "add": FOUNDER,
+        "change": FOUNDER,
+        "delete": FOUNDER + 1,
+        "export": FOUNDER,
+    }
+
+
+@register
+class DecisionResource(_Finance):
+    """Permanent record of every executive decision (read-only)."""
+
+    model = ApprovalDecision
+    slug = "approval-decisions"
+    label = "Approval decisions"
+    nav_group = "Accounts"
+    sensitive = False
+    list_fields: ClassVar = [
+        "created_at",
+        "reference",
+        "kind",
+        "decision",
+        "unbudgeted",
+        "override",
+        "amount",
+        "approver",
+    ]
+    filters: ClassVar = ["decision", "unbudgeted", "override", "kind"]
+    detail_fields: ClassVar = [*list_fields, "department", "justification", "approver_role"]
+    perms: ClassVar = {
+        "view": HEAD,
+        "add": FOUNDER + 1,
+        "change": FOUNDER + 1,
+        "delete": FOUNDER + 1,
+        "export": HEAD,
+    }
 
 
 @register
@@ -542,7 +656,25 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         )
     )
     lurl = LedgerResource().url("list")
+    from .approvals import pending_items
+
+    waiting = [] if access.branch_restricted_in(DEPT) else pending_items()
+    unbudgeted = [i for i in waiting if i["unbudgeted"]]
     kpis = [
+        KPI(
+            "UNBUDGETED awaiting approval",
+            f"{len(unbudgeted)} · {money(sum((i['amount'] for i in unbudgeted), Decimal('0')))}",
+            "No approved budget line, or more than its remaining balance",
+            reverse("portal:finance:approvals"),
+            code="unbudgeted_waiting",
+            status="bad" if unbudgeted else "",
+        ),
+        KPI(
+            "Waiting for executive approval",
+            len(waiting),
+            url=reverse("portal:finance:approvals"),
+            code="executive_waiting",
+        ),
         KPI(
             "Income (period)",
             money(in_period["income"]),
@@ -624,6 +756,10 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         ),
     ]
     attention = [
+        Item(f"UNBUDGETED: {i['reference']} ({money(i['amount'])})", i["reason"], i["url"], "bad")
+        for i in unbudgeted[:6]
+    ]
+    attention += [
         Item(f"Approve: {e}", e.description, LedgerResource().url("detail", e), "warn")
         for e in awaiting.exclude(recorded_by=access.user)[:6]
     ]
@@ -734,6 +870,20 @@ def pending() -> list[Item]:
                 "Finance",
                 DonationResource().url("list") + "?status=pledged",
                 "warn",
+            )
+        )
+    from .approvals import pending_items
+
+    waiting = pending_items()
+    if waiting:
+        flagged = sum(1 for i in waiting if i["unbudgeted"])
+        items.append(
+            Item(
+                f"{len(waiting)} item(s) waiting for executive approval"
+                + (f", {flagged} UNBUDGETED" if flagged else ""),
+                "Founder / Executive Director",
+                reverse("portal:finance:approvals"),
+                "bad" if flagged else "warn",
             )
         )
     vetting = FinanceVolunteer.objects.filter(status__in=["submitted", "references", "interview"]).count()

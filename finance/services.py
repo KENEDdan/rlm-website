@@ -19,7 +19,6 @@ from audit.services import log_event
 from .models import (
     BudgetLine,
     Donor,
-    FinanceSettings,
     FinanceVolunteer,
     FinancialYear,
     LedgerEntry,
@@ -32,14 +31,16 @@ ZERO = Decimal("0")
 
 # ------------------------------------------------------------------------------------------ ledger workflow
 def can_approve(user: Any, entry: LedgerEntry) -> tuple[bool, str]:
-    """Segregation of duties + threshold. Returns (allowed, reason when not)."""
+    """Income: any Finance member except the recorder. Expenditure: ONLY executive approval (decision 3).
+
+    Returns (allowed, reason when not). There is no amount threshold.
+    """
     if entry.status != E.SUBMITTED:
         return False, "Only entries awaiting approval can be approved."
+    if entry.kind == LedgerEntry.Kind.EXPENSE:
+        return False, "Expenditure is approved by the Founder or Executive Director under Approvals."
     if entry.recorded_by_id == user.pk:
         return False, "You recorded this entry, so someone else must approve it."
-    threshold = FinanceSettings.load().approval_threshold
-    if abs(entry.amount) > threshold and not getattr(user, "is_super_admin", False):
-        return False, f"Entries above {threshold:,.2f} must be approved by the Founder (Super Admin)."
     return True, ""
 
 
@@ -131,6 +132,10 @@ def approve(request: HttpRequest, entry: LedgerEntry) -> None:
 def reject(request: HttpRequest, entry: LedgerEntry, note: str) -> None:
     if entry.status != E.SUBMITTED:
         raise ValidationError("Only entries awaiting approval can be rejected.")
+    if entry.kind == LedgerEntry.Kind.EXPENSE:
+        raise PermissionDenied(
+            "Expenditure is approved or rejected by an executive approver under Approvals."
+        )
     if entry.recorded_by_id == request.user.pk:
         raise PermissionDenied("You cannot reject your own entry; edit or delete the draft instead.")
     if not note.strip():

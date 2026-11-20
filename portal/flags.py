@@ -29,6 +29,19 @@ def collect() -> list[Item]:
     today = timezone.localdate()
     flags: list[Item] = []
 
+    from finance.approvals import unbudgeted_summary
+
+    unbudgeted = unbudgeted_summary()
+    if unbudgeted["count"]:
+        flags.append(
+            Item(
+                f"UNBUDGETED: {unbudgeted['count']} item(s) waiting for executive approval ({unbudgeted['total']:,.2f})",
+                "Need a written justification",
+                reverse("portal:finance:approvals"),
+                "bad",
+            )
+        )
+
     # Finance: departments over budget this year
     year = today.year
     spend = dict(

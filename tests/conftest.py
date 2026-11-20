@@ -98,3 +98,21 @@ def verified_client(db: Any):  # type: ignore[no-untyped-def]
         return client
 
     return _login
+
+
+@pytest.fixture
+def reauth():  # type: ignore[no-untyped-def]
+    """Confirm identity again (password + fresh TOTP) in an already signed-in test client."""
+
+    def _reauth(client: Client, user: Any) -> None:
+        TOTPDevice.objects.filter(user=user).update(
+            last_t=-1, throttling_failure_count=0, throttling_failure_timestamp=None
+        )
+        device = TOTPDevice.objects.get(user=user, confirmed=True)
+        resp = client.post(
+            "/" + settings.PORTAL_URL + "accounts/confirm/",
+            {"password": PASSWORD, "code": format_token(totp_now(device))},
+        )
+        assert resp.status_code == 302, resp.content[:300]
+
+    return _reauth

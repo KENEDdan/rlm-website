@@ -107,6 +107,7 @@ class Resource:
     branch_actions: ClassVar[set[str]] = {"view"}
     perms: ClassVar[dict[str, int]] = {}
     sensitive: bool = False  # every list/detail view is audit-logged
+    reauth_required: bool = False  # add/change/delete need password + 2FA again (e.g. approvers)
     page_size: int = 25
     fk_querysets: ClassVar[dict[str, Any]] = {}
 

@@ -155,6 +155,7 @@ def seed() -> int:
             category="programmes",
             name=f"{M} {depts[code].name} operations",
             amount=amount,
+            status="approved",  # demo budgets count as approved by the executive
         )
     for n in range(12):
         day = _months_ago(n, rng.randint(1, 28))

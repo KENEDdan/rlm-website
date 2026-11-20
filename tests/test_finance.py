@@ -12,7 +12,7 @@ from django.utils import timezone
 from accounts.roles import BRANCH_COORDINATOR, FINANCE, MEDIA, MEMBERSHIP
 from audit.models import AuditLog
 from branches.models import Branch
-from finance.models import BudgetLine, Donor, FinanceSettings, FinanceVolunteer, LedgerEntry
+from finance.models import BudgetLine, Donor, FinanceVolunteer, LedgerEntry
 from giving.models import Donation, PartnershipEnquiry
 from portal.models import Department
 
@@ -48,8 +48,12 @@ def approver(make_staff):  # type: ignore[no-untyped-def]
     return make_staff(FINANCE, email="approver@example.test", heads={"finance"})
 
 
+INCOME = {"kind": "income", "income_source": "offering", "category": ""}
+
+
 def test_recorder_cannot_approve_own_entry(recorder, approver, verified_client) -> None:  # type: ignore[no-untyped-def]
-    entry = _entry(recorder)
+    """Income: any Finance member except the recorder approves (expenditure: see test_approvals.py)."""
+    entry = _entry(recorder, **INCOME)
     mine = verified_client(recorder)
     assert mine.post(P + f"finance/ledger/{entry.pk}/step/approve/").status_code == 302
     entry.refresh_from_db()
@@ -57,7 +61,7 @@ def test_recorder_cannot_approve_own_entry(recorder, approver, verified_client) 
     other = verified_client(approver)
     other.post(P + f"finance/ledger/{entry.pk}/step/approve/")
     entry.refresh_from_db()
-    assert entry.status == "posted" and entry.approved_by == approver and entry.number.startswith("EX-")
+    assert entry.status == "posted" and entry.approved_by == approver and entry.number.startswith("IN-")
     assert AuditLog.objects.filter(action=AuditLog.Action.POST, object_id=str(entry.pk)).exists()
 
 
@@ -81,9 +85,12 @@ def test_recording_through_the_portal_then_submit(recorder, approver, verified_c
     client.post(P + f"finance/ledger/{entry.pk}/step/submit/")
     entry.refresh_from_db()
     assert entry.status == "submitted"
-    # the approve button is not offered to the recorder
-    assert b"Approve and post" not in client.get(P + f"finance/ledger/{entry.pk}/").content
-    assert b"Approve and post" in verified_client(approver).get(P + f"finance/ledger/{entry.pk}/").content
+    # expenditure is never approved inside Finance: it goes to executive approval (decision 3)
+    for client_ in (client, verified_client(approver)):
+        assert b"Approve and post" not in client_.get(P + f"finance/ledger/{entry.pk}/").content
+    verified_client(approver).post(P + f"finance/ledger/{entry.pk}/step/approve/")
+    entry.refresh_from_db()
+    assert entry.status == "submitted"
 
 
 def test_expense_needs_category_income_needs_source(recorder, verified_client) -> None:  # type: ignore[no-untyped-def]
@@ -107,19 +114,6 @@ def test_expense_needs_category_income_needs_source(recorder, verified_client) -
     assert resp.status_code == 200 and not LedgerEntry.objects.exists()
 
 
-def test_threshold_requires_super_admin(recorder, approver, make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
-    settings_row = FinanceSettings.load()
-    settings_row.approval_threshold = Decimal("500")
-    settings_row.save()
-    entry = _entry(recorder, amount=Decimal("900"))
-    verified_client(approver).post(P + f"finance/ledger/{entry.pk}/step/approve/")
-    entry.refresh_from_db()
-    assert entry.status == "submitted"
-    verified_client(make_staff(superuser=True)).post(P + f"finance/ledger/{entry.pk}/step/approve/")
-    entry.refresh_from_db()
-    assert entry.status == "posted"
-
-
 def test_posted_entries_are_immutable(recorder, approver, verified_client) -> None:  # type: ignore[no-untyped-def]
     entry = _entry(recorder, status="posted", approved_by=approver, number="EX-2026-00001")
     entry.description = "changed"
@@ -137,7 +131,8 @@ def test_posted_entries_are_immutable(recorder, approver, verified_client) -> No
 
 
 def test_reversal_flow(recorder, approver, verified_client) -> None:  # type: ignore[no-untyped-def]
-    entry = _entry(recorder, status="posted", approved_by=approver, number="EX-2026-00001")
+    """Correcting posted income (a reversal of expenditure goes to executive approval, see test_approvals)."""
+    entry = _entry(recorder, status="posted", approved_by=approver, number="IN-2026-00001", **INCOME)
     head = verified_client(approver)
     assert (
         verified_client(recorder)

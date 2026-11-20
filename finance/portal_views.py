@@ -67,6 +67,22 @@ def ledger_step(request: HttpRequest, pk: int, step: str) -> HttpResponse:
 @never_cache
 @portal_view(DEPT, level=HEAD)
 @require_POST
+def budget_line_submit(request: HttpRequest, pk: int) -> HttpResponse:
+    from .approvals import submit_budget_line
+
+    resource, line = post_action(request, DEPT, "budget", pk, "view")
+    try:
+        submit_budget_line(request, line)
+    except ValidationError as exc:
+        _fail(request, exc)
+    else:
+        messages.success(request, "Submitted for executive approval.")
+    return redirect(resource.url("detail", line))
+
+
+@never_cache
+@portal_view(DEPT, level=HEAD)
+@require_POST
 def year_close(request: HttpRequest, pk: int) -> HttpResponse:
     resource, fy = post_action(request, DEPT, "financial-years", pk, "view")
     try:

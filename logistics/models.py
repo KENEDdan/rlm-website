@@ -15,6 +15,7 @@ from core.fields import EncryptedCharField, EncryptedEmailField
 from core.models import TimeStampedModel
 from core.private_files import PrivateFileField
 from core.uploads import RandomUploadTo
+from finance.models import BudgetApproval
 
 MIN_QUOTATIONS = 3
 
@@ -49,7 +50,7 @@ class PurchaseRequest(TimeStampedModel):
         DRAFT = "draft", "Draft"
         SUBMITTED = "submitted", "Submitted: collecting quotations"
         RECOMMENDED = "recommended", "Supplier recommended: awaiting Finance"
-        BUDGET_CONFIRMED = "budget_confirmed", "Budget confirmed: awaiting approval"
+        BUDGET_CONFIRMED = "budget_confirmed", "Budget checked: awaiting executive approval"
         APPROVED = "approved", "Approved"
         ORDERED = "ordered", "Purchase order issued"
         RECEIVED = "received", "Goods received"
@@ -112,6 +113,7 @@ class PurchaseRequest(TimeStampedModel):
     )
     approved_at = models.DateTimeField(null=True, blank=True, editable=False)
     rejection_note = models.CharField(max_length=300, blank=True, editable=False)
+    unbudgeted = models.BooleanField(default=False, editable=False)
 
     class Meta:
         ordering: ClassVar = ["-created_at"]
@@ -296,7 +298,7 @@ class MaintenanceRecord(TimeStampedModel):
 
 
 # ------------------------------------------------------------------------------------------ event logistics
-class LogisticsPlan(TimeStampedModel):
+class LogisticsPlan(BudgetApproval, TimeStampedModel):
     class Kind(models.TextChoices):
         CONFERENCE = "conference", "Conference"
         CRUSADE = "crusade", "Crusade"
@@ -319,6 +321,9 @@ class LogisticsPlan(TimeStampedModel):
     location = models.CharField(max_length=200, blank=True)
     branch = models.ForeignKey("branches.Branch", null=True, blank=True, on_delete=models.SET_NULL)
     expected_attendance = models.PositiveIntegerField(null=True, blank=True)
+    budget_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True, help_text="Total event budget requested"
+    )
     coordinator = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )

@@ -17,6 +17,7 @@ from core.models import TimeStampedModel
 from core.people import AgeBand, Gender
 from core.private_files import PrivateFileField
 from core.uploads import RandomUploadTo
+from finance.models import BudgetApproval
 
 
 class Community(TimeStampedModel):
@@ -118,7 +119,7 @@ class TeamMember(TimeStampedModel):
         return f"{self.name}{f' ({self.role})' if self.role else ''}"
 
 
-class Campaign(TimeStampedModel):
+class Campaign(BudgetApproval, TimeStampedModel):
     class Kind(models.TextChoices):
         CRUSADE = "crusade", "Crusade"
         OPEN_AIR = "open_air", "Open-air meeting"

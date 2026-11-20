@@ -1,0 +1,71 @@
+{% extends "portal/base.html" %}
+{% block title %}Approve {{ reference }}{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow"><a class="hover:underline" href="{% url 'portal:finance:approvals' %}">Approvals</a> · {{ kind.label }}</p>
+    <h1 class="portal-title">{{ reference }}</h1>
+    {% if check.unbudgeted %}<p class="mt-2"><span class="badge-unbudgeted">UNBUDGETED</span> <span class="text-sm font-semibold">{{ check.reason }}</span></p>{% endif %}
+  </div>
+</div>
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="panel lg:col-span-2">
+    <dl class="detail-list">
+      <div><dt>Amount</dt><dd class="kpi-value tabular-nums">{{ amount|floatformat:2 }}</dd></div>
+      <div><dt>Department</dt><dd>{{ department|default:"—" }}</dd></div>
+      <div><dt>Branch</dt><dd>{{ branch|default:"All / ministry-wide" }}</dd></div>
+      {% for label, value in rows %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+    </dl>
+  </section>
+  <section class="panel">
+    <h2 class="panel-title">Budget line</h2>
+    {% if line %}
+      <p class="text-sm font-semibold">{{ line }}</p>
+      <p class="text-xs text-rlm-grey">{{ line.get_status_display }}</p>
+      {% if position %}
+      <table class="table-rlm mt-2 text-sm"><tbody>
+        <tr><th scope="row">Budget (incl. adjustments)</th><td class="tabular-nums">{{ position.total|floatformat:2 }}</td></tr>
+        <tr><th scope="row">Spent</th><td class="tabular-nums">{{ position.spent|floatformat:2 }}</td></tr>
+        <tr><th scope="row">Committed</th><td class="tabular-nums">{{ position.committed|floatformat:2 }}</td></tr>
+        <tr><th scope="row">Remaining</th><td class="tabular-nums">{{ position.remaining|floatformat:2 }}</td></tr>
+      </tbody></table>
+      {% endif %}
+    {% else %}<p class="text-sm">{{ check.reason|default:"No budget line." }}</p>{% endif %}
+  </section>
+</div>
+<section class="panel mt-6">
+  <h2 class="panel-title">Decision</h2>
+  {% if is_own %}
+    <p class="text-sm">You asked for, recorded or checked this yourself, so another approver must decide it.</p>
+  {% elif not can_decide %}
+    <p class="text-sm">Only a current approver can decide. You can see this list because you are a Super Admin.</p>
+  {% else %}
+  {% if not fresh %}<p class="mb-3 text-xs text-rlm-grey">You will be asked for your password and an authenticator code before the decision is saved.</p>{% endif %}
+  <form method="post" class="rlm-form space-y-4">{% csrf_token %}
+    <div>
+      <label for="justification">{% if check.unbudgeted %}Written justification (required to approve UNBUDGETED spending){% else %}Note (required if you do not approve){% endif %}</label>
+      <textarea id="justification" name="justification" rows="3" maxlength="2000"></textarea>
+    </div>
+    {% if check.unbudgeted %}
+    <fieldset class="space-y-3 rounded-xl border border-rlm-line p-3">
+      <legend class="px-1 text-sm font-bold">Budget adjustment {% if requires_adjustment %}(required){% else %}(optional){% endif %}</legend>
+      <div class="checkbox-list">
+        <label for="adj-none"><input type="radio" id="adj-none" name="adjustment" value="" {% if not requires_adjustment %}checked{% endif %}> No adjustment</label>
+        <label for="adj-realloc"><input type="radio" id="adj-realloc" name="adjustment" value="reallocation"> Reallocate from another line</label>
+        <label for="adj-supp"><input type="radio" id="adj-supp" name="adjustment" value="supplementary"> Supplementary budget</label>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div><label for="to_line">Line to increase</label><select id="to_line" name="to_line"><option value="">{% if line %}{{ line }}{% else %}Choose…{% endif %}</option>{% for l in approved_lines %}<option value="{{ l.pk }}">{{ l }}</option>{% endfor %}</select></div>
+        <div><label for="from_line">Take from (reallocation)</label><select id="from_line" name="from_line"><option value="">Choose…</option>{% for l in approved_lines %}<option value="{{ l.pk }}">{{ l }}</option>{% endfor %}</select></div>
+        <div><label for="adjustment_amount">Amount</label><input type="number" step="0.01" min="0" id="adjustment_amount" name="adjustment_amount" value="{{ check.shortfall|floatformat:2 }}"></div>
+      </div>
+    </fieldset>
+    {% endif %}
+    <div class="flex flex-wrap gap-3">
+      <button type="submit" name="decision" value="approve" class="btn-primary" data-confirm="Approve {{ reference }} for {{ amount|floatformat:2 }}?">Approve</button>
+      <button type="submit" name="decision" value="reject" class="btn-danger">Do not approve</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

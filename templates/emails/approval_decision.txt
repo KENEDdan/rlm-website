@@ -1,0 +1,8 @@
+{% autoescape off %}Hello,
+
+Your {{ label|lower }} ({{ reference }}) was {% if approved %}APPROVED{% else %}NOT APPROVED{% endif %} by the ministry's executive approver.
+
+For privacy this email contains no amounts or details. Please sign in to the staff portal to see the decision and any note:
+{{ site_url }}
+
+This is an automated message.{% endautoescape %}

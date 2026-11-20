@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any
 
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import HttpRequest
 from django.utils import timezone
@@ -61,31 +61,32 @@ def recommend(request: HttpRequest, pr: PurchaseRequest, quotation: Quotation, n
 
 @transaction.atomic
 def confirm_budget(request: HttpRequest, pr: PurchaseRequest, budget_line: Any) -> None:
-    """Finance: the cost fits a budget line of the requesting department for this year."""
-    _require(pr.status == S.RECOMMENDED, "Finance confirms the budget after a supplier is recommended.")
-    _require(
-        budget_line.department_id == pr.requesting_department_id,
-        "Use a budget line of the requesting department.",
-    )
-    _require(budget_line.year == timezone.localdate().year, "Use a budget line of the current year.")
+    """Finance checks the budget and sends the purchase for EXECUTIVE approval (decision 3).
+
+    ``budget_line`` may be None when the requesting department has no suitable line: the purchase is then
+    UNBUDGETED and the approver must justify it. The same happens when the line's remaining balance is too small.
+    """
+    from finance.approvals import KINDS, check_budget
+
+    _require(pr.status == S.RECOMMENDED, "Finance checks the budget after a supplier is recommended.")
+    if budget_line is not None:
+        _require(
+            budget_line.department_id == pr.requesting_department_id,
+            "Use a budget line of the requesting department.",
+        )
+        _require(budget_line.year == timezone.localdate().year, "Use a budget line of the current year.")
     pr.budget_line = budget_line
     pr.budget_confirmed_by = request.user
     pr.budget_confirmed_at = timezone.now()
     pr.status = S.BUDGET_CONFIRMED
+    pr.unbudgeted = check_budget(KINDS["purchase"], pr).unbudgeted
     pr.save()
-    log_event(AuditLog.Action.APPROVE, request=request, obj=pr, extra={"budget_line": budget_line.pk})
-
-
-@transaction.atomic
-def approve(request: HttpRequest, pr: PurchaseRequest) -> None:
-    _require(pr.status == S.BUDGET_CONFIRMED, "Approval needs a confirmed budget first.")
-    if pr.requested_by_id == request.user.pk:
-        raise PermissionDenied("You asked for this purchase, so someone else must approve it.")
-    pr.status = S.APPROVED
-    pr.approved_by = request.user
-    pr.approved_at = timezone.now()
-    pr.save()
-    log_event(AuditLog.Action.APPROVE, request=request, obj=pr)
+    log_event(
+        AuditLog.Action.SUBMIT,
+        request=request,
+        obj=pr,
+        extra={"budget_line": budget_line.pk if budget_line else None, "unbudgeted": pr.unbudgeted},
+    )
 
 
 @transaction.atomic

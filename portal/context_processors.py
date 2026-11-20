@@ -41,7 +41,12 @@ def _nav(request: HttpRequest) -> dict[str, Any]:
                 ),
             }
         )
+    from finance.approvals import is_approver, pending_items
+
+    approver = is_approver(request.user)
     return {
+        "approvals_url": reverse("portal:finance:approvals") if (approver or access.is_super_admin) else "",
+        "approvals_pending": len(pending_items()) if approver else 0,
         "access": access,
         "departments": departments,
         "show_executive": access.is_executive,

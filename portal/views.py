@@ -14,10 +14,13 @@ from django.db import transaction
 from django.db.models import ProtectedError
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import urlencode
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
+from accounts import reauth
 from audit.models import AuditLog
 from audit.services import log_event
 from core.admin_mixins import Echo, csv_safe
@@ -246,6 +249,8 @@ def resource_form(request: HttpRequest, department: str, slug: str, pk: int | No
     if resource.fields is None and resource.form_class is None:
         raise Http404
     obj = None if pk is None else _object_or_404(request, resource, pk, "change")
+    if resource.reauth_required and not reauth.is_fresh(request):
+        return redirect(f"{reverse('portal:reauth')}?{urlencode({'next': request.get_full_path()})}")
     form_class = resource.get_form_class(access, obj)
     kwargs: dict[str, Any] = {"instance": obj}
     if "access" in form_class.__init__.__code__.co_varnames:
@@ -285,6 +290,8 @@ def resource_form(request: HttpRequest, department: str, slug: str, pk: int | No
 def resource_delete(request: HttpRequest, department: str, slug: str, pk: int) -> HttpResponse:
     resource = _resource_or_404(request, department, slug, "delete")
     obj = _object_or_404(request, resource, pk, "delete")
+    if resource.reauth_required and not reauth.is_fresh(request):
+        return redirect(f"{reverse('portal:reauth')}?{urlencode({'next': request.get_full_path()})}")
     if request.method == "POST":
         log_event(AuditLog.Action.DELETE, request=request, obj=obj)
         try:

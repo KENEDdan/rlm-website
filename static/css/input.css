@@ -252,6 +252,9 @@
   .status-warn { @apply border-rlm-amber bg-rlm-gold text-rlm-black; }
   .status-bad { @apply border-rlm-flame-dark bg-rlm-flame-dark text-rlm-white; }
   .btn-danger { @apply btn bg-rlm-flame-dark text-rlm-white hover:bg-rlm-black; }
+  /* UNBUDGETED: always the word, black on gold with a heavy border (not colour alone; prints in b/w). */
+  .badge-unbudgeted { @apply inline-flex items-center rounded border-2 border-rlm-black bg-rlm-gold px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-rlm-black; }
+  .unbudgeted-panel { @apply border-2 border-rlm-black; }
   /* Charts (portal/charts.py): one brand hue; thin recessive grid. */
   .chart-svg { @apply h-auto w-full; }
   .chart-grid { stroke: var(--rlm-line); stroke-width: 1; }

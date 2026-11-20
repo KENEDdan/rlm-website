@@ -1,0 +1,43 @@
+{% extends "portal/base.html" %}
+{% block title %}Approvals{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Executive approval</p>
+    <h1 class="portal-title">Approvals</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Every expenditure and financial commitment needs approval by the Founder, the Executive Director or the acting approver before it is paid or committed. Each decision asks for your password and an authenticator code, and is recorded permanently.</p>
+  </div>
+</div>
+{% if unbudgeted %}
+<section class="panel mb-6 unbudgeted-panel" aria-labelledby="unbudgeted-title">
+  <h2 class="panel-title" id="unbudgeted-title"><span class="badge-unbudgeted">UNBUDGETED</span> {{ unbudgeted|length }} item{{ unbudgeted|length|pluralize }} need{{ unbudgeted|length|pluralize:"s," }} a written justification</h2>
+  <p class="text-sm">These have no approved budget line, or are more than the line's remaining balance.</p>
+</section>
+{% endif %}
+<section class="panel p-0">
+  <div class="table-wrap"><table class="table-rlm">
+    <caption class="sr-only">Waiting for approval</caption>
+    <thead><tr><th scope="col">Item</th><th scope="col">Type</th><th scope="col">Department</th><th scope="col">Amount</th><th scope="col">Budget</th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr>
+        <th scope="row"><a class="portal-link" href="{{ i.url }}">{{ i.reference }}</a></th>
+        <td>{{ i.kind.label }}</td>
+        <td>{{ i.department|default:"—" }}</td>
+        <td class="tabular-nums">{{ i.amount|floatformat:2 }}</td>
+        <td>{% if i.unbudgeted %}<span class="badge-unbudgeted">UNBUDGETED</span> <span class="text-xs">{{ i.reason }}</span>{% else %}{% include "portal/_status.html" with value="good" label="Within budget" %}{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Nothing is waiting for approval.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+<section class="panel mt-6">
+  <h2 class="panel-title">Recent decisions</h2>
+  <div class="table-wrap"><table class="table-rlm">
+    <thead><tr><th scope="col">When</th><th scope="col">Item</th><th scope="col">Decision</th><th scope="col">Amount</th><th scope="col">By</th></tr></thead>
+    <tbody>{% for d in recent %}<tr><td>{{ d.created_at|date:"j M Y H:i" }}</td><td>{{ d.reference }}</td><td>{% if d.decision == "approved" %}{% include "portal/_status.html" with value="good" label="Approved" %}{% else %}{% include "portal/_status.html" with value="bad" label="Not approved" %}{% endif %}{% if d.override %} <span class="badge-unbudgeted">UNBUDGETED</span>{% endif %}</td><td class="tabular-nums">{{ d.amount|floatformat:2 }}</td><td>{{ d.approver|default:"—" }} <span class="text-xs text-rlm-grey">{{ d.approver_role }}</span></td></tr>{% empty %}<tr><td colspan="5">No decisions yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}
