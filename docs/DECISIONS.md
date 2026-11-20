@@ -250,3 +250,43 @@ nightly encrypted backups. `manage.py emergency_disable` is the only server-side
 first-Super-Admin bootstrap: it can only remove access, ends sessions and alerts the Super Admins.
 `seed_demo` fills every dashboard with fake data (DEBUG only, no accounts) and `seed_indicators` creates
 suggested targets. No new third-party packages were added for any of this work.
+
+
+## Ministry decisions (Nov 2026)
+
+Recorded verbatim as received on 2026-11-20. These are binding; how each was implemented, and the defaults
+chosen where a decision left something open, are in D-026 to D-033 below.
+
+1. EXECUTIVE FINANCE DASHBOARD
+- Add an "Executive Leadership" role (Founder/Executive Director plus any members the Super Admin adds). Give it an Executive Finance page showing ministry-wide SUMMARIES only: income received, expenditure, cash balances, outstanding pledges, approved budgets, budget vs actual by department and branch, with the financial-year and month filters.
+- Detailed ledger entries, donor identities, vouchers and receipts stay visible only to Finance and the Founder. Executive Leadership gets drill-down to totals and categories, not individual donors or documents unless they also hold the Finance role. Test this boundary.
+
+2. FINANCIAL YEAR
+- Financial year = 1 January to 31 December for every branch and department. Create a FinancialYear model (default current year), and make budgets, ledger, indicators, reports and dashboards all period-aware. Prevent posting into a closed year; provide a Super Admin/Finance-head "close year" action (audit-logged, reversible only by Super Admin with re-authentication). Quarters and months derive from the calendar year.
+
+3. APPROVAL RULES
+- EVERY expenditure or financial commitment (purchase orders, procurement approvals, project payments, event budgets, mission trip budgets, reimbursements) requires Founder/Executive Director approval before it can be paid or committed. Remove any lower approval thresholds; keep segregation of duties (requester cannot approve own request, recorder cannot approve).
+- Unbudgeted expenditure (no matching approved budget line, or exceeding the remaining line balance) is flagged "UNBUDGETED" and requires a second step: executive approval with a mandatory written justification and, if configured, a budget reallocation or supplementary budget. Show these prominently on Finance and Executive dashboards.
+- Approver group is configurable by the Super Admin (Founder, Executive Director, optional acting approver with start/end dates for when the Founder is away). Approval uses re-authentication (password + 2FA). Every approval, rejection and override is immutably audit-logged. Notify requesters by email without sensitive details.
+
+4. MONTHLY PERFORMANCE TARGETS
+- Build an Indicator framework from the approved annual strategic plan: categories evangelism, discipleship, youth fellowships, membership, partnerships, missions, finance, development, media, prayer. Each indicator: name, unit, owner department, annual target, monthly targets (auto-split but editable), branch scope (ministry-wide or per branch), financial year.
+- Add an admin screen to enter/import the strategic plan targets (CSV import with validation) and let authorized leadership adjust them; keep a change history (who, old and new value, reason).
+- Departments enter monthly actuals in their dashboards; show target vs actual, percent achieved, trend and red/amber/green status. The Executive Overview shows all categories at once, with overdue reporting flagged. Seed clearly fake sample targets for demo only.
+
+5. BRANCH COORDINATOR + DEPARTMENT ACCESS
+- Make scope a property of EACH role assignment, not of the user. DepartmentMembership gets a scope: "all branches" (department leaders) or "single branch" (a Branch Coordinator who also serves in a department). A Branch Coordinator in a department sees only that branch's records inside that department, and nothing from other branches or other departments. Department leaders see their department across all branches.
+- Enforce in querysets, views, exports, reports, search and dashboard aggregates (KPI cards and charts must respect scope too). Test combinations: coordinator-only, coordinator + department, leader, multi-department user, and attempts to guess IDs from another branch.
+
+6. DEVELOPMENT <-> FINANCE INTEGRATION
+- Link Development projects to Finance directly: each project has a budget (a Finance budget line/cost centre) and project costs are the Finance ledger entries tagged with that project. NO duplicate transactions: the project page reads from the ledger, and recording a project expense happens by creating a ledger entry (with project and budget-line references) that follows rule 3 approvals.
+- Project dashboard: budget, committed, spent, remaining, variance, milestone progress vs money spent, and alerts for overspend and unbudgeted costs. Finance sees the same entries in the ledger; Development sees only its projects' cost summaries and entries it is permitted to view. Same pattern for Logistics purchase orders and Missions budgets: one ledger, referenced everywhere.
+
+7. PRINTABLE REPORTS (browser print, no server PDF for now)
+- Create print stylesheets and "Print / Save as PDF" buttons for all reports (membership, finance, procurement, missions, discipleship, media, development, executive, indicator reports, member/volunteer lists).
+- Every printable report must include: ministry logo and name, report title, department, branch (or "All branches"), reporting period and financial year, generated date and time, generated by, page numbers, a footer with confidentiality notice for sensitive reports, and an APPROVAL SECTION (Prepared by / Reviewed by / Approved by with name, signature and date lines). Use brand colours with good print contrast, A4 layout, no cut-off tables, and a clean black-and-white fallback. Hide navigation and buttons when printing. Printing sensitive reports is permission-gated and audit-logged.
+- Structure the report templates so that server-side PDF generation can be added later without rewriting them (keep print views as standalone templates).
+
+8. APPLICATION RETENTION
+- Applications (membership, discipleship, partnership, finance-volunteer) have statuses: pending, approved (successful), unsuccessful. Successful applications are converted into the proper ministry records (member register, discipleship cohort, partner pipeline, vetted finance-volunteer list) and the application keeps only a reference.
+- Unsuccessful applications are retained for 365 days from the decision date, then automatically anonymized or deleted by a scheduled Celery job: delete personal data, encrypted essays and contact details, keeping only non-identifying statistics (type, branch, month, outcome) for reporting. Make the retention period a setting, log each purge run in the audit log, and give Super Admin a dry-run preview. Support early deletion on a person's valid request and a legal-hold flag that pauses deletion. Show the retention deadline in the application screen and send the department head a monthly report of applications nearing purge. Tell applicants about the retention period on the form and in the privacy policy, and update the privacy policy accordingly. Apply the same rules to any minors' data (stricter visibility, never kept longer than needed).
