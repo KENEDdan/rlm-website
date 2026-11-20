@@ -7,14 +7,16 @@ from decimal import Decimal
 from typing import Any, ClassVar
 
 from django import forms
-from django.db.models import Model
+from django.db.models import Model, QuerySet
 from django.http import HttpRequest
 from django.urls import reverse
 from django.utils import timezone
 
-from portal.access import HEAD, Access
+from finance.models import BudgetLine, LedgerEntry
+from portal.access import HEAD, MEMBER, Access
 from portal.charts import Chart, grouped_counts, timeline
 from portal.dashboards import KPI, Action, Dashboard, Filters, Item, dashboard, executive_summary, handoffs
+from portal.models import Department
 from portal.resources import DateInput, Resource, register
 
 from .models import (
@@ -24,7 +26,6 @@ from .models import (
     Milestone,
     Project,
     ProjectDocument,
-    ProjectExpense,
     ProjectRisk,
     Property,
     SitePhoto,
@@ -52,7 +53,7 @@ class ProjectForm(forms.ModelForm):
             "branch",
             "site",
             "description",
-            "budget",
+            "budget_line",
             "funding_secured",
             "currency",
             "start_date",
@@ -71,7 +72,15 @@ class ProjectResource(_Development):
     branch_lookup = "branch"
     label = "Project register"
     nav_group = "Projects"
-    list_fields: ClassVar = ["name", "kind", "phase", "budget", "spent_display", "progress", "target_end"]
+    list_fields: ClassVar = [
+        "name",
+        "kind",
+        "phase",
+        "budget_display",
+        "spent_display",
+        "progress",
+        "target_end",
+    ]
     filters: ClassVar = ["phase", "kind", "branch"]
     search_fields: ClassVar = ["name"]
     form_class = ProjectForm
@@ -80,12 +89,25 @@ class ProjectResource(_Development):
     children: ClassVar = [
         ("milestones", "milestones", "Milestones"),
         ("site_visits", "site-visits", "Site visits and progress"),
-        ("expenses", "project-costs", "Costs"),
+        ("ledger_entries", "project-costs", "Costs (from the Finance ledger)"),
         ("documents", "project-documents", "Documents (designs, BOQs, permits, contracts)"),
         ("risks", "risks", "Risks and issues"),
         ("proposals", "capital-proposals", "Capital proposals"),
     ]
     perms: ClassVar = {"delete": HEAD}
+
+    detail_template = "development/project_detail.html"
+    fk_querysets: ClassVar = {
+        "budget_line": lambda access: BudgetLine.objects.filter(department__code=DEPT),
+    }
+
+    def extra_context(self, request: HttpRequest, access: Access, obj: Model) -> dict[str, Any]:
+        return {"money": obj.finance_summary()}  # type: ignore[attr-defined]
+
+    def budget_display(self, obj: Project) -> str:
+        return f"{obj.budget:,.2f}" if obj.budget_line_id else "No budget line"
+
+    budget_display.short_description = "Budget"  # type: ignore[attr-defined]
 
     def spent_display(self, obj: Project) -> str:
         pct = f" ({int(obj.spent * 100 / obj.budget)}%)" if obj.budget else ""
@@ -127,12 +149,88 @@ class MilestoneResource(_ProjectChild):
 
 
 @register
-class ExpenseResource(_ProjectChild):
-    model = ProjectExpense
+class ProjectCostResource(_ProjectChild):
+    """Project costs ARE Finance ledger entries tagged with the project (decision 6): no second set of books.
+
+    Development records a cost (a draft expenditure entry charged to the project's budget line) and submits it;
+    it then follows executive approval like every expenditure. Development never sees receipts, payees or
+    entries of other departments.
+    """
+
+    model = LedgerEntry
     slug = "project-costs"
+    label = "Project costs (Finance ledger)"
     branch_lookup = "project__branch"
-    list_fields: ClassVar = ["date", "description", "amount", "reference"]
-    fields: ClassVar = ["project", "date", "description", "amount", "reference"]
+    list_fields: ClassVar = ["number", "date", "project", "description", "amount", "status", "unbudgeted"]
+    fields: ClassVar = ["project", "date", "amount", "description", "reference"]
+    detail_fields: ClassVar = [
+        "number",
+        "status",
+        "project",
+        "date",
+        "amount",
+        "description",
+        "reference",
+        "budget_line",
+        "unbudgeted",
+        "rejection_note",
+        "posted_at",
+    ]
+    export_fields: ClassVar = ["number", "date", "project", "description", "amount", "status"]
+    perms: ClassVar = {"delete": MEMBER, "change": MEMBER}
+    fk_querysets: ClassVar = {"project": lambda access: Project.objects.all()}
+
+    def get_form_class(self, access: Access, obj: Model | None = None) -> type[forms.ModelForm]:
+        base = super().get_form_class(access, obj)
+
+        class CostForm(base):  # type: ignore[valid-type, misc]
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                super().__init__(*args, **kwargs)
+                # Fixed parts of a project cost, set before validation so the ledger rules apply.
+                self.instance.kind = LedgerEntry.Kind.EXPENSE
+                self.instance.category = self.instance.category or "construction"
+                self.instance.department = Department.objects.get(code=DEPT)
+
+            def clean(self) -> dict[str, Any]:
+                cleaned = super().clean()
+                project = cleaned.get("project")
+                if project is not None:
+                    self.instance.budget_line = project.budget_line
+                return cleaned
+
+        return CostForm
+
+    def scope(self, access: Access, qs: QuerySet) -> QuerySet:
+        return qs.filter(project__isnull=False, kind=LedgerEntry.Kind.EXPENSE)
+
+    def object_allows(self, access: Access, action: str, obj: Model) -> bool:
+        if action in ("change", "delete"):
+            entry: LedgerEntry = obj  # type: ignore[assignment]
+            return entry.status in ("draft", "rejected") and (
+                entry.recorded_by_id == access.user.pk or access.is_head(DEPT)
+            )
+        return True
+
+    def before_save(self, request: HttpRequest, access: Access, obj: Model, created: bool) -> None:
+        super().before_save(request, access, obj, created)
+        entry: LedgerEntry = obj  # type: ignore[assignment]
+        entry.kind = LedgerEntry.Kind.EXPENSE
+        entry.department = Department.objects.get(code=DEPT)
+        entry.budget_line = entry.project.budget_line
+        entry.branch = entry.project.branch
+        entry.currency = entry.project.currency
+
+    def actions(self, request: HttpRequest, access: Access, obj: Model) -> list[dict[str, Any]]:
+        entry: LedgerEntry = obj  # type: ignore[assignment]
+        if entry.status in ("draft", "rejected") and self.object_allows(access, "change", entry):
+            return [
+                {
+                    "label": "Submit for approval",
+                    "url": reverse("portal:development:cost_submit", args=[entry.pk]),
+                    "style": "primary",
+                }
+            ]
+        return []
 
 
 @register
@@ -286,7 +384,12 @@ class ContractorResource(_Development):
 # ------------------------------------------------------------------------------------------ dashboard
 @dashboard(DEPT)
 def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
-    projects = ProjectResource().get_queryset(access).prefetch_related("expenses", "site_visits")
+    projects = (
+        ProjectResource()
+        .get_queryset(access)
+        .select_related("budget_line")
+        .prefetch_related("site_visits", "milestones")
+    )
     if filters.branch_id:
         projects = projects.filter(branch_id=filters.branch_id)
     active = [p for p in projects if p.phase in Project.ACTIVE]
@@ -300,6 +403,8 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
     budget = sum((p.budget for p in active), Decimal("0"))
     spent = sum((p.spent for p in active), Decimal("0"))
     gap = sum((p.funding_gap for p in active), Decimal("0"))
+    summaries = {p.pk: p.finance_summary() for p in active}
+    committed = sum((m["committed"] for m in summaries.values()), Decimal("0"))
     purl = ProjectResource().url("list")
     kpis = [
         KPI("Active projects", len(active), url=purl, code="active_projects"),
@@ -309,6 +414,12 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
             f"{spent:,.2f}",
             f"{int(spent * 100 / budget) if budget else 0}% of budget",
             code="spent",
+        ),
+        KPI(
+            "Committed (active)",
+            f"{committed:,.2f}",
+            "Awaiting approval, or approved and not yet paid",
+            code="committed",
         ),
         KPI(
             "Funding gap",
@@ -341,7 +452,7 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         Chart(
             "Budget spent per active project (%)",
             "hbar",
-            [(p.name, int(p.spent * 100 / p.budget) if p.budget else 0) for p in active],
+            [(p.name, summaries[p.pk]["spent_pct"] or 0) for p in active],
             unit="%",
         ),
     ]
@@ -365,23 +476,77 @@ def build(request: HttpRequest, access: Access, filters: Filters) -> Dashboard:
         )
     sections = [
         {
-            "title": "Budget vs spent per project",
-            "columns": ["Project", "Stage", "Budget", "Spent", "Funding secured", "Gap"],
+            "title": "Budget vs spent per project (from the Finance ledger)",
+            "columns": [
+                "Project",
+                "Stage",
+                "Budget",
+                "Committed",
+                "Spent",
+                "Remaining",
+                "Money spent",
+                "Milestones done",
+            ],
             "rows": [
                 [
                     p.name,
                     p.get_phase_display(),
-                    f"{p.budget:,.2f}",
-                    f"{p.spent:,.2f}",
-                    f"{p.funding_secured:,.2f}",
-                    f"{p.funding_gap:,.2f}",
+                    f"{m['budget']:,.2f}" if not m["no_budget_line"] else "No budget line",
+                    f"{m['committed']:,.2f}",
+                    f"{m['spent']:,.2f}",
+                    f"{m['remaining']:,.2f}",
+                    "—" if m["spent_pct"] is None else f"{m['spent_pct']}%",
+                    "—" if m["milestones_pct"] is None else f"{m['milestones_pct']}%",
                 ]
                 for p in active
+                for m in [summaries[p.pk]]
             ],
             "empty": "No active projects.",
         }
     ]
     attention = [
+        Item(
+            f"Overspent: {p}",
+            f"Spent {summaries[p.pk]['spent']:,.2f} of {summaries[p.pk]['budget']:,.2f}",
+            ProjectResource().url("detail", p),
+            "bad",
+        )
+        for p in active
+        if summaries[p.pk]["overspent"]
+    ]
+    attention += [
+        Item(
+            f"UNBUDGETED costs on {p}: {summaries[p.pk]['unbudgeted']}",
+            "Need an executive justification",
+            ProjectResource().url("detail", p),
+            "bad",
+        )
+        for p in active
+        if summaries[p.pk]["unbudgeted"]
+    ]
+    attention += [
+        Item(
+            f"Money ahead of progress: {p}",
+            f"{summaries[p.pk]['spent_pct']}% spent, {summaries[p.pk]['milestones_pct']}% of milestones done",
+            ProjectResource().url("detail", p),
+            "warn",
+        )
+        for p in active
+        if summaries[p.pk]["spent_pct"] is not None
+        and summaries[p.pk]["milestones_pct"] is not None
+        and summaries[p.pk]["spent_pct"] > summaries[p.pk]["milestones_pct"] + 20
+    ]
+    attention += [
+        Item(
+            f"No budget line: {p}",
+            "Ask Finance for a cost centre",
+            ProjectResource().url("detail", p),
+            "warn",
+        )
+        for p in active
+        if summaries[p.pk]["no_budget_line"]
+    ]
+    attention += [
         Item(
             f"Overdue milestone: {m.title}",
             f"{m.project} · due {m.due_date:%d %b}",

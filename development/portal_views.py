@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 from audit.models import AuditLog
 from audit.services import log_event
 from finance.models import Proposal
-from portal.access import HEAD, portal_view
+from portal.access import HEAD, MEMBER, portal_view
 from portal.views import post_action
 
 from .models import CapitalProposal
@@ -47,3 +47,22 @@ def send_to_finance(request: HttpRequest, pk: int) -> HttpResponse:
         )
     messages.success(request, "Sent to Finance. It now appears in Finance's appeals & proposals.")
     return redirect(resource.url("detail", proposal))
+
+
+@never_cache
+@portal_view(DEPT, level=MEMBER)
+@require_POST
+def cost_submit(request: HttpRequest, pk: int) -> HttpResponse:
+    """Send a project cost (a draft Finance ledger entry) for executive approval (decisions 3 and 6)."""
+    from django.core.exceptions import ValidationError
+
+    from finance import services as finance_services
+
+    resource, entry = post_action(request, DEPT, "project-costs", pk, "change")
+    try:
+        finance_services.submit(request, entry)
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+    else:
+        messages.success(request, "Submitted. It now waits for executive approval before it is paid.")
+    return redirect(resource.url("detail", entry))

@@ -36,7 +36,6 @@ def seed() -> int:
         MaintenanceRequest,
         Milestone,
         Project,
-        ProjectExpense,
         ProjectRisk,
         Property,
         SiteVisit,
@@ -456,7 +455,14 @@ def seed() -> int:
         phase="construction",
         site=plot,
         branch=branches[0],
-        budget=Decimal("120000"),
+        budget_line=BudgetLine.objects.create(
+            year=today.year,
+            department=depts["development"],
+            category="construction",
+            name=f"{M} Conference hall",
+            amount=Decimal("120000"),
+            status="approved",
+        ),
         funding_secured=Decimal("70000"),
         start_date=today - timedelta(days=150),
         target_end=today + timedelta(days=200),
@@ -466,7 +472,14 @@ def seed() -> int:
         name=f"{M} Youth hostel",
         kind="hostel",
         phase="design",
-        budget=Decimal("80000"),
+        budget_line=BudgetLine.objects.create(
+            year=today.year,
+            department=depts["development"],
+            category="construction",
+            name=f"{M} Youth hostel",
+            amount=Decimal("80000"),
+            status="approved",
+        ),
         funding_secured=Decimal("10000"),
         start_date=today - timedelta(days=30),
         target_end=today + timedelta(days=400),
@@ -475,7 +488,14 @@ def seed() -> int:
         name=f"{M} Training centre",
         kind="training",
         phase="fundraising",
-        budget=Decimal("150000"),
+        budget_line=BudgetLine.objects.create(
+            year=today.year,
+            department=depts["development"],
+            category="construction",
+            name=f"{M} Training centre",
+            amount=Decimal("150000"),
+            status="approved",
+        ),
         start_date=today + timedelta(days=60),
         target_end=today + timedelta(days=700),
     )
@@ -486,8 +506,21 @@ def seed() -> int:
             due_date=today + timedelta(days=due),
             completed_on=today + timedelta(days=due) if done else None,
         )
-    ProjectExpense.objects.create(project=hall, description=f"{M} cement and sand", amount=Decimal("38000"))
-    ProjectExpense.objects.create(project=hostel, description=f"{M} architect fees", amount=Decimal("4500"))
+    # project costs are Finance ledger entries tagged with the project (decision 6)
+    for project, text, amount in ((hall, "cement and sand", "38000"), (hostel, "architect fees", "4500")):
+        LedgerEntry.objects.create(
+            kind="expense",
+            status="posted",
+            number=f"EX-{today.year}-9{project.pk:04d}",
+            date=today - timedelta(days=20),
+            amount=Decimal(amount),
+            category="construction",
+            description=f"{M} {text}",
+            department=depts["development"],
+            budget_line=project.budget_line,
+            branch=project.branch,
+            project=project,
+        )
     SiteVisit.objects.create(
         project=hall,
         date=today - timedelta(days=12),
@@ -520,6 +553,9 @@ def reset() -> int:
     from missions.models import Campaign, Community, NewConvert, Team
 
     total = 0
+    # Ledger rows first: they reference demo projects, campaigns and orders (one ledger, decision 6).
+    # Posted ledger rows are immutable by design; demo rows are removed with a raw queryset delete on purpose.
+    total += LedgerEntry.objects.filter(description__startswith=M)._raw_delete(LedgerEntry.objects.db)
     total += Disciple.objects.filter(
         Q(convert__location__startswith=M) | Q(registration__city__startswith=M)
     ).delete()[0]
@@ -549,7 +585,5 @@ def reset() -> int:
         (Contractor, "name"),
     ):
         total += model.objects.filter(**{f"{field}__startswith": M}).delete()[0]
-    # Posted ledger rows are immutable by design; demo rows are removed with a raw queryset delete on purpose.
-    total += LedgerEntry.objects.filter(description__startswith=M)._raw_delete(LedgerEntry.objects.db)
     total += BudgetLine.objects.filter(name__startswith=M).delete()[0]
     return total

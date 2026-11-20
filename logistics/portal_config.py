@@ -197,10 +197,18 @@ class OrderResource(_Logistics):
         "issued_on",
         "issued_by",
         "expected_delivery",
+        "paid",
     ]
     children: ClassVar = [("deliveries", "deliveries", "Delivery notes")]
     date_field = "issued_on"
     perms: ClassVar = {"add": FOUNDER + 1, "change": FOUNDER + 1, "delete": FOUNDER + 1}
+
+    def paid(self, obj: PurchaseOrder) -> str:
+        from finance.approvals import _paid
+
+        return f"{_paid(obj.ledger_entries.all()):,.2f} of {obj.amount:,.2f}"
+
+    paid.short_description = "Paid (posted in the Finance ledger)"  # type: ignore[attr-defined]
 
     def late(self, obj: PurchaseOrder) -> str:
         return "Late" if obj.is_late else ""

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -122,7 +122,14 @@ class Project(TimeStampedModel):
         verbose_name="property",
     )
     description = models.TextField(blank=True)
-    budget = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    budget_line = models.OneToOneField(
+        "finance.BudgetLine",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="project",
+        help_text="The project's cost centre in the Finance budget. Its costs are the ledger entries tagged with the project.",
+    )
     funding_secured = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
     currency = models.CharField(max_length=3, default="USD")
     start_date = models.DateField(null=True, blank=True)
@@ -139,9 +146,50 @@ class Project(TimeStampedModel):
     def __str__(self) -> str:
         return self.name
 
+    # ------------------------------------------------------------------ money: read from the Finance ledger
+    @property
+    def budget(self) -> Decimal:
+        if not self.budget_line_id:
+            return Decimal("0")
+        from finance.approvals import line_position
+
+        return line_position(self.budget_line).total
+
+    def _ledger(self) -> Any:
+        from finance.models import LedgerEntry
+
+        return LedgerEntry.objects.filter(project=self, kind=LedgerEntry.Kind.EXPENSE)
+
     @property
     def spent(self) -> Decimal:
-        return self.expenses.aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        return self._ledger().filter(status="posted").aggregate(t=Sum("amount"))["t"] or Decimal("0")
+
+    @property
+    def committed(self) -> Decimal:
+        """Costs submitted and waiting for approval, plus approved commitments charged to the project's line."""
+        waiting = self._ledger().filter(status="submitted").aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        if not self.budget_line_id:
+            return waiting
+        from finance.approvals import line_position
+
+        return waiting + line_position(self.budget_line).committed
+
+    def finance_summary(self) -> dict[str, Any]:
+        budget, spent, committed = self.budget, self.spent, self.committed
+        total = self.milestones.count()
+        done = self.milestones.filter(completed_on__isnull=False).count()
+        return {
+            "budget": budget,
+            "committed": committed,
+            "spent": spent,
+            "remaining": budget - spent - committed,
+            "variance": budget - spent - committed,
+            "spent_pct": int(spent * 100 / budget) if budget else None,
+            "milestones_pct": int(done * 100 / total) if total else None,
+            "overspent": spent > budget if budget else spent > 0,
+            "unbudgeted": self._ledger().filter(unbudgeted=True).exclude(status="rejected").count(),
+            "no_budget_line": not self.budget_line_id,
+        }
 
     @property
     def funding_gap(self) -> Decimal:
@@ -151,22 +199,6 @@ class Project(TimeStampedModel):
     def latest_progress(self) -> int | None:
         visit = self.site_visits.first()
         return visit.progress_percent if visit else None
-
-
-class ProjectExpense(TimeStampedModel):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="expenses")
-    date = models.DateField(default=timezone.localdate)
-    description = models.CharField(max_length=255)
-    amount = models.DecimalField(
-        max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
-    )
-    reference = models.CharField(max_length=60, blank=True, help_text="Finance voucher / ledger number")
-
-    class Meta:
-        ordering: ClassVar = ["-date"]
-
-    def __str__(self) -> str:
-        return f"{self.description}: {self.amount:,.2f}"
 
 
 class Milestone(TimeStampedModel):

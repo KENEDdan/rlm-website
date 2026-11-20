@@ -345,3 +345,23 @@ date range still works through links). Choices made:
   item type and number only.
 * Campaigns with a budget cannot be marked approved/in progress/completed until the budget is approved; approval
   moves a planned campaign to approved. Existing budget lines were migrated as approved; new ones start as drafts.
+
+## D-029: One ledger for projects, purchase orders and campaigns (ministry decision 6)
+(2026-11-20)
+* `Project.budget_line` (one-to-one) is the project's cost centre; the project budget is that line's approved
+  amount plus approved adjustments. The free-typed `Project.budget` and the separate `ProjectExpense` table were
+  removed.
+* A project cost IS a Finance `LedgerEntry` tagged with `project`. Development records it under "Project costs"
+  (a draft expenditure charged to the project's line), submits it, and it follows executive approval (D-028).
+  Finance sees the same entry in the ledger; there is no copy. Development sees only project-tagged entries:
+  number, date, description, amount, status. Never receipts, payees or other departments' entries.
+* Project screen and dashboard: budget, committed (submitted costs + approved commitments on the line),
+  spent (posted), remaining, money spent % against milestones done %, alerts for overspent, UNBUDGETED costs,
+  money ahead of progress (spent % more than 20 points above milestones %), and projects without a line.
+* Same pattern: ledger entries can reference a purchase order, campaign or event plan; the purchase order and
+  campaign screens show what has been paid from the ledger, and approved commitments reduce the line's remaining
+  balance until paid.
+* **Migration of existing data:** each project budget became a DRAFT Development budget line (needs approval);
+  each old project expense became a DRAFT expenditure entry tagged with the project, with its old voucher number
+  in `reference`. Finance checks these against the books and submits or deletes them; nothing was posted
+  automatically, so nothing is counted twice.

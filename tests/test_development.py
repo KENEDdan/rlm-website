@@ -15,12 +15,12 @@ from development.models import (
     MaintenanceRequest,
     Milestone,
     Project,
-    ProjectExpense,
     Property,
     SiteVisit,
 )
-from finance.models import Proposal
+from finance.models import BudgetLine, LedgerEntry, Proposal
 from portal.charts import timeline
+from portal.models import Department
 
 pytestmark = pytest.mark.django_db
 P = "/" + settings.PORTAL_URL
@@ -32,18 +32,36 @@ def _project(**kw) -> Project:  # type: ignore[no-untyped-def]
         "name": "Juba conference hall",
         "kind": "hall",
         "phase": "construction",
-        "budget": Decimal("100000"),
         "funding_secured": Decimal("60000"),
         "start_date": today - timedelta(days=60),
         "target_end": today + timedelta(days=120),
     }
     data.update(kw)
+    if "budget_line" not in data:
+        data["budget_line"] = BudgetLine.objects.create(
+            year=today.year,
+            department=Department.objects.get(code="development"),
+            category="construction",
+            name=data["name"],
+            amount=Decimal("100000"),
+            status="approved",
+        )
     return Project.objects.create(**data)
 
 
 def test_dashboard_kpis_and_timeline(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
     project = _project()
-    ProjectExpense.objects.create(project=project, description="Foundation", amount=Decimal("25000"))
+    LedgerEntry.objects.create(
+        kind="expense",
+        status="posted",
+        number="EX-1",
+        amount=Decimal("25000"),
+        category="construction",
+        description="Foundation",
+        project=project,
+        department=Department.objects.get(code="development"),
+        budget_line=project.budget_line,
+    )
     Milestone.objects.create(
         project=project, title="Roof on", due_date=timezone.localdate() - timedelta(days=3)
     )

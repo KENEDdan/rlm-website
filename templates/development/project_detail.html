@@ -1,0 +1,16 @@
+{% extends "portal/resource/detail.html" %}
+{% block detail_extra_top %}
+<section class="panel mb-6" aria-labelledby="money-title">
+  <h2 class="panel-title" id="money-title">Money (from the Finance ledger)</h2>
+  {% if money.no_budget_line %}<p class="mb-3 text-sm font-semibold">No budget line yet: ask Finance to create the project's cost centre, then choose it on this project.</p>{% endif %}
+  <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <div class="kpi"><p class="kpi-label">Budget</p><p class="kpi-value tabular-nums">{{ money.budget|floatformat:2 }}</p></div>
+    <div class="kpi"><p class="kpi-label">Committed</p><p class="kpi-value tabular-nums">{{ money.committed|floatformat:2 }}</p><p class="kpi-hint">Waiting for approval, or approved and not yet paid</p></div>
+    <div class="kpi"><p class="kpi-label">Spent</p><p class="kpi-value tabular-nums">{{ money.spent|floatformat:2 }}</p></div>
+    <div class="kpi"><p class="kpi-label">Remaining</p><p class="kpi-value tabular-nums">{{ money.remaining|floatformat:2 }}</p></div>
+    <div class="kpi"><p class="kpi-label">Money spent / milestones done</p><p class="kpi-value tabular-nums">{% if money.spent_pct is None %}—{% else %}{{ money.spent_pct }}%{% endif %} / {% if money.milestones_pct is None %}—{% else %}{{ money.milestones_pct }}%{% endif %}</p></div>
+  </div>
+  {% if money.overspent %}<p class="mt-3">{% include "portal/_status.html" with value="bad" label="Overspent" %}</p>{% endif %}
+  {% if money.unbudgeted %}<p class="mt-3"><span class="badge-unbudgeted">UNBUDGETED</span> {{ money.unbudgeted }} cost{{ money.unbudgeted|pluralize }} above the budget need an executive justification.</p>{% endif %}
+</section>
+{% endblock %}
