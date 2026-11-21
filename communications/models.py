@@ -101,7 +101,10 @@ class DesignRequest(TimeStampedModel):
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+", editable=False
     )
     artwork = PrivateFileField(
-        upload_to=RandomUploadTo("design"), blank=True, help_text="Final file (PDF or image)"
+        upload_to=RandomUploadTo("design"),
+        policy="design_file",
+        blank=True,
+        help_text="Final file (PDF or image)",
     )
 
     class Meta:

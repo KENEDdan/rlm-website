@@ -43,7 +43,7 @@ class Event(PublishableModel):
     registration_open = models.BooleanField(default=False)
     registration_deadline = models.DateTimeField(null=True, blank=True)
     capacity = models.PositiveIntegerField(null=True, blank=True, help_text="Leave empty for unlimited.")
-    poster = SafeImageField(upload_to=RandomUploadTo("events"), blank=True)
+    poster = SafeImageField(upload_to=RandomUploadTo("events"), policy="content_image", blank=True)
     poster_alt = models.CharField(max_length=200, blank=True)
 
     objects = EventQuerySet.as_manager()

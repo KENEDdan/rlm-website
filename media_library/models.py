@@ -67,7 +67,7 @@ class Album(PublishableModel):
     event = models.ForeignKey(
         "events.Event", null=True, blank=True, on_delete=models.SET_NULL, related_name="albums"
     )
-    cover = SafeImageField(upload_to=RandomUploadTo("albums"), blank=True)
+    cover = SafeImageField(upload_to=RandomUploadTo("albums"), policy="gallery_photo", blank=True)
     cover_alt = models.CharField(max_length=200, blank=True)
 
     class Meta:
@@ -89,7 +89,7 @@ class Album(PublishableModel):
 
 class Photo(TimeStampedModel):
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="photos")
-    image = SafeImageField(upload_to=RandomUploadTo("photos"))
+    image = SafeImageField(upload_to=RandomUploadTo("photos"), policy="gallery_photo")
     alt_text = models.CharField(
         max_length=200, help_text="Describe the photo for people using screen readers."
     )
@@ -126,7 +126,7 @@ class Report(PublishableModel):
     title = models.CharField(max_length=160)
     summary = models.TextField(blank=True)
     year = models.PositiveSmallIntegerField(null=True, blank=True)
-    file = SafeFileField(upload_to=RandomUploadTo("reports"), kind="pdf")
+    file = SafeFileField(upload_to=RandomUploadTo("reports"), policy="public_document")
 
     class Meta:
         ordering: ClassVar = ["-year", "-created_at"]
@@ -180,7 +180,7 @@ class Testimony(PublishableModel):
         help_text="Reviewed and approved for the website (home page slider and Testimonies page).",
     )
     body = models.TextField()
-    photo = SafeImageField(upload_to=RandomUploadTo("testimonies"), blank=True)
+    photo = SafeImageField(upload_to=RandomUploadTo("testimonies"), policy="content_image", blank=True)
     photo_alt = models.CharField(max_length=200, blank=True)
     branch = models.ForeignKey(
         "branches.Branch", null=True, blank=True, on_delete=models.SET_NULL, related_name="testimonies"

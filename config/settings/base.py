@@ -68,6 +68,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "core.middleware.RealIPMiddleware",
+    "core.middleware.RequestSizeLimitMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -217,15 +218,21 @@ WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365
 MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "data" / "media")))
 MEDIA_URL = "/uploads/"
 FILE_UPLOAD_PERMISSIONS = 0o640
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # bigger uploads are streamed to a temporary file
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # form fields other than files (no form needs more)
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000
+FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.TemporaryFileUploadHandler"]
+# Whole request body caps (core.middleware.RequestSizeLimitMiddleware; Caddy enforces the same cap first).
+# Public pages take no uploads at all; staff pages up to the largest upload policy (sermon audio 50 MB).
+MAX_PUBLIC_REQUEST_BYTES = env.int("MAX_PUBLIC_REQUEST_BYTES", default=1 * 1024 * 1024)
+MAX_STAFF_REQUEST_BYTES = env.int("MAX_STAFF_REQUEST_BYTES", default=60 * 1024 * 1024)
 
-UPLOAD_LIMITS = {
-    "image": env.int("UPLOAD_MAX_IMAGE_MB", default=8) * 1024 * 1024,
-    "pdf": env.int("UPLOAD_MAX_PDF_MB", default=20) * 1024 * 1024,
-    "audio": env.int("UPLOAD_MAX_AUDIO_MB", default=60) * 1024 * 1024,
-}
+# Upload formats and limits are policies in core/upload_policy.py (Super Admin adjusts limits in the admin).
+# Optional ClamAV scan of every upload before it is stored (docker compose --profile clamav). Fails closed.
+CLAMAV_ENABLED = env.bool("CLAMAV_ENABLED", default=False)
+CLAMAV_HOST = env("CLAMAV_HOST", default="clamav")
+CLAMAV_PORT = env.int("CLAMAV_PORT", default=3310)
+CLAMAV_TIMEOUT = env.int("CLAMAV_TIMEOUT", default=30)
 
 # Private uploads (receipts, permits, member documents...): never under MEDIA_ROOT, never served directly.
 PRIVATE_MEDIA_ROOT = Path(env("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "data" / "private")))

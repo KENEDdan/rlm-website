@@ -40,7 +40,14 @@ CSV_COLUMNS = [
     "higher_is_better",
     *MONTHS,
 ]
-MAX_CSV_BYTES = 512 * 1024
+
+
+def max_csv_bytes() -> int:
+    from core.upload_policy import get_policy
+
+    return get_policy("csv_import").max_bytes
+
+
 MAX_CSV_ROWS = 1000
 
 
@@ -310,8 +317,8 @@ def parse_csv(data: bytes) -> tuple[list[dict[str, Any]], list[str]]:
     from branches.models import Branch
 
     errors: list[str] = []
-    if len(data) > MAX_CSV_BYTES:
-        return [], [f"The file is larger than {MAX_CSV_BYTES // 1024} KB."]
+    if len(data) > max_csv_bytes():
+        return [], [f"The file is larger than {max_csv_bytes() // 1024} KB."]
     try:
         text = data.decode("utf-8-sig")
     except UnicodeDecodeError:

@@ -95,12 +95,14 @@ class SiteSettings(SingletonModel):
     )
     logo = SafeImageField(
         upload_to=RandomUploadTo("brand"),
+        policy="logo",
         blank=True,
         help_text="Logo for LIGHT backgrounds (site header). PNG with transparency works best. "
         "Leave empty to use the built-in logo.",
     )
     logo_on_dark = SafeImageField(
         upload_to=RandomUploadTo("brand"),
+        policy="logo",
         blank=True,
         help_text="Logo for DARK backgrounds (footer, home page hero, link previews). Leave empty for the built-in one.",
     )
@@ -437,6 +439,7 @@ class HeroSlide(TimeStampedModel):
     )
     image = SafeImageField(
         upload_to=RandomUploadTo("hero"),
+        policy="hero_photo",
         blank=True,
         help_text="Landscape photo, ideally 1920 x 900 pixels (JPG, PNG or WebP, max size as for all "
         "uploads). A dark shade is added automatically so the text stays readable. Leave empty for the "
@@ -511,6 +514,7 @@ class Partner(TimeStampedModel):
     name = models.CharField(max_length=120, help_text="Used as the logo's text alternative.")
     logo = SafeImageField(
         upload_to=RandomUploadTo("partners"),
+        policy="content_image",
         help_text="PNG with a transparent background works best, at least 400 pixels wide.",
     )
     website = models.CharField(
@@ -535,3 +539,60 @@ class Partner(TimeStampedModel):
     @property
     def safe_website(self) -> str:
         return self.website if is_safe_link(self.website) else ""
+
+
+class UploadLimit(TimeStampedModel):
+    """Super Admin adjustment of one upload policy's limits (formats stay fixed in core/upload_policy.py).
+
+    Empty values keep the built-in default. Sizes can never exceed the web server's request cap.
+    """
+
+    policy = models.CharField(max_length=30, unique=True)
+    max_mb = models.DecimalField("maximum size (MB)", max_digits=5, decimal_places=1, null=True, blank=True)
+    min_width = models.PositiveIntegerField(
+        "minimum width (pixels)", null=True, blank=True, help_text="Images only. 0 = no minimum."
+    )
+    max_seconds = models.PositiveSmallIntegerField(
+        "maximum length (seconds)", null=True, blank=True, help_text="Background video only (at most 30)."
+    )
+
+    class Meta:
+        ordering: ClassVar = ["policy"]
+        verbose_name = "upload limit"
+
+    def __str__(self) -> str:
+        from .upload_policy import POLICIES
+
+        policy = POLICIES.get(self.policy)
+        return policy.label if policy else self.policy
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        from .upload_policy import POLICY_CACHE_KEY
+
+        super().save(*args, **kwargs)
+        cache.delete(POLICY_CACHE_KEY)
+
+    def delete(self, *args: Any, **kwargs: Any) -> Any:
+        from .upload_policy import POLICY_CACHE_KEY
+
+        result = super().delete(*args, **kwargs)
+        cache.delete(POLICY_CACHE_KEY)
+        return result
+
+    def clean(self) -> None:
+        from .upload_policy import HARD_MAX_BYTES, HARD_MAX_VIDEO_SECONDS, MB, POLICIES
+
+        errors: dict[str, str] = {}
+        policy = POLICIES.get(self.policy)
+        if policy is None:
+            errors["policy"] = "Unknown upload policy."
+        if self.max_mb is not None and not (0 < self.max_mb * MB <= HARD_MAX_BYTES):
+            errors["max_mb"] = f"Choose between 0.1 and {HARD_MAX_BYTES // MB} MB."
+        if self.max_seconds is not None and policy and not policy.max_seconds:
+            errors["max_seconds"] = "Only the background video has a length limit."
+        if self.max_seconds is not None and not (1 <= self.max_seconds <= HARD_MAX_VIDEO_SECONDS):
+            errors["max_seconds"] = f"Choose between 1 and {HARD_MAX_VIDEO_SECONDS} seconds."
+        if self.min_width is not None and policy and not ({"image"} & policy.kinds):
+            errors["min_width"] = "Only image policies have a minimum width."
+        if errors:
+            raise ValidationError(errors)

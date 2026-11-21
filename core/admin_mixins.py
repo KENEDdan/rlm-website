@@ -23,7 +23,7 @@ CSV_INJECTION_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 def csv_safe(value: Any) -> str:
     """Neutralise spreadsheet formula injection in exported cells."""
     text = "" if value is None else str(value)
-    if text.startswith(CSV_INJECTION_PREFIXES):
+    if text.lstrip(" \n").startswith(CSV_INJECTION_PREFIXES):
         return "'" + text
     return text
 

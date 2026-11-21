@@ -40,7 +40,7 @@ class Leader(TimeStampedModel):
         "branches.Branch", null=True, blank=True, on_delete=models.SET_NULL, related_name="leaders"
     )
     bio = models.TextField(blank=True)
-    photo = SafeImageField(upload_to=RandomUploadTo("leaders"), blank=True)
+    photo = SafeImageField(upload_to=RandomUploadTo("leaders"), policy="content_image", blank=True)
     photo_alt = models.CharField(max_length=200, blank=True)
     order = models.PositiveSmallIntegerField(default=0)
     confirmation_status = models.CharField(

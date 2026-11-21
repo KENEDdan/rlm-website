@@ -23,7 +23,7 @@ class Program(PublishableModel):
     summary = models.CharField(max_length=300)
     body = models.TextField(blank=True, help_text="Plain text. Blank lines separate paragraphs.")
     icon = models.CharField(max_length=20, choices=Icon.choices, default=Icon.FLAME)
-    image = SafeImageField(upload_to=RandomUploadTo("programs"), blank=True)
+    image = SafeImageField(upload_to=RandomUploadTo("programs"), policy="content_image", blank=True)
     image_alt = models.CharField(max_length=200, blank=True)
     department = models.ForeignKey(
         "leadership.Department", null=True, blank=True, on_delete=models.SET_NULL, related_name="programs"

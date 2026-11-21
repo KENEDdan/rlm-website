@@ -69,7 +69,8 @@ def test_outcome_follows_status_and_starts_the_clock() -> None:
 def test_purge_deletes_only_past_deadline_and_keeps_anonymous_stats(django_capture_on_commit_callbacks) -> None:  # type: ignore[no-untyped-def]
     branch = Branch.objects.get(slug="juba")
     old = _reject_member(branch=branch)
-    doc = MemberDocument.objects.create(member=old, title="ID", file=ContentFile(b"secret", name="id.pdf"))
+    pdf = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF secret"
+    doc = MemberDocument.objects.create(member=old, title="ID", file=ContentFile(pdf, name="id.pdf"))
     storage, file_name = doc.file.storage, doc.file.name
     _age(old)
     recent = _reject_member(full_name="Recent")

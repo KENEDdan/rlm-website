@@ -37,7 +37,7 @@ class Post(TimeStampedModel):
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.NEWS)
     summary = models.CharField(max_length=300)
     body = models.TextField(help_text="Plain text. Blank lines separate paragraphs.")
-    image = SafeImageField(upload_to=RandomUploadTo("news"), blank=True)
+    image = SafeImageField(upload_to=RandomUploadTo("news"), policy="content_image", blank=True)
     image_alt = models.CharField(max_length=200, blank=True)
     branch = models.ForeignKey(
         "branches.Branch", null=True, blank=True, on_delete=models.SET_NULL, related_name="posts"

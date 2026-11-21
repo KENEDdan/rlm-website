@@ -18,6 +18,7 @@ from .models import (
     Partner,
     SiteSettings,
     SocialLink,
+    UploadLimit,
 )
 from .uploads import rendition_name
 
@@ -232,3 +233,40 @@ class PartnerAdmin(AuditedAdminMixin, admin.ModelAdmin):
     @admin.display(description="Logo")
     def thumb(self, obj: Partner) -> SafeString | str:
         return admin_thumb(obj.logo, obj.name)
+
+
+@admin.register(UploadLimit)
+class UploadLimitAdmin(AuditedAdminMixin, admin.ModelAdmin):
+    """Super Admin only: adjust the size/width/length limits of an upload policy. Formats cannot change here."""
+
+    list_display = ("__str__", "max_mb", "min_width", "max_seconds", "updated_at")
+    fields = ("policy", "defaults", "max_mb", "min_width", "max_seconds")
+    readonly_fields = ("defaults",)
+
+    def has_module_permission(self, request: HttpRequest) -> bool:
+        return bool(getattr(request.user, "is_super_admin", False))
+
+    def has_view_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return self.has_module_permission(request)
+
+    has_add_permission = has_view_permission  # type: ignore[assignment]
+    has_change_permission = has_view_permission
+    has_delete_permission = has_view_permission
+
+    def formfield_for_dbfield(self, db_field: Any, request: HttpRequest, **kwargs: Any) -> Any:
+        if db_field.name == "policy":
+            from django import forms
+
+            from .upload_policy import POLICIES
+
+            return forms.ChoiceField(
+                choices=[(p.code, p.label) for p in POLICIES.values()], label="Upload type"
+            )
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+    @admin.display(description="Built-in rule")
+    def defaults(self, obj: UploadLimit | None) -> str:
+        from .upload_policy import POLICIES
+
+        policy = POLICIES.get(obj.policy) if obj else None
+        return policy.help_text if policy else "Choose an upload type and save to see its built-in rule."

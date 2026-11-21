@@ -24,6 +24,7 @@ from django.views.decorators.http import require_http_methods
 
 from audit.models import AuditLog
 from audit.services import log_event
+from core.upload_policy import validate_upload
 
 from . import indicators as svc
 from .access import BRANCH, MEMBER, Access, get_access, portal_view
@@ -241,7 +242,7 @@ def target_import(request: HttpRequest) -> HttpResponse:
     access = get_access(request)
     if not svc.can_manage(access):
         raise PermissionDenied
-    context: dict[str, Any] = {"columns": svc.CSV_COLUMNS, "max_kb": svc.MAX_CSV_BYTES // 1024}
+    context: dict[str, Any] = {"columns": svc.CSV_COLUMNS, "max_kb": svc.max_csv_bytes() // 1024}
     if request.method == "POST":
         if request.POST.get("confirm") and SESSION_IMPORT in request.session:
             data = base64.b64decode(request.session.pop(SESSION_IMPORT))
@@ -255,12 +256,16 @@ def target_import(request: HttpRequest) -> HttpResponse:
                 return redirect("portal:targets")
         else:
             upload = request.FILES.get("file")
-            if upload is None or not upload.name.lower().endswith(".csv"):
-                messages.error(request, "Choose a .csv file.")
-            elif upload.size > svc.MAX_CSV_BYTES:
-                messages.error(request, f"The file is larger than {svc.MAX_CSV_BYTES // 1024} KB.")
+            problem = "Choose a .csv file." if upload is None else ""
+            if upload is not None:
+                try:
+                    validate_upload(upload, "csv_import")  # central upload policy (CSV only, size, UTF-8)
+                except ValidationError as exc:
+                    problem = " ".join(exc.messages)
+            if problem:
+                messages.error(request, problem)
             else:
-                data = upload.read(svc.MAX_CSV_BYTES + 1)
+                data = upload.read(svc.max_csv_bytes() + 1)
                 result = svc.import_csv(request, access, data, dry_run=True)
                 context["result"] = result
                 if not result.errors:

@@ -22,13 +22,20 @@ from core import crypto
 from core.fields import EncryptedTextField
 from core.forms import ProtectedFormMixin
 from core.logging import PIIScrubFilter, scrub_data, sentry_before_send
+from core.upload_policy import validate_upload
 from core.uploads import (
     SafeImageField,
     rendition_name,
     sanitise_image,
-    validate_image_upload,
-    validate_pdf_upload,
 )
+
+
+def validate_image_upload(file):  # type: ignore[no-untyped-def]
+    validate_upload(file, "gallery_photo")
+
+
+def validate_pdf_upload(file):  # type: ignore[no-untyped-def]
+    validate_upload(file, "public_document")
 
 
 @pytest.fixture(autouse=True)
@@ -253,8 +260,13 @@ def test_image_validator_rejects_spoofed_content() -> None:
         validate_image_upload(svg)
 
 
-@override_settings(UPLOAD_LIMITS={"image": 1024, "pdf": 1024, "audio": 1024})
-def test_image_validator_enforces_size_cap() -> None:
+def test_image_validator_enforces_size_cap(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import dataclasses
+
+    from core import upload_policy
+
+    small = dataclasses.replace(upload_policy.POLICIES["gallery_photo"], max_bytes=1024)
+    monkeypatch.setitem(upload_policy.POLICIES, "gallery_photo", small)
     big = SimpleUploadedFile("big.jpg", _jpeg_with_gps(), content_type="image/jpeg")
     with pytest.raises(ValidationError, match="too large"):
         validate_image_upload(big)

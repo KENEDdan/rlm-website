@@ -22,7 +22,7 @@ from contact.models import ContactMessage
 from core import checks, privacy
 from core.crypto import DECRYPTION_FAILED, blind_index, decrypt_str, encrypt_str
 from core.turnstile import verify_turnstile
-from core.uploads import validate_image_upload
+from core.upload_policy import validate_upload
 from giving.models import Donation, WebhookEvent
 from newsletter.models import Subscriber
 from prayer.models import PrayerRequest
@@ -231,7 +231,7 @@ def test_image_between_one_and_two_times_pixel_limit_is_rejected() -> None:
     Image.new("1", (7000, 7000)).save(buf, format="PNG")  # 49 MP > 40 MP limit, < 2x (no hard error)
     upload = SimpleUploadedFile("big.png", buf.getvalue(), content_type="image/png")
     with pytest.raises(ValidationError, match="could not be read"):
-        validate_image_upload(upload)
+        validate_upload(upload, "gallery_photo")
 
 
 def test_encryption_helpers_roundtrip() -> None:

@@ -18,6 +18,12 @@ www.{$DOMAIN} {
 {$DOMAIN} {
 	encode zstd gzip
 
+	# Request body cap (also for chunked uploads). Must match MAX_STAFF_REQUEST_BYTES; Django refuses
+	# anything above 1 MB outside the admin and the staff portal (public forms take no files).
+	request_body {
+		max_size 60MB
+	}
+
 	# Never serve anything under uploads/private (none exists today; defence in depth).
 	@private path /uploads/private/*
 	respond @private 404

@@ -185,7 +185,7 @@ class FieldReport(TimeStampedModel):
 
 class FieldPhoto(TimeStampedModel):
     report = models.ForeignKey(FieldReport, on_delete=models.CASCADE, related_name="photos")
-    image = PrivateFileField(upload_to=RandomUploadTo("field"), images_only=True)
+    image = PrivateFileField(upload_to=RandomUploadTo("field"), policy="site_photo")
     caption = models.CharField(max_length=200, blank=True)
     people_consented = models.BooleanField(
         default=False, help_text="Identifiable people agreed to the photo being used."

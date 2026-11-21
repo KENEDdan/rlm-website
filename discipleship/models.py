@@ -211,7 +211,10 @@ class Curriculum(TimeStampedModel):
     level = models.CharField(max_length=60, blank=True, help_text="e.g. Foundations, Growth, Leadership")
     description = models.TextField(blank=True)
     file = PrivateFileField(
-        upload_to=RandomUploadTo("curriculum"), blank=True, verbose_name="study material (PDF)"
+        upload_to=RandomUploadTo("curriculum"),
+        policy="study_material",
+        blank=True,
+        verbose_name="study material (PDF)",
     )
     resource = models.ForeignKey(
         "resources.Resource",

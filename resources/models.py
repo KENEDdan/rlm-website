@@ -55,9 +55,9 @@ class Resource(YouTubeMixin, PublishableModel):
     series = models.ForeignKey(
         Series, null=True, blank=True, on_delete=models.SET_NULL, related_name="resources"
     )
-    audio = SafeFileField(upload_to=RandomUploadTo("audio"), kind="audio", blank=True)
-    pdf = SafeFileField(upload_to=RandomUploadTo("resources"), kind="pdf", blank=True)
-    thumbnail = SafeImageField(upload_to=RandomUploadTo("resources"), blank=True)
+    audio = SafeFileField(upload_to=RandomUploadTo("audio"), policy="sermon_audio", blank=True)
+    pdf = SafeFileField(upload_to=RandomUploadTo("resources"), policy="public_document", blank=True)
+    thumbnail = SafeImageField(upload_to=RandomUploadTo("resources"), policy="content_image", blank=True)
 
     class Meta:
         ordering: ClassVar = ["-date", "-created_at"]

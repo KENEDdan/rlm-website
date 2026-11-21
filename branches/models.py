@@ -36,7 +36,7 @@ class Branch(PublishableModel):
     contact_phone = models.CharField(max_length=30, blank=True, validators=[phone_validator])
     address = models.TextField(blank=True)
     map_url = models.URLField(blank=True, help_text="Optional link to a map (opens in a new tab).")
-    image = SafeImageField(upload_to=RandomUploadTo("branches"), blank=True)
+    image = SafeImageField(upload_to=RandomUploadTo("branches"), policy="content_image", blank=True)
     image_alt = models.CharField(max_length=200, blank=True)
     order = models.PositiveSmallIntegerField(default=0)
 

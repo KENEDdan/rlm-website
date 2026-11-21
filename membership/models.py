@@ -225,7 +225,7 @@ class WelfareCase(TimeStampedModel):
 class MemberDocument(TimeStampedModel):
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="documents")
     title = models.CharField(max_length=160)
-    file = PrivateFileField(upload_to=RandomUploadTo("members"))
+    file = PrivateFileField(upload_to=RandomUploadTo("members"), policy="private_record")
 
     class Meta:
         ordering: ClassVar = ["-created_at"]
@@ -265,7 +265,7 @@ class MeetingMinutes(TimeStampedModel):
     attendees = models.TextField(blank=True, help_text="Names or roles present.")
     minutes = models.TextField()
     action_points = models.TextField(blank=True)
-    file = PrivateFileField(upload_to=RandomUploadTo("minutes"), blank=True)
+    file = PrivateFileField(upload_to=RandomUploadTo("minutes"), policy="private_record", blank=True)
 
     class Meta:
         ordering: ClassVar = ["-meeting_date"]
@@ -286,7 +286,7 @@ class Correspondence(TimeStampedModel):
     counterparty = models.CharField(max_length=200, help_text="Organisation or office")
     subject = models.CharField(max_length=200)
     summary = models.TextField(blank=True)
-    file = PrivateFileField(upload_to=RandomUploadTo("correspondence"), blank=True)
+    file = PrivateFileField(upload_to=RandomUploadTo("correspondence"), policy="private_record", blank=True)
 
     class Meta:
         ordering: ClassVar = ["-date"]

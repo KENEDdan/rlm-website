@@ -26,6 +26,34 @@ class RealIPMiddleware:
         return self.get_response(request)
 
 
+class RequestSizeLimitMiddleware:
+    """Refuse oversized request bodies (413) before Django parses them.
+
+    Public pages accept no file uploads, so their cap is small; the Django admin and staff portal allow the
+    largest upload policy. Caddy's ``request_body max_size`` enforces the staff cap first in production and
+    also covers chunked bodies without a Content-Length.
+    """
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+        self.staff_prefixes = ("/" + settings.ADMIN_URL, "/" + settings.PORTAL_URL)
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        try:
+            length = int(request.META.get("CONTENT_LENGTH") or 0)
+        except ValueError:
+            return HttpResponse("Bad request.", status=400, content_type="text/plain")
+        staff = request.path.startswith(self.staff_prefixes)
+        limit = settings.MAX_STAFF_REQUEST_BYTES if staff else settings.MAX_PUBLIC_REQUEST_BYTES
+        if length > limit:
+            return HttpResponse(
+                f"The request is too large (maximum {limit // (1024 * 1024)} MB).",
+                status=413,
+                content_type="text/plain",
+            )
+        return self.get_response(request)
+
+
 class SecurityHeadersMiddleware:
     """Headers Django does not set itself, plus no-store caching for staff pages."""
 

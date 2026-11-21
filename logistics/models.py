@@ -137,7 +137,10 @@ class Quotation(TimeStampedModel):
     )
     valid_until = models.DateField(null=True, blank=True)
     file = PrivateFileField(
-        upload_to=RandomUploadTo("quotations"), blank=True, verbose_name="quotation document"
+        upload_to=RandomUploadTo("quotations"),
+        policy="office_document",
+        blank=True,
+        verbose_name="quotation document",
     )
     notes = models.CharField(max_length=300, blank=True)
 
@@ -187,7 +190,7 @@ class DeliveryNote(TimeStampedModel):
     received_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+", editable=False
     )
-    file = PrivateFileField(upload_to=RandomUploadTo("deliveries"), blank=True)
+    file = PrivateFileField(upload_to=RandomUploadTo("deliveries"), policy="finance_receipt", blank=True)
 
     class Meta:
         ordering: ClassVar = ["-delivered_on"]

@@ -287,7 +287,10 @@ class LedgerEntry(TimeStampedModel):
     counterparty = EncryptedCharField(max_length=200, blank=True, help_text="Payer or payee (encrypted).")
     reference = models.CharField(max_length=60, blank=True, help_text="Receipt / voucher / bank reference")
     receipt = PrivateFileField(
-        upload_to=RandomUploadTo("ledger"), blank=True, verbose_name="receipt or voucher"
+        upload_to=RandomUploadTo("ledger"),
+        policy="finance_receipt",
+        blank=True,
+        verbose_name="receipt or voucher",
     )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT, db_index=True)
     recorded_by = models.ForeignKey(
@@ -729,7 +732,7 @@ class Proposal(TimeStampedModel):
     amount_requested = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT, db_index=True)
     sent_on = models.DateField(null=True, blank=True)
-    document = PrivateFileField(upload_to=RandomUploadTo("proposals"), blank=True)
+    document = PrivateFileField(upload_to=RandomUploadTo("proposals"), policy="office_document", blank=True)
     notes = models.TextField(blank=True)
 
     class Meta:

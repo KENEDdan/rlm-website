@@ -67,7 +67,9 @@ class Property(TimeStampedModel):
         max_length=120, blank=True, help_text="Title deed / lease number (encrypted)"
     )
     acquired_on = models.DateField(null=True, blank=True)
-    title_document = PrivateFileField(upload_to=RandomUploadTo("property"), blank=True)
+    title_document = PrivateFileField(
+        upload_to=RandomUploadTo("property"), policy="office_document", blank=True
+    )
     notes = models.TextField(blank=True)
 
     class Meta:
@@ -232,7 +234,7 @@ class ProjectDocument(TimeStampedModel):
     kind = models.CharField(max_length=10, choices=Kind.choices)
     title = models.CharField(max_length=200)
     issued_on = models.DateField(null=True, blank=True)
-    file = PrivateFileField(upload_to=RandomUploadTo("projects"))
+    file = PrivateFileField(upload_to=RandomUploadTo("projects"), policy="office_document")
 
     class Meta:
         ordering: ClassVar = ["kind", "-issued_on"]
@@ -263,7 +265,7 @@ class SiteVisit(TimeStampedModel):
 
 class SitePhoto(TimeStampedModel):
     visit = models.ForeignKey(SiteVisit, on_delete=models.CASCADE, related_name="photos")
-    image = PrivateFileField(upload_to=RandomUploadTo("site"), images_only=True)
+    image = PrivateFileField(upload_to=RandomUploadTo("site"), policy="site_photo")
     caption = models.CharField(max_length=200, blank=True)
 
     def __str__(self) -> str:
@@ -350,7 +352,7 @@ class CapitalProposal(TimeStampedModel):
     title = models.CharField(max_length=200)
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     summary = models.TextField(help_text="Need, plan, cost and impact in plain language")
-    document = PrivateFileField(upload_to=RandomUploadTo("capital"), blank=True)
+    document = PrivateFileField(upload_to=RandomUploadTo("capital"), policy="office_document", blank=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT)
     finance_proposal = models.OneToOneField(
         "finance.Proposal",

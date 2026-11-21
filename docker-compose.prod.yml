@@ -172,6 +172,24 @@ services:
       resources:
         limits: { cpus: "1.00", memory: 1G }
 
+  # Optional virus scan of every upload (CLAMAV_ENABLED=true in .env, then
+  # `docker compose --profile clamav up -d`). Only on the private data network; downloads signatures daily.
+  clamav:
+    image: clamav/clamav:1.4.3
+    profiles: ["clamav"]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+    networks: [data, egress]
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits: { cpus: "1.00", memory: 1536M }
+
   redis:
     <<: *hardening
     image: redis:7.4.12-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
@@ -204,3 +222,4 @@ networks:
         - subnet: 172.30.10.0/24
   data:
     internal: true  # no route to the internet; not reachable from outside the host
+  egress: {}  # ClamAV signature downloads only (nothing else joins it)
