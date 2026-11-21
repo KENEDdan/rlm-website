@@ -1,18 +1,19 @@
 from django.contrib import admin
 
 from core.admin_mixins import AuditedAdminMixin
+from core.versioning import VersionedAdminMixin
 
 from .models import Department, Leader
 
 
 @admin.register(Department)
-class DepartmentAdmin(AuditedAdminMixin, admin.ModelAdmin):
+class DepartmentAdmin(VersionedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     list_display = ("name", "order")
     prepopulated_fields = {"slug": ("name",)}
 
 
 @admin.register(Leader)
-class LeaderAdmin(AuditedAdminMixin, admin.ModelAdmin):
+class LeaderAdmin(VersionedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     list_display = (
         "name",
         "role_title",

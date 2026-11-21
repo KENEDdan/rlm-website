@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html
@@ -16,11 +17,13 @@ from .models import (
     Page,
     PageText,
     Partner,
+    SiteContent,
     SiteSettings,
     SocialLink,
     UploadLimit,
 )
 from .uploads import rendition_name
+from .versioning import VersionedAdminMixin
 
 
 def _thumb_url(field: Any) -> str:
@@ -44,6 +47,8 @@ class SingletonAdmin(AuditedAdminMixin, admin.ModelAdmin):
         return False
 
     def changelist_view(self, request: HttpRequest, extra_context: Any = None) -> HttpResponseRedirect:
+        if not self.has_view_or_change_permission(request):
+            raise PermissionDenied  # refuse before redirecting, so the row's existence is not revealed
         obj = self.model.load()
         opts = self.model._meta
         return HttpResponseRedirect(
@@ -53,21 +58,18 @@ class SingletonAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(SingletonAdmin):
+    """System settings: Super Admin only. Website wording and contacts are in Site content."""
+
     fieldsets = (
-        ("Identity", {"fields": ("ministry_name", "short_name", "tagline", "logo", "logo_on_dark")}),
-        ("Scripture", {"fields": ("scripture_reference", "scripture_text")}),
-        ("About", {"fields": ("vision", "mission", "about_intro", "about_body")}),
-        (
-            "Contact details (shown publicly)",
-            {"fields": ("public_email", "public_phone", "whatsapp_number", "address", "footer_text")},
-        ),
         (
             "Staff notifications",
             {
                 "fields": ("notification_email",),
-                "description": "Alerts never include the content of a submission.",
+                "description": "Alerts never include the content of a submission. Giving, partnership and other "
+                "finance enquiries go only to the Finance & Resource Mobilization heads.",
             },
         ),
+        ("Approval rules", {"fields": ("vision_mission_approval_required",)}),
         (
             "Analytics (loaded only after visitor consent)",
             {"fields": ("analytics_provider", "analytics_script_url", "analytics_site_id")},
@@ -87,14 +89,48 @@ class SiteSettingsAdmin(SingletonAdmin):
     )
 
 
+@admin.register(SiteContent)
+class SiteContentAdmin(VersionedAdminMixin, SingletonAdmin):
+    """Everything visitors see across the site (Technical Team). Every save is versioned and can be rolled back."""
+
+    readonly_fields = ("vision_mission",)
+    fieldsets = (
+        (
+            "Identity",
+            {"fields": ("ministry_name", "short_name", "tagline", "logo", "logo_on_dark", "favicon")},
+        ),
+        ("Scripture", {"fields": ("scripture_reference", "scripture_text")}),
+        ("About", {"fields": ("vision_mission", "about_intro", "about_body")}),
+        (
+            "Contact details (shown publicly)",
+            {
+                "fields": ("public_email", "public_phone", "whatsapp_number", "address", "footer_text"),
+                "description": "Branch addresses and phone numbers are edited on each branch.",
+            },
+        ),
+    )
+
+    @admin.display(description="Vision and mission")
+    def vision_mission(self, obj: SiteContent) -> SafeString:
+        url = reverse("portal:website:vision_mission")
+        return format_html(
+            "<p><strong>Vision:</strong> {}</p><p><strong>Mission:</strong> {}</p>"
+            '<p class="help">Changed only through <a href="{}">Website &gt; Vision and mission</a> (draft, preview, '
+            "approval, publish, with history and rollback).</p>",
+            obj.vision,
+            obj.mission,
+            url,
+        )
+
+
 @admin.register(SocialLink)
-class SocialLinkAdmin(AuditedAdminMixin, admin.ModelAdmin):
+class SocialLinkAdmin(VersionedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     list_display = ("platform", "label", "url", "order", "is_published")
     list_editable = ("order", "is_published")
 
 
 @admin.register(Page)
-class PageAdmin(AuditedAdminMixin, admin.ModelAdmin):
+class PageAdmin(VersionedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     list_display = ("title", "slug", "is_published", "show_in_footer", "order", "last_reviewed", "updated_at")
     list_editable = ("show_in_footer", "order")
     prepopulated_fields = {"slug": ("title",)}
@@ -112,7 +148,7 @@ class PageAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(PageText)
-class PageTextAdmin(AuditedAdminMixin, admin.ModelAdmin):
+class PageTextAdmin(VersionedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     """Headings and intro text of each page. Rows exist for every place on the site; edit, don't add."""
 
     list_display = ("label", "heading", "updated_at")
@@ -146,7 +182,7 @@ class FormOptionAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(HeroSlide)
-class HeroSlideAdmin(AuditedAdminMixin, admin.ModelAdmin):
+class HeroSlideAdmin(VersionedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     """Home page hero slides. Reorder with the Order column (lower first) and press Save."""
 
     list_display = (
@@ -163,15 +199,36 @@ class HeroSlideAdmin(AuditedAdminMixin, admin.ModelAdmin):
     list_editable = ("order", "is_active")
     list_filter = ("is_active",)
     search_fields = ("title", "subtitle")
-    readonly_fields = ("preview",)
+    readonly_fields = ("preview", "full_preview", "readability")
     fieldsets = (
-        (None, {"fields": ("preview", "title", "subtitle", "image", "image_alt", "show_scripture")}),
-        ("Button", {"fields": ("button_text", "button_link")}),
+        (None, {"fields": ("preview", "full_preview", "title", "subtitle", "show_scripture")}),
+        (
+            "Background",
+            {
+                "fields": (
+                    "background_type",
+                    "image",
+                    "image_alt",
+                    "video",
+                    "video_poster",
+                    "focal_x",
+                    "focal_y",
+                    "overlay_opacity",
+                    "readability",
+                ),
+                "description": "Theme colour, photo or a short silent video (with a required poster). A missing "
+                "photo or video always falls back to the theme colour.",
+            },
+        ),
+        ("Text", {"fields": ("text_align", "text_tone")}),
+        ("Buttons", {"fields": ("button_text", "button_link", "button2_text", "button2_link")}),
         (
             "When to show it",
             {
                 "fields": ("order", "is_active", "start_at", "end_at"),
-                "description": f"The home page shows up to {HERO_SLIDE_LIMIT} active slides, lowest order first.",
+                "description": f"The home page shows up to {HERO_SLIDE_LIMIT} active slides, lowest order first. "
+                "Save a new slide switched off, preview it, then switch it on to publish. Every save is kept: "
+                "Website > Changes and rollback restores an earlier version.",
             },
         ),
     )
@@ -208,6 +265,32 @@ class HeroSlideAdmin(AuditedAdminMixin, admin.ModelAdmin):
             obj.button_text,
         )
 
+    @admin.display(description="Preview before publishing")
+    def full_preview(self, obj: HeroSlide | None) -> SafeString | str:
+        if obj is None or obj.pk is None:
+            return "Save the slide (switched off) to preview it full size."
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">Open a full-size preview</a> (also works while the slide '
+            "is switched off).",
+            reverse("portal:website:hero_preview") + f"?slide={obj.pk}",
+        )
+
+    @admin.display(description="Readability")
+    def readability(self, obj: HeroSlide | None) -> str:
+        from .hero import contrast_message
+
+        if obj is None or obj.pk is None:
+            return "Checked after saving."
+        return contrast_message(obj) or f"Text contrast about {obj.contrast_ratio}:1 (meets WCAG AA)."
+
+    def save_model(self, request: HttpRequest, obj: HeroSlide, form: Any, change: bool) -> None:
+        super().save_model(request, obj, form, change)
+        from .hero import contrast_message
+
+        warning = contrast_message(obj)
+        if warning:
+            messages.warning(request, warning)
+
     def changelist_view(self, request: HttpRequest, extra_context: Any = None) -> HttpResponse:
         if request.method == "GET":
             live = HeroSlide.objects.live().count()
@@ -221,7 +304,7 @@ class HeroSlideAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(Partner)
-class PartnerAdmin(AuditedAdminMixin, admin.ModelAdmin):
+class PartnerAdmin(VersionedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     """Logo strip on the home page. It only appears when at least one partner is published."""
 
     list_display = ("thumb", "name", "website", "order", "is_published")

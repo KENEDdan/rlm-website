@@ -57,11 +57,12 @@ class CampaignResource(_Missions):
         "reached",
         "decisions_total",
     ]
-    filters: ClassVar = ["kind", "status", "branch", "team"]
+    filters: ClassVar = ["kind", "activity", "status", "branch", "team"]
     search_fields: ClassVar = ["title", "location"]
     fields: ClassVar = [
         "title",
         "kind",
+        "activity",
         "community",
         "location",
         "branch",
@@ -78,6 +79,7 @@ class CampaignResource(_Missions):
     detail_fields: ClassVar = [
         "title",
         "kind",
+        "activity",
         "community",
         "location",
         "branch",

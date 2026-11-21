@@ -18,6 +18,9 @@ from typing import Any
 FOUNDER = "Founder / Super Admin"
 BRANCH_COORDINATOR = "Branch Coordinator"
 EXECUTIVE = "Executive Leadership"
+# Website Administration: website content ONLY (docs/DECISIONS.md D-034). No department, no portal records,
+# no finance, donors, members, prayer, discipleship or accounts.
+TECHNICAL = "Technical Team"
 
 # The seven departments. (code, group name) - the code is used in URLs and in code, the name everywhere else.
 MEMBERSHIP = "Membership Administration"
@@ -40,7 +43,7 @@ DEPARTMENTS: list[tuple[str, str]] = [
 DEPARTMENT_GROUPS = [name for _, name in DEPARTMENTS]
 GROUP_FOR_CODE = dict(DEPARTMENTS)
 
-ALL_ROLES = [FOUNDER, *DEPARTMENT_GROUPS, BRANCH_COORDINATOR, EXECUTIVE]
+ALL_ROLES = [FOUNDER, *DEPARTMENT_GROUPS, BRANCH_COORDINATOR, EXECUTIVE, TECHNICAL]
 SCOPED_ROLES = {BRANCH_COORDINATOR}
 
 # Permissions the Founder group must never carry: account and role administration belongs to the
@@ -63,7 +66,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
     MEMBERSHIP: {
         "branches.country": "v",
         "branches.branch": "v",
-        "programs.program": "v",
+        "programs.activity": "v",
         "leadership.department": "vac",
         "leadership.leader": "vac",
         "events.event": "vacd",
@@ -102,16 +105,16 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
         "news.post": "vacd",
         "newsletter.subscriber": "vx",
     },
-    # Was "Programs & Events": programmes, events and event registrations.
+    # Was "Programs & Events": events and event registrations (activities are website content: Technical Team).
     MISSIONS: {
         "branches.country": "v",
         "branches.branch": "v",
-        "programs.program": "vacd",
+        "programs.activity": "v",
         "events.event": "vacd",
         "registrations.eventregistration": "vcx",
     },
     DISCIPLESHIP: {
-        "programs.program": "v",
+        "programs.activity": "v",
         "events.event": "v",
         **dict.fromkeys(RESOURCE_MODELS, "v"),
     },
@@ -120,7 +123,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
     },
     BRANCH_COORDINATOR: {
         "branches.branch": "vc",
-        "programs.program": "v",
+        "programs.activity": "v",
         "events.event": "vac",
         "registrations.eventregistration": "vc",
         "registrations.volunteerapplication": "vc",
@@ -129,6 +132,38 @@ ROLE_PERMISSIONS: dict[str, dict[str, str]] = {
         "news.post": "vac",
     },
     EXECUTIVE: {},
+    # Website content only. Activity.department is read-only for them (Super Admin sets the routing), and
+    # Vision/Mission go through the approval flow (core.ContentChangeRequest), never a direct edit.
+    TECHNICAL: {
+        "core.sitecontent": "vc",
+        "core.herosettings": "vc",
+        "core.heroslide": "vacd",
+        "core.sociallink": "vacd",
+        "core.page": "vac",
+        "core.pagetext": "vc",
+        "core.partner": "vacd",
+        "core.contentversion": "v",
+        "core.contentchangerequest": "vac",
+        "programs.activitycategory": "vacd",
+        "programs.activity": "vacd",
+        "leadership.department": "vac",
+        "leadership.leader": "vacd",
+        "branches.country": "v",
+        "branches.branch": "vc",
+        "media_library.album": "vc",
+        "events.event": "v",
+    },
+}
+# What the Technical Team may NEVER hold, whatever the matrix above says (tests/test_technical_team.py).
+TECHNICAL_FORBIDDEN_APPS = {
+    "giving", "finance", "membership", "prayer", "discipleship", "registrations", "contact", "newsletter",
+    "accounts", "auth", "otp_totp", "otp_static", "axes", "sessions", "audit", "portal", "logistics", "missions",
+    "development", "communications",
+}  # fmt: skip
+TECHNICAL_FORBIDDEN_MODELS = {
+    ("core", "sitesettings"),
+    ("core", "uploadlimit"),
+    ("core", "formoption"),
 }
 
 # Groups renamed when the seven departments replaced the original roles (migration accounts 0005).

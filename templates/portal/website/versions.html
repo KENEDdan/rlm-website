@@ -1,0 +1,27 @@
+{% extends "portal/base.html" %}
+{% block title %}Changes and rollback{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Website</p>
+    <h1 class="portal-title">Changes and rollback</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Every change to website content is kept. "Restore" puts that item back exactly as it was at that moment (photos included), and is itself recorded, so it can be undone too. Vision and Mission have their own history on the <a class="underline" href="{% url 'portal:website:vision_mission' %}">Vision and mission</a> page.</p>
+  </div>
+</div>
+<form method="get" class="rlm-form mb-4 flex flex-wrap items-end gap-3">
+  <div><label for="type">Content</label><select id="type" name="type"><option value="">All website content</option>{% for t in types %}<option value="{{ t.pk }}"{% if type == t.pk|stringformat:"s" %} selected{% endif %}>{{ t.name|capfirst }}</option>{% endfor %}</select></div>
+  {% if object %}<input type="hidden" name="object" value="{{ object }}">{% endif %}
+  <button type="submit" class="btn-outline btn-sm">Show</button>{% if object %} <a class="text-sm underline" href="?type={{ type }}">Show all items</a>{% endif %}
+</form>
+<div class="table-wrap"><table class="table-rlm">
+  <thead><tr><th scope="col">When</th><th scope="col">Item</th><th scope="col">Change</th><th scope="col">Fields</th><th scope="col">Who</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
+  <tbody>{% for v in versions %}<tr>
+    <td>{{ v.created_at|date:"j M Y H:i" }}</td>
+    <th scope="row"><a class="underline" href="?type={{ v.content_type_id }}&amp;object={{ v.object_id }}">{{ v.object_repr }}</a><br><span class="text-xs text-rlm-grey">{{ v.content_type.name|capfirst }}</span></th>
+    <td>{{ v.get_action_display }}{% if v.note %}<br><span class="text-xs text-rlm-grey">{{ v.note }}</span>{% endif %}</td>
+    <td class="text-xs">{{ v.changed_fields|join:", "|truncatechars:120 }}</td>
+    <td>{{ v.created_by.full_name|default:"System" }}</td>
+    <td>{% if v.action != "delete" %}<form method="post" action="{% url 'portal:website:version_restore' v.pk %}">{% csrf_token %}<button type="submit" class="btn-outline btn-sm" data-confirm="Restore '{{ v.object_repr }}' to how it was on {{ v.created_at|date:'j M Y H:i' }}?">Restore</button></form>{% else %}<form method="post" action="{% url 'portal:website:version_restore' v.pk %}">{% csrf_token %}<button type="submit" class="btn-outline btn-sm" data-confirm="Bring back the deleted '{{ v.object_repr }}'?">Undelete</button></form>{% endif %}</td>
+  </tr>{% empty %}<tr><td colspan="6">No changes recorded yet.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

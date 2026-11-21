@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Preview: {{ hero.title }}{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow"><script src="{% static 'js/hero-video.js' %}" nonce="{{ request.csp_nonce }}" defer></script>{% endblock %}
+{% block content %}
+<div class="bg-rlm-gold px-4 py-2 text-center text-sm font-semibold text-rlm-black" role="status">PREVIEW: visitors do not see this yet. <a class="underline" href="{% url 'portal:website:hero' %}">Back to the editor</a>{% if warning %} · {{ warning }}{% endif %}</div>
+<section class="relative">
+  {% include "includes/hero_content.html" with hero=hero first=True %}
+  <div class="flame-bar"></div>
+</section>
+{% endblock %}

@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
-from core.models import SiteSettings
+from core.models import SiteContent
 
 from .models import BulkMessage, Member
 
@@ -17,7 +17,7 @@ def send_bulk_message(message_pk: int, member_ids: list[int]) -> int:
     message = BulkMessage.objects.filter(pk=message_pk).first()
     if message is None:
         return 0
-    site = SiteSettings.load()
+    site = SiteContent.load()
     sent = 0
     for member in Member.objects.filter(pk__in=member_ids, comms_opt_in=True, is_minor=False):
         if not member.email:

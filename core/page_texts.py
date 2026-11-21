@@ -23,11 +23,6 @@ class PageTextDefault(TypedDict, total=False):
 
 PAGE_TEXT_DEFAULTS: dict[str, PageTextDefault] = {
     # ---- home page
-    "home_hero": {
-        "label": "Home: hero (only shown when no hero slide is active)",
-        "heading": "Rebuilding Lives.",
-        "highlight": "Reviving Generations.",
-    },
     "home_testimonies": {
         "label": "Home: testimonies slider",
         "eyebrow": "Lives rebuilt",
@@ -44,9 +39,10 @@ PAGE_TEXT_DEFAULTS: dict[str, PageTextDefault] = {
         "heading": "Our leadership",
     },
     "home_programmes": {
-        "label": "Home: programmes section",
+        "label": "Home: activities section",
         "eyebrow": "What we do",
-        "heading": "Our programmes",
+        "heading": "Our activities",
+        "intro": "Four ways we rebuild lives and revive a generation.",
     },
     "home_events": {
         "label": "Home: events section",
@@ -94,10 +90,11 @@ PAGE_TEXT_DEFAULTS: dict[str, PageTextDefault] = {
         "heading": "The people serving the vision",
     },
     "programs": {
-        "label": "Programmes page",
-        "eyebrow": "Programmes",
+        "label": "Activities page",
+        "eyebrow": "Our activities",
         "heading": "How we rebuild lives",
-        "intro": "Revival, discipleship, evangelism and leadership: each programme helps people grow in faith and serve.",
+        "intro": "Charitable and humanitarian services, evangelism and missions, discipleship and revival: find an "
+        "activity near you and get involved.",
     },
     "branches": {"label": "Branches page", "eyebrow": "Branches", "heading": "Find a branch near you"},
     "events": {

@@ -7,6 +7,7 @@ from django.views.decorators.cache import cache_page
 from core import views as core_views
 from core.sitemaps import SITEMAPS
 from media_library import views as media_views
+from programs import urls as programs_urls
 
 handler400 = "core.views.error_400"
 handler403 = "core.views.error_403"
@@ -24,7 +25,8 @@ urlpatterns = [
     path("sitemap.xml", cache_page(60 * 60)(sitemap), {"sitemaps": SITEMAPS}, name="sitemap"),
     # Public site
     path("leadership/", include("leadership.urls")),
-    path("programs/", include("programs.urls")),
+    path("activities/", include("programs.urls")),
+    path("programs/", include(programs_urls.old_urlpatterns)),
     path("branches/", include("branches.urls")),
     path("events/", include("events.urls")),
     path("gallery/", include("media_library.urls")),

@@ -21,7 +21,7 @@ from django.utils import timezone
 from audit.models import AuditLog
 from audit.services import log_event
 
-from .models import SiteSettings
+from .models import SiteContent, SiteSettings
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,8 @@ def _admin_change_url(model_label: str, pk: int) -> str:
 
     model = apps.get_model(model_label)
     resource = BY_MODEL.get(model)
-    if resource is not None:
+    obj = model.objects.filter(pk=pk).first()
+    if resource is not None and (obj is None or resource.covers(obj)):
         return settings.SITE_URL + reverse(
             "portal:resource_detail", args=[resource.department, resource.slug, pk]
         )
@@ -40,20 +41,42 @@ def _admin_change_url(model_label: str, pk: int) -> str:
     return settings.SITE_URL + reverse(f"admin:{opts.app_label}_{opts.model_name}_change", args=[pk])
 
 
+def alert_recipients(model: Any, pk: int) -> list[str]:
+    """Where a 'new submission' alert goes. Finance-related enquiries go ONLY to the Finance queue: the heads of
+    Finance & Resource Mobilization (never the general notification inbox)."""
+    obj = model.objects.filter(pk=pk).first()
+    if obj is not None and getattr(obj, "is_finance_queue", False):
+        from portal.models import DepartmentMembership
+
+        return sorted(
+            set(
+                DepartmentMembership.objects.filter(
+                    department__code="finance",
+                    is_head=True,
+                    user__is_active=True,
+                    user__deleted_at__isnull=True,
+                ).values_list("user__email", flat=True)
+            )
+        )
+    address = SiteSettings.load().notification_email
+    return [address] if address else []
+
+
 @shared_task(autoretry_for=(OSError,), retry_backoff=True, max_retries=5)
 def notify_staff_new_submission(model_label: str, pk: int) -> bool:
     """'New submission, view in admin'. The email carries NO submission content."""
-    site = SiteSettings.load()
-    if not site.notification_email:
-        return False
     model = apps.get_model(model_label)
+    recipients = alert_recipients(model, pk)
+    if not recipients:
+        return False
+    site = SiteContent.load()
     kind = model._meta.verbose_name
     context = {"kind": kind, "ref": f"#{pk}", "url": _admin_change_url(model_label, pk), "site": site}
     send_mail(
         subject=f"New {kind} received ({site.short_name})",
         message=render_to_string("emails/staff_alert.txt", context),
         from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[site.notification_email],
+        recipient_list=recipients,
     )
     return True
 
@@ -68,7 +91,7 @@ def send_acknowledgement(model_label: str, pk: int, template: str, email_field: 
     address = getattr(obj, email_field, "")
     if not address:
         return False
-    site = SiteSettings.load()
+    site = SiteContent.load()
     context = {"obj": obj, "site": site, "site_url": settings.SITE_URL}
     subject = render_to_string(f"emails/{template}_subject.txt", context).strip()
     send_mail(

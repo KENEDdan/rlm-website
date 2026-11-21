@@ -21,18 +21,29 @@ class ContactForm(ProtectedFormMixin, ConsentMixin, forms.ModelForm):
         label="Phone (optional)",
         widget=forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel"}),
     )
+    category = forms.ChoiceField(
+        choices=ContactMessage.Category.choices,
+        initial=ContactMessage.Category.GENERAL,
+        required=False,  # missing = General
+        label="Subject",
+        widget=forms.RadioSelect,
+        help_text="Giving, finance and partnership messages go straight to our Finance team.",
+    )
     topic = forms.ChoiceField(choices=(), label="Topic")
-    subject = forms.CharField(max_length=150)
+    subject = forms.CharField(max_length=150, label="Short summary")
     message = forms.CharField(max_length=4000, widget=forms.Textarea(attrs={"rows": 6}))
 
     class Meta:
         model = ContactMessage
-        fields = ["name", "email", "phone", "topic", "subject", "message"]
+        fields = ["name", "email", "phone", "category", "topic", "subject", "message"]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.fields["topic"].choices = option_choices("contact_topic")
         self.order_fields([*self.Meta.fields, "consent", "website"])
+
+    def clean_category(self) -> str:
+        return self.cleaned_data.get("category") or ContactMessage.Category.GENERAL
 
     def save(self, commit: bool = True) -> ContactMessage:
         obj = super().save(commit=False)

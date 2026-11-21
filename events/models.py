@@ -22,8 +22,13 @@ class Event(PublishableModel):
     title = models.CharField(max_length=160)
     summary = models.CharField(max_length=300)
     description = models.TextField(blank=True)
-    program = models.ForeignKey(
-        "programs.Program", null=True, blank=True, on_delete=models.SET_NULL, related_name="events"
+    activity = models.ForeignKey(
+        "programs.Activity",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="events",
+        help_text="The ministry activity this event belongs to (shown on the activity page).",
     )
     branch = models.ForeignKey(
         "branches.Branch",

@@ -17,6 +17,28 @@
   {% empty %}
     {% if not nav.show_executive %}<p class="px-3 py-2 text-sm text-rlm-grey">No department has been assigned to your account yet. Ask the Super Admin.</p>{% endif %}
   {% endfor %}
+  {% if nav.show_website %}
+    <details class="portal-nav-dept" {% if '/website/' in request.path %}open{% endif %}>
+      <summary>Website{% if nav.vm_pending %} <span class="portal-badge">{{ nav.vm_pending }}</span>{% endif %}</summary>
+      <a href="{% url 'portal:website:dashboard' %}" class="portal-nav-link{% if request.resolver_match.url_name == 'dashboard' and '/website/' in request.path %} is-current{% endif %}">Website dashboard</a>
+      <a href="{% url 'portal:website:hero' %}" class="portal-nav-link">Home page hero</a>
+      <a href="{% url 'portal:website:vision_mission' %}" class="portal-nav-link">Vision and mission</a>
+      <a href="{% url 'portal:website:versions' %}" class="portal-nav-link">Changes and rollback</a>
+      <p class="portal-nav-group">In the website admin</p>
+      <a href="{{ nav.admin_url }}programs/activity/" class="portal-nav-link">Activities</a>
+      <a href="{{ nav.admin_url }}core/heroslide/" class="portal-nav-link">Hero slides</a>
+      <a href="{{ nav.admin_url }}core/sitecontent/" class="portal-nav-link">Contacts, logos and footer</a>
+      <a href="{{ nav.admin_url }}core/page/" class="portal-nav-link">Pages (About, Privacy, Terms)</a>
+      <a href="{{ nav.admin_url }}core/pagetext/" class="portal-nav-link">Headings and SEO text</a>
+      <a href="{{ nav.admin_url }}core/sociallink/" class="portal-nav-link">Social links</a>
+      <a href="{{ nav.admin_url }}leadership/leader/" class="portal-nav-link">Leadership page</a>
+      <a href="{{ nav.admin_url }}branches/branch/" class="portal-nav-link">Branch contacts</a>
+      <a href="{{ nav.admin_url }}media_library/album/" class="portal-nav-link">Gallery layout</a>
+    </details>
+  {% elif nav.show_vm_approvals %}
+    <a href="{% url 'portal:website:vision_mission' %}" class="portal-nav-top">Vision &amp; mission approvals{% if nav.vm_pending %} <span class="portal-badge">{{ nav.vm_pending }}</span>{% endif %}</a>
+  {% endif %}
+  {% if nav.show_bank_details %}<a href="{% url 'portal:giving:bank_details' %}" class="portal-nav-top{% if '/bank-details/' in request.path %} is-current{% endif %}">Bank details{% if nav.bank_pending %} <span class="portal-badge">1 pending</span>{% endif %}</a>{% endif %}
   {% if nav.show_accounts %}
     <details class="portal-nav-dept" {% if '/accounts/' in request.path %}open{% endif %}>
       <summary>Accounts &amp; security</summary>

@@ -1,6 +1,0 @@
-{% load rlm %}<article class="card p-6">
-  <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-flame text-rlm-black">{% icon program.icon "h-6 w-6" %}</div>
-  <h3 class="mt-5 text-lg font-bold"><a href="{{ program.get_absolute_url }}" class="hover:text-rlm-flame-dark">{{ program.title }}</a></h3>
-  <p class="mt-2 text-sm text-rlm-grey">{{ program.summary }}</p>
-  <a href="{{ program.get_absolute_url }}" class="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-semibold text-rlm-flame-dark hover:underline">Learn more {% icon "arrow" "h-4 w-4" %}<span class="sr-only"> about {{ program.title }}</span></a>
-</article>

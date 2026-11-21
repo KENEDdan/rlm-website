@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from core.admin_mixins import AuditedAdminMixin, ScopedAdminMixin
+from core.versioning import VersionedAdminMixin
 
 from .models import Album, Photo, Report, Testimony, Video
 
@@ -12,7 +13,7 @@ class PhotoInline(admin.TabularInline):
 
 
 @admin.register(Album)
-class AlbumAdmin(ScopedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
+class AlbumAdmin(VersionedAdminMixin, ScopedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     branch_lookup = "branch"
     list_display = ("title", "date", "branch", "is_published")
     list_filter = ("is_published", "branch")

@@ -37,7 +37,8 @@ BY_MODEL: dict[type[Model], Resource] = {}
 PUBLIC_FK_MODELS = {
     "branches.branch",
     "branches.country",
-    "programs.program",
+    "programs.activity",
+    "programs.activitycategory",
     "events.event",
     "portal.department",
     "leadership.department",
@@ -175,6 +176,10 @@ class Resource:
     def scope(self, access: Access, qs: QuerySet) -> QuerySet:
         """Extra row-level rules (override), e.g. hide minors from non-heads."""
         return qs
+
+    def covers(self, obj: Model) -> bool:
+        """Whether this screen shows ``obj`` at all (staff alerts link here only then)."""
+        return True
 
     def is_head(self, access: Access) -> bool:
         return self.effective_level(access) >= HEAD

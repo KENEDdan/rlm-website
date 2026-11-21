@@ -13,6 +13,12 @@ STAMP="$(date -u +%Y%m%d-%H%M%S)"
 umask 077
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
+
+# Record the result for the Website dashboard (core.BackupRun): no file names, sizes or secrets, just ok/failed.
+record_run() {
+    psql -h db -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q -v ON_ERROR_STOP=1         -c "INSERT INTO core_backuprun (finished_at, ok, detail) VALUES (now(), $1, '$2')" >/dev/null 2>&1 || true
+}
+trap 'record_run false "backup failed"' EXIT
 DB_FILE="$OUT/rlm-$STAMP-db.dump.age"
 MEDIA_FILE="$OUT/rlm-$STAMP-media.tgz.age"
 PRIVATE_FILE="$OUT/rlm-$STAMP-private.tgz.age"
@@ -33,4 +39,6 @@ if [ -n "${BACKUP_REMOTE:-}" ]; then
     rclone --config /config/rclone/rclone.conf copy "$OUT" "$BACKUP_REMOTE" --include "rlm-$STAMP*"
 fi
 
+trap - EXIT
+record_run true "database, media and private files"
 echo "backup ok: $(basename "$DB_FILE") $(basename "$MEDIA_FILE") $(basename "$PRIVATE_FILE")"

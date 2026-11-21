@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% load rlm %}
 {% block title %}{% page_text "partner" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Partner with us · {{ site.ministry_name }}{% endif %}{% endblock %}
-{% block description %}{% page_text "partner" as pt %}{{ pt.seo_description|default:pt.intro|default:site.about_intro|default:site.tagline|truncatechars:158 }}{% endblock %}
+{% block description %}{% page_text "partner" as pt %}{{ pt.seo_description|default:pt.intro|default:site.meta_description|truncatechars:158 }}{% endblock %}
 {% block content %}
 {% page_text "partner" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=giving.partnership_intro|default:pt.intro %}
 <section class="section"><div class="container-rlm grid gap-12 lg:grid-cols-12">

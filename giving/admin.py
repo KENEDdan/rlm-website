@@ -24,24 +24,16 @@ class GivingSettingsAdmin(SingletonAdmin):
     """Only Founder and Finance have permissions on this model (see accounts/roles.py)."""
 
     audit_views = True
+    readonly_fields = ("bank_details",)
     fieldsets = (
         (
-            "Bank transfer",
+            "Bank and payment details",
             {
-                "fields": (
-                    "bank_transfer_enabled",
-                    "account_name",
-                    "bank_name",
-                    "account_number",
-                    "swift_code",
-                    "branch_name",
-                    "currency",
-                    "transfer_instructions",
-                ),
-                "description": "Shown on the Give and Partner pages only when enabled and complete.",
+                "fields": ("bank_details",),
+                "description": "Changed only in the staff portal (Finance > Bank details): re-authentication, a "
+                "second person's confirmation, email alerts and full history. Never here.",
             },
         ),
-        ("Mobile money", {"fields": ("mobile_money_enabled", "mobile_money_instructions")}),
         (
             "Online gateway (future)",
             {
@@ -54,6 +46,12 @@ class GivingSettingsAdmin(SingletonAdmin):
             {"fields": ("default_currency", "receipt_prefix", "give_intro", "partnership_intro")},
         ),
     )
+
+    @admin.display(description="Bank details")
+    def bank_details(self, obj: GivingSettings) -> str:
+        verified = f"{obj.bank_details_verified_at:%d %b %Y}" if obj.bank_details_verified_at else "never"
+        shown = "shown" if obj.has_bank_details else "not shown"
+        return f"Account ending {obj.masked_account_number or '(none)'}, {shown} on the Give page; last verified {verified}."
 
 
 @admin.register(GivingCategory)

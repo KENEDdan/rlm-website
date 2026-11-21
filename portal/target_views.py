@@ -108,6 +108,7 @@ class TargetForm(forms.ModelForm):
             "category",
             "name",
             "department",
+            "activity",
             "branch",
             "year",
             "unit",

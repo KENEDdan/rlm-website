@@ -16,7 +16,7 @@ from .models import Event
 
 
 def event_list(request: HttpRequest) -> HttpResponse:
-    events = Event.objects.upcoming().select_related("branch", "program")
+    events = Event.objects.upcoming().select_related("branch", "activity")
     return render(request, "events/list.html", {"events": events, "showing": "upcoming"})
 
 
@@ -26,7 +26,7 @@ def past_events(request: HttpRequest) -> HttpResponse:
 
 
 def event_detail(request: HttpRequest, slug: str) -> HttpResponse:
-    event = get_object_or_404(Event.objects.published().select_related("branch", "program"), slug=slug)
+    event = get_object_or_404(Event.objects.published().select_related("branch", "activity"), slug=slug)
     return render(
         request, "events/detail.html", {"event": event, "albums": event.albums.filter(is_published=True)}
     )

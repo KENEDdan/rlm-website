@@ -38,7 +38,7 @@ from . import reauth
 from .guard import sanctioned
 from .integrity import check_integrity
 from .models import Invitation, User
-from .roles import BRANCH_COORDINATOR, EXECUTIVE, FOUNDER, GROUP_FOR_CODE
+from .roles import BRANCH_COORDINATOR, EXECUTIVE, FOUNDER, GROUP_FOR_CODE, TECHNICAL
 from .twofactor import reset_two_factor
 
 
@@ -46,14 +46,14 @@ class AccountError(Exception):
     """A rule was broken; the message is safe to show to the Super Admin."""
 
 
-EXTRA_ROLES = {BRANCH_COORDINATOR, EXECUTIVE}
+EXTRA_ROLES = {BRANCH_COORDINATOR, EXECUTIVE, TECHNICAL}
 
 
 @dataclass
 class RoleSpec:
     # department code -> is_head, or (is_head, branch id) for a single-branch assignment (None = all branches)
     departments: dict[str, Any]
-    extra_roles: set[str]  # Branch Coordinator / Executive Leadership
+    extra_roles: set[str]  # Branch Coordinator / Executive Leadership / Technical Team
     branch_id: int | None
     super_admin: bool = False
 

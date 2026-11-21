@@ -1,0 +1,14 @@
+{% load rlm %}<section class="section{% if alt %} bg-rlm-cream{% endif %}" id="{{ category.slug }}" aria-labelledby="cat-{{ category.slug }}">
+  <div class="container-rlm">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div class="flex items-start gap-4">
+        <span class="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rlm-black text-rlm-flame sm:flex">{% icon category.icon "h-6 w-6" %}</span>
+        <div><h2 id="cat-{{ category.slug }}" class="section-title">{{ category.title }}</h2>{% if category.summary %}<p class="mt-2 max-w-2xl text-rlm-grey">{{ category.summary }}</p>{% endif %}</div>
+      </div>
+      {% if link_category %}<a href="{{ category.get_absolute_url }}" class="btn-outline btn-sm">More about this<span class="sr-only">: {{ category.title }}</span></a>{% endif %}
+    </div>
+    <div class="mt-8 grid gap-6 sm:grid-cols-2 {% if activities|length > 3 %}lg:grid-cols-4{% else %}lg:grid-cols-3{% endif %}">
+      {% for activity in activities %}{% include "includes/activity_card.html" %}{% endfor %}
+    </div>
+  </div>
+</section>

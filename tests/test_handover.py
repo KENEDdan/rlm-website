@@ -15,7 +15,7 @@ from accounts.models import User
 from accounts.roles import FOUNDER
 from audit.models import AuditLog
 from core.launch import BLOCKER, OK, run_checks
-from core.models import Page, SiteSettings, SocialLink
+from core.models import Page, SiteContent, SiteSettings, SocialLink
 
 pytestmark = pytest.mark.django_db
 
@@ -37,14 +37,13 @@ def _areas(level: str) -> set[str]:
 
 
 def _make_site_ready() -> None:
-    site = SiteSettings.load()
+    site = SiteContent.load()
     site.about_intro = "Official introduction."
     site.about_body = "Official story."
-    site.vision, site.mission = "Vision", "Mission"
-    site.notification_email = "office@example.org"
     site.public_email = "info@example.org"
     site.whatsapp_number = "+211 900 000 000"
     site.save()
+    SiteSettings.objects.update(notification_email="office@example.org")
     for slug in ("privacy", "terms"):
         page = Page.objects.get(slug=slug)
         page.body = "## Who we are\nReviewed text."

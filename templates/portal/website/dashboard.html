@@ -1,0 +1,58 @@
+{% extends "portal/base.html" %}
+{% block title %}Website dashboard{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Technical Team · Website Administration</p>
+    <h1 class="portal-title">Website dashboard</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Website content only: hero, Vision and Mission, activities, pages, contacts, social links, leadership page and gallery layout. Every change is recorded and can be rolled back.</p>
+  </div>
+  <div class="flex flex-wrap gap-2"><a class="btn-outline btn-sm" href="/" target="_blank" rel="noopener">Open the website</a><a class="btn-primary btn-sm" href="{% url 'portal:website:hero' %}">Edit the home hero</a></div>
+</div>
+
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="kpi"><p class="kpi-label">Drafts awaiting publish</p><p class="kpi-value">{{ open_changes|length|add:hero_draft_pending }}</p><p class="kpi-hint">Vision/Mission changes and the hero draft</p></div>
+  <div class="kpi"><p class="kpi-label">Pages needing an update</p><p class="kpi-value">{{ pages|length }}</p></div>
+  <div class="kpi"><p class="kpi-label">Broken links or images</p><p class="kpi-value">{{ problems|length }}</p>{% if problems %}<p class="mt-1">{% include "portal/_status.html" with value="bad" label="Problem" %}</p>{% endif %}</div>
+  <div class="kpi"><p class="kpi-label">Upload storage</p><p class="kpi-value">{{ storage.public_mb }} MB</p><p class="kpi-hint">{{ storage.public_files }} public files · private files {{ storage.private_mb }} MB (size only) · <a class="underline" href="?refresh=storage">measure again</a></p></div>
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-2">
+  <section class="panel" aria-labelledby="drafts-title">
+    <h2 class="panel-title" id="drafts-title">Drafts awaiting publish</h2>
+    <ul class="divide-y divide-rlm-line text-sm">
+      {% if hero_draft_pending %}<li class="py-2"><a class="font-semibold underline" href="{% url 'portal:website:hero' %}">Home page hero</a>: the draft differs from what visitors see.</li>{% endif %}
+      {% for c in open_changes %}<li class="py-2"><a class="font-semibold underline" href="{% url 'portal:website:vm_detail' c.pk %}">{{ c.get_field_display }} change #{{ c.pk }}</a>: {{ c.get_status_display }}{% if c.created_by %}, by {{ c.created_by.full_name }}{% endif %}</li>{% endfor %}
+      {% if hidden_slides %}<li class="py-2"><a class="underline" href="{{ portal_nav.admin_url }}core/heroslide/?is_active__exact=0">{{ hidden_slides }} hero slide{{ hidden_slides|pluralize }} switched off</a> (preview, then switch on to publish).</li>{% endif %}
+      {% if not hero_draft_pending and not open_changes and not hidden_slides %}<li class="py-2 text-rlm-grey">Nothing waiting.</li>{% endif %}
+    </ul>
+  </section>
+
+  <section class="panel" aria-labelledby="pages-title">
+    <h2 class="panel-title" id="pages-title">Pages needing updates</h2>
+    <ul class="divide-y divide-rlm-line text-sm">{% for p in pages %}<li class="flex justify-between gap-3 py-2"><span>{% if p.url %}<a class="underline" href="{{ p.url }}">{{ p.title }}</a>{% else %}{{ p.title }}{% endif %}</span><span class="text-rlm-grey">{{ p.reason }}</span></li>{% empty %}<li class="py-2 text-rlm-grey">All pages are up to date.</li>{% endfor %}</ul>
+  </section>
+
+  <section class="panel" aria-labelledby="health-title">
+    <h2 class="panel-title" id="health-title">Site health</h2>
+    <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+      <div><dt class="text-xs font-bold uppercase tracking-widest text-rlm-grey">Website</dt><dd class="mt-1">{% if uptime.database %}{% include "portal/_status.html" with value="good" label="OK" %} Running since {{ uptime.since|date:"j M Y H:i" }}{% else %}{% include "portal/_status.html" with value="bad" label="Problem" %} Database not reachable{% endif %}</dd></div>
+      <div><dt class="text-xs font-bold uppercase tracking-widest text-rlm-grey">Last backup</dt><dd class="mt-1">{% if backup.last_ok %}{% if backup.stale %}{% include "portal/_status.html" with value="warn" label="Check" %}{% else %}{% include "portal/_status.html" with value="good" label="OK" %}{% endif %} {{ backup.last_ok.finished_at|date:"j M Y H:i" }}{% else %}{% include "portal/_status.html" with value="bad" label="Problem" %} No successful backup recorded{% endif %}{% if backup.last and not backup.last.ok %}<br><span class="text-rlm-grey">The most recent run FAILED ({{ backup.last.finished_at|date:"j M Y H:i" }}). Tell the Super Admin.</span>{% endif %}</dd></div>
+      <div><dt class="text-xs font-bold uppercase tracking-widest text-rlm-grey">Hero readability</dt><dd class="mt-1">{% if contrast_warning %}{% include "portal/_status.html" with value="warn" label="Check" %} {{ contrast_warning }}{% else %}{% include "portal/_status.html" with value="good" label="OK" %} Text contrast {{ live_hero.contrast_ratio }}:1 (WCAG AA){% endif %}</dd></div>
+    </dl>
+  </section>
+
+  <section class="panel" aria-labelledby="links-title">
+    <h2 class="panel-title" id="links-title">Broken links and missing images</h2>
+    <p class="text-xs text-rlm-grey">Links to pages of this site and stored images are checked each time this page opens. Links to other websites are only checked for a safe https:// address.</p>
+    <div class="table-wrap"><table class="table-rlm"><thead><tr><th scope="col">Where</th><th scope="col">Field</th><th scope="col">Problem</th></tr></thead>
+      <tbody>{% for p in problems %}<tr><th scope="row">{% if p.admin_url %}<a class="underline" href="{{ p.admin_url }}">{{ p.where }}</a>{% else %}{{ p.where }}{% endif %}</th><td>{{ p.field }}{% if p.value %}<br><code class="text-xs">{{ p.value }}</code>{% endif %}</td><td>{{ p.problem }}</td></tr>{% empty %}<tr><td colspan="3">No broken links or missing images.</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+</div>
+
+<section class="panel mt-6" aria-labelledby="recent-title">
+  <div class="flex items-center justify-between gap-3"><h2 class="panel-title" id="recent-title">Recent changes</h2><a class="btn-outline btn-sm" href="{% url 'portal:website:versions' %}">All changes and rollback</a></div>
+  <div class="table-wrap"><table class="table-rlm"><thead><tr><th scope="col">When</th><th scope="col">What</th><th scope="col">Change</th><th scope="col">Who</th></tr></thead>
+    <tbody>{% for v in recent %}<tr><td>{{ v.created_at|date:"j M Y H:i" }}</td><th scope="row">{{ v.object_repr }} <span class="text-xs text-rlm-grey">({{ v.content_type.name }})</span></th><td>{{ v.get_action_display }}{% if v.note %}: {{ v.note }}{% endif %}</td><td>{{ v.created_by.full_name|default:"System" }}</td></tr>{% empty %}<tr><td colspan="4">No changes recorded yet.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

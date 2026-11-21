@@ -28,7 +28,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import urlencode
 
-from accounts.roles import BRANCH_COORDINATOR, EXECUTIVE
+from accounts.roles import BRANCH_COORDINATOR, EXECUTIVE, TECHNICAL
 
 NONE, BRANCH, MEMBER, HEAD, FOUNDER = 0, 1, 2, 3, 4
 LEVEL_NAMES = {NONE: "none", BRANCH: "branch", MEMBER: "member", HEAD: "head", FOUNDER: "founder"}
@@ -44,6 +44,8 @@ class Access:
         self.is_super_admin = authed and bool(getattr(user, "is_super_admin", False))
         groups = set(user.groups.values_list("name", flat=True)) if authed else set()
         self.is_executive = self.is_super_admin or EXECUTIVE in groups
+        # Website Administration: only the Website screens of the portal (no department, no records).
+        self.is_technical = self.is_super_admin or TECHNICAL in groups
         self.is_branch_coordinator = (not self.is_super_admin) and BRANCH_COORDINATOR in groups
         self.branch_id: int | None = user.branch_id if self.is_branch_coordinator else None
         self.levels: dict[str, int] = {}
@@ -82,7 +84,7 @@ class Access:
 
     @property
     def has_any_access(self) -> bool:
-        return self.is_super_admin or self.is_executive or bool(self.departments())
+        return self.is_super_admin or self.is_executive or self.is_technical or bool(self.departments())
 
     # ------------------------------------------------------------------ branch scoping (per department)
     def branch_scope(self, department: str | None) -> tuple[bool, int | None]:
@@ -123,6 +125,8 @@ class Access:
         departments = self.member_departments() or self.departments()
         if departments:
             return reverse("portal:dashboard", args=[departments[0]])
+        if self.is_technical:
+            return reverse("portal:website:dashboard")
         return reverse("portal:no_access")
 
 
@@ -151,6 +155,7 @@ def portal_view(
     level: int = MEMBER,
     super_admin: bool = False,
     executive: bool = False,
+    technical: bool = False,
     url_department: bool = True,
 ) -> Callable[[Callable[..., HttpResponse]], Callable[..., HttpResponse]]:
     """Decorator: 2FA-verified staff only, then the department level / Super Admin / executive check.
@@ -170,6 +175,8 @@ def portal_view(
             if super_admin and not access.is_super_admin:
                 raise PermissionDenied
             if executive and not access.is_executive:
+                raise PermissionDenied
+            if technical and not access.is_technical:
                 raise PermissionDenied
             code = department or kwargs.get("department")
             if code is not None:

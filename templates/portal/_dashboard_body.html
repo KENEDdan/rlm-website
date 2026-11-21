@@ -36,6 +36,15 @@
       <h2 class="panel-title">Recent activity</h2>
       {% include "portal/_items.html" with items=board.activity empty="No recent activity." %}
     </section>
+    {% if activities %}<section class="panel" aria-labelledby="act-panel">
+      <h2 class="panel-title" id="act-panel">Our activities</h2>
+      <ul class="divide-y divide-rlm-line text-sm">{% for row in activities %}<li class="py-2">
+        <p class="font-semibold">{{ row.activity.title }}{% if not row.activity.is_published %} <span class="portal-badge">Not on the website</span>{% endif %}</p>
+        <p class="text-xs text-rlm-grey">{{ row.activity.category.title }}{% if row.activity.schedule %} · {{ row.activity.schedule }}{% endif %}</p>
+        <p class="mt-1 text-xs">{{ row.events }} upcoming event{{ row.events|pluralize }}{% if row.campaigns is not None %} · {{ row.campaigns }} open campaign{{ row.campaigns|pluralize }}{% endif %}{% if row.cohorts is not None %} · {{ row.cohorts }} open class{{ row.cohorts|pluralize:"es" }}{% endif %} · {{ row.targets }} target{{ row.targets|pluralize }} this year</p>
+      </li>{% endfor %}</ul>
+      <p class="mt-2 text-xs text-rlm-grey">Which activities feed this dashboard is set by the Super Admin.</p>
+    </section>{% endif %}
     <section class="panel">
       <h2 class="panel-title">Targets (M&amp;E)</h2>
       {% for row in indicators %}

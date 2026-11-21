@@ -294,9 +294,10 @@ class CohortResource(_Discipleship):
     label = "Classes / cohorts"
     nav_group = "Classes"
     list_fields: ClassVar = ["name", "status", "branch", "facilitator", "start_date", "schedule", "enrolled"]
-    filters: ClassVar = ["status", "branch", "facilitator"]
+    filters: ClassVar = ["status", "activity", "branch", "facilitator"]
     fields: ClassVar = [
         "name",
+        "activity",
         "branch",
         "curriculum",
         "facilitator",

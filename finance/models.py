@@ -49,7 +49,7 @@ class FinanceSettings(SingletonModel):
 
 
 class Category(models.TextChoices):
-    PROGRAMMES = "programmes", "Programmes & events"
+    PROGRAMMES = "programmes", "Activities & events"
     OUTREACH = "outreach", "Outreach & missions"
     PERSONNEL = "personnel", "Personnel & stipends"
     TRAVEL = "travel", "Travel & transport"
@@ -784,6 +784,8 @@ class FinanceVolunteer(RetainedApplication, TimeStampedModel):
         editable=False,
     )
     decided_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    is_finance_queue = True  # new-submission alerts go to the Finance heads only
 
     class Meta:
         ordering: ClassVar = ["-created_at"]

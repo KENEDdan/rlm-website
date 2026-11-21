@@ -1,0 +1,14 @@
+{% extends "portal/base.html" %}
+{% block title %}Propose a bank details change{% endblock %}
+{% block content %}
+<div class="portal-head"><div>
+  <p class="eyebrow"><a class="underline" href="{% url 'portal:giving:bank_details' %}">Bank details</a></p>
+  <h1 class="portal-title">Propose a change</h1>
+  <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Copy the details exactly from the bank's official letter. Nothing changes on the website until the Founder or Executive Director confirms. Check with the bank by phone (a number you already know, not one from an email) before proposing.</p>
+</div></div>
+{% if pending %}<p class="panel mb-4 text-sm">Change #{{ pending.pk }} is already waiting for confirmation; a second change cannot be proposed until it is decided.</p>{% else %}
+<form method="post" class="panel rlm-form max-w-2xl space-y-4" autocomplete="off">{% csrf_token %}
+  {% for field in form %}{% include "portal/website/_field.html" %}{% endfor %}
+  <button type="submit" class="btn-primary" data-confirm="Send this change for confirmation?">Save as pending change</button>
+</form>{% endif %}
+{% endblock %}

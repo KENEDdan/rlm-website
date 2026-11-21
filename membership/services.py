@@ -22,7 +22,7 @@ from django.utils import timezone
 
 from audit.models import AuditLog
 from audit.services import log_event
-from core.models import SiteSettings
+from core.models import SiteContent
 
 from .models import Activity, Attendance, BulkMessage, Member
 
@@ -98,7 +98,7 @@ def send_decision_email(member_pk: int) -> bool:
     member = Member.objects.filter(pk=member_pk).first()
     if member is None or not member.email or member.status not in (S.APPROVED, S.REJECTED):
         return False
-    site = SiteSettings.load()
+    site = SiteContent.load()
     context = {"member": member, "site": site, "approved": member.status == S.APPROVED}
     send_mail(
         subject=render_to_string("emails/member_decision_subject.txt", context).strip(),

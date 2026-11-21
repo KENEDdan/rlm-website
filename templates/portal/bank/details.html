@@ -1,0 +1,40 @@
+{% extends "portal/base.html" %}
+{% block title %}Bank details{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Finance &amp; Resource Mobilization · Restricted</p>
+    <h1 class="portal-title">Bank and payment details</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">What donors see on the Give and Partner pages. A change is saved as pending and goes live only after a second person (the Founder or Executive Director) confirms it. Both steps ask for your password and an authenticator code, and an alert is emailed to the Finance head and the Founder.</p>
+  </div>
+  {% if can_propose and not pending %}<a href="{% url 'portal:giving:bank_propose' %}" class="btn-primary btn-sm">Propose a change</a>{% endif %}
+</div>
+
+{% if pending %}
+<section class="panel mb-6 border-2 border-rlm-amber" aria-labelledby="pending-title">
+  <h2 class="panel-title" id="pending-title">Waiting for confirmation</h2>
+  <p class="text-sm">Change #{{ pending.pk }} proposed by {{ pending.requested_by.full_name|default:"unknown" }} on {{ pending.created_at|date:"j M Y H:i" }}: new account number ending {{ pending.masked_account_number|default:"(none)" }}.</p>
+  <a class="btn-primary btn-sm mt-3" href="{% url 'portal:giving:bank_change' pending.pk %}">{% if can_confirm and pending.requested_by_id != request.user.pk %}Review and confirm{% else %}Open{% endif %}</a>
+</section>
+{% endif %}
+
+<section class="panel" aria-labelledby="live-title">
+  <h2 class="panel-title" id="live-title">Live now</h2>
+  <dl class="grid gap-3 text-sm sm:grid-cols-2">
+    <div><dt class="text-rlm-grey">Bank transfer shown</dt><dd class="font-semibold">{{ gs.bank_transfer_enabled|yesno:"Yes,No" }}</dd></div>
+    <div><dt class="text-rlm-grey">Account name</dt><dd class="font-semibold">{{ gs.account_name|default:"-" }}</dd></div>
+    <div><dt class="text-rlm-grey">Bank and branch</dt><dd class="font-semibold">{{ gs.bank_name|default:"-" }}{% if gs.branch_name %}, {{ gs.branch_name }}{% endif %}</dd></div>
+    <div><dt class="text-rlm-grey">Account number</dt><dd class="font-mono font-semibold">{{ gs.account_number|default:"-" }}</dd></div>
+    <div><dt class="text-rlm-grey">SWIFT / BIC</dt><dd class="font-mono font-semibold">{{ gs.swift_code|default:"-" }}</dd></div>
+    <div><dt class="text-rlm-grey">Currency</dt><dd class="font-semibold">{{ gs.currency|default:"-" }}</dd></div>
+    <div><dt class="text-rlm-grey">Mobile money shown</dt><dd class="font-semibold">{{ gs.mobile_money_enabled|yesno:"Yes,No" }}</dd></div>
+    <div><dt class="text-rlm-grey">Last verified</dt><dd class="font-semibold">{% if gs.bank_details_verified_at %}{{ gs.bank_details_verified_at|date:"j M Y" }}{% if gs.bank_details_verified_by %} by {{ gs.bank_details_verified_by.full_name }}{% endif %}{% else %}Never{% endif %}</dd></div>
+  </dl>
+</section>
+
+<section class="panel mt-6" aria-labelledby="hist-title">
+  <h2 class="panel-title" id="hist-title">History</h2>
+  <div class="table-wrap"><table class="table-rlm"><thead><tr><th scope="col">Change</th><th scope="col">Status</th><th scope="col">Proposed by</th><th scope="col">Decided by</th><th scope="col">Account ends</th></tr></thead>
+    <tbody>{% for c in history %}<tr><th scope="row"><a class="underline" href="{% url 'portal:giving:bank_change' c.pk %}">#{{ c.pk }}</a> {{ c.created_at|date:"j M Y" }}</th><td>{{ c.get_status_display }}</td><td>{{ c.requested_by.full_name|default:"-" }}</td><td>{{ c.decided_by.full_name|default:"-" }}{% if c.decided_at %} ({{ c.decided_at|date:"j M Y" }}){% endif %}</td><td class="font-mono">{{ c.masked_account_number|default:"-" }}</td></tr>{% empty %}<tr><td colspan="5">No changes yet.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

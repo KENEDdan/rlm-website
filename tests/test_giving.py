@@ -74,6 +74,11 @@ def test_give_page_shows_bank_details_only_when_complete(client: Client) -> None
     gs.account_name = "Example Ministry Account"
     gs.bank_name = "Example Bank"
     gs.account_number = "000-TEST-000"
+    with pytest.raises(PermissionError):  # bank details only change through the confirmed flow
+        gs.save()
+    gs._bank_change_confirmed = (
+        True  # what giving.bank_details.confirm() does after the second person confirms
+    )
     gs.save()
     html = client.get("/give/").content
     assert b"000-TEST-000" in html and b"Example Bank" in html

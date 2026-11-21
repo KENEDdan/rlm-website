@@ -9,7 +9,7 @@
     <tbody>{% for name, purpose, life in cookies %}<tr class="border-t border-rlm-line"><td class="py-2 pr-4 font-mono">{{ name }}</td><td class="py-2 pr-4">{{ purpose }}</td><td class="py-2">{{ life }}</td></tr>{% endfor %}</tbody>
   </table></div>
   <p>Videos are loaded from YouTube's privacy-enhanced domain only when you press play.
-    {% if site.analytics_enabled %}Visitor statistics are cookieless and load only if you agree; your choice is stored in your browser.
+    {% if site_config.analytics_enabled %}Visitor statistics are cookieless and load only if you agree; your choice is stored in your browser.
     <button type="button" data-consent-reset class="font-semibold text-rlm-flame-dark underline">Change your privacy choices</button>{% else %}We do not use visitor statistics.{% endif %}</p>
   <h3>How long we keep your information</h3>
   <ul>{% for label, days in retention %}<li>{{ label }}: {% if days %}deleted automatically after {{ days }} days{% else %}kept until deleted by the ministry{% endif %}</li>{% endfor %}

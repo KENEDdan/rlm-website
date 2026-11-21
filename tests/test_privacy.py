@@ -21,7 +21,7 @@ def _cookies(response) -> dict:  # type: ignore[no-untyped-def]
     return dict(response.cookies.items())
 
 
-@pytest.mark.parametrize("url", ["/", "/events/", "/news/", "/privacy/", "/programs/"])
+@pytest.mark.parametrize("url", ["/", "/events/", "/news/", "/privacy/", "/activities/"])
 def test_pages_without_forms_set_no_cookies(client: Client, url: str) -> None:
     assert _cookies(client.get(url)) == {}
 

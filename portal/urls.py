@@ -34,6 +34,7 @@ urlpatterns = [
     path("targets/template.csv", target_views.target_template, name="target_template"),
     path("targets/<int:pk>/", target_views.target_detail, name="target_detail"),
     path("accounts/", include("accounts.portal_urls")),
+    path("website/", include("portal.website_urls")),
     *department_workflow_urls(),
     re_path(rf"^{DEPT}/$", views.dashboard, name="dashboard"),
     re_path(rf"^{DEPT}/screens/$", views.department_resources, name="department_resources"),

@@ -130,6 +130,14 @@ class Indicator(TimeStampedModel):
     year = models.PositiveSmallIntegerField(
         "financial year", db_index=True, help_text="January to December (ministry decision 2)."
     )
+    activity = models.ForeignKey(
+        "programs.Activity",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="indicators",
+        help_text="Optional: the ministry activity this target measures (e.g. Monthly Youth Revival Fellowship).",
+    )
     branch = models.ForeignKey(
         "branches.Branch",
         null=True,

@@ -1,0 +1,5 @@
+<div{% if field.errors %} class="has-error"{% endif %}>
+  {% if field.field.widget.input_type == "checkbox" %}<label class="flex items-center gap-2">{{ field }} {{ field.label }}</label>{% else %}<label for="{{ field.id_for_label }}">{{ field.label }}{% if field.name == "overlay_opacity" or field.name == "focal_x" or field.name == "focal_y" %} <output data-output-for="{{ field.id_for_label }}">{{ field.value }}</output>%{% endif %}</label>{{ field }}{% endif %}
+  {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+  {% for error in field.errors %}<p class="text-sm font-semibold text-rlm-flame-deep" role="alert">{{ error }}</p>{% endfor %}
+</div>

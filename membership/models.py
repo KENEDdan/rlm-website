@@ -165,6 +165,7 @@ class Activity(TimeStampedModel):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+        related_name="member_activities",
         help_text="Optional: the public event.",
     )
 

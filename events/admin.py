@@ -9,12 +9,12 @@ from .models import Event
 class EventAdmin(ScopedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     branch_lookup = "branch"
     list_display = ("title", "start", "branch", "is_published", "registration_open", "capacity", "seats")
-    list_filter = ("is_published", "registration_open", "branch", "program")
+    list_filter = ("is_published", "registration_open", "branch", "activity__category", "activity")
     search_fields = ("title", "summary", "venue")
     date_hierarchy = "start"
     prepopulated_fields = {"slug": ("title",)}
     fieldsets = (
-        (None, {"fields": ("title", "slug", "summary", "description", "program", "branch", "department")}),
+        (None, {"fields": ("title", "slug", "summary", "description", "activity", "branch", "department")}),
         ("When & where", {"fields": ("start", "end", "venue", "address")}),
         ("Registration", {"fields": ("registration_open", "registration_deadline", "capacity")}),
         ("Poster", {"fields": ("poster", "poster_alt")}),

@@ -1,0 +1,31 @@
+{% load static rlm %}{# One hero (the static home hero, a slider slide, or a portal preview). `hero` is a HeroSettings or HeroSlide. #}
+{% with bg=hero.effective_background uid=hero.dom_id %}
+<div class="hero-slide hero-tone-{{ hero.text_tone }} hero-align-{{ hero.text_align }}{% if bg == 'theme' %} hero-glow{% endif %}" id="{{ uid }}" data-hero-bg="{{ bg }}">
+  {% if bg != "theme" %}
+    {# Focal point and overlay come from the hero's settings (numbers only); CSP allows only nonce'd style blocks. #}
+    <style nonce="{{ request.csp_nonce }}">#{{ uid }} .hero-slide-img,#{{ uid }} .hero-video{object-position:{{ hero.focal_x }}% {{ hero.focal_y }}%}#{{ uid }} .hero-shade{background:rgba(10,10,10,{{ hero.overlay_alpha }})}</style>
+    {% responsive_img hero.background_image hero.image_alt "100vw" "hero-slide-img" first %}
+    {% if bg == "video" %}
+      {# No src until static/js/hero-video.js decides the connection and motion settings allow it (after first paint). #}
+      <video class="hero-video" muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1" poster="{{ hero.video_poster|rendition:1600 }}" data-hero-video><source data-src="{{ hero.video.url }}" type="{{ hero.video_mime }}"></video>
+    {% endif %}
+    <div class="hero-shade" aria-hidden="true"></div>
+  {% endif %}
+  <div class="container-rlm relative grid w-full items-center gap-10 lg:grid-cols-12">
+    <div class="{% if hero.text_align == 'center' %}mx-auto text-center lg:col-span-12{% else %}lg:col-span-7{% endif %}">
+      {% if first %}<p class="{% if hero.text_tone == 'dark' %}eyebrow{% else %}eyebrow-light{% endif %}">{{ site.ministry_name }}</p>{% endif %}
+      {% if first %}<h1 class="hero-title{% if hero.text_align == 'center' %} mx-auto{% endif %}">{{ hero.title }}</h1>{% else %}<h2 class="hero-title{% if hero.text_align == 'center' %} mx-auto{% endif %}">{{ hero.title }}</h2>{% endif %}
+      {% if hero.subtitle %}<p class="hero-sub mt-5 max-w-xl text-lg{% if hero.text_align == 'center' %} mx-auto{% endif %}">{{ hero.subtitle }}</p>{% endif %}
+      {% if hero.buttons %}<div class="mt-8 flex flex-wrap gap-3{% if hero.text_align == 'center' %} justify-center{% endif %}">{% for label, link in hero.buttons %}<a href="{{ link }}" class="{% if forloop.first %}btn-primary{% elif hero.text_tone == 'dark' %}btn-outline{% else %}btn-outline-light{% endif %}">{{ label }}</a>{% endfor %}</div>{% endif %}
+      {% if hero.show_scripture %}<figure class="hero-scripture mt-8 max-w-xl border-l-2 border-rlm-flame pl-4{% if hero.text_align == 'center' %} mx-auto text-left{% endif %}">
+        <blockquote class="text-sm italic">“{{ site.scripture_text }}”</blockquote>
+        <figcaption class="mt-1 text-xs font-bold uppercase tracking-widest text-rlm-gold">{{ site.scripture_reference }}</figcaption>
+      </figure>{% endif %}
+    </div>
+    {% if bg == "theme" and hero.text_align != "center" %}<div class="hidden justify-center lg:col-span-5 lg:flex">
+      {% if site.logo_on_dark %}<img src="{{ site.logo_on_dark|rendition:960 }}" alt="" class="h-auto w-[360px] object-contain drop-shadow-[0_0_60px_rgba(240,101,42,0.35)]" loading="lazy">{% else %}<img src="{% static 'brand/logo-on-dark-640.webp' %}" srcset="{% static 'brand/logo-on-dark-320.webp' %} 320w, {% static 'brand/logo-on-dark-640.webp' %} 640w" sizes="(min-width: 1024px) 360px, 0px" width="360" height="372" alt="" class="h-auto w-[360px] drop-shadow-[0_0_60px_rgba(240,101,42,0.35)]" loading="lazy">{% endif %}
+    </div>{% endif %}
+  </div>
+  {% if bg == "video" %}<button type="button" class="hero-video-toggle" data-hero-video-toggle hidden aria-pressed="false">Pause background video</button>{% endif %}
+</div>
+{% endwith %}

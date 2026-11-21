@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from core.admin_mixins import AuditedAdminMixin, ScopedAdminMixin
+from core.versioning import VersionedAdminMixin
 
 from .models import Branch, Country
 
@@ -12,7 +13,7 @@ class CountryAdmin(AuditedAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(Branch)
-class BranchAdmin(ScopedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
+class BranchAdmin(VersionedAdminMixin, ScopedAdminMixin, AuditedAdminMixin, admin.ModelAdmin):
     branch_lookup = "id"
     list_display = ("name", "country", "city", "is_published", "order")
     list_filter = ("country", "is_published")

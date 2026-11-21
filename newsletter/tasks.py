@@ -4,7 +4,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
 
-from core.models import SiteSettings
+from core.models import SiteContent
 
 from .models import Subscriber
 
@@ -16,7 +16,7 @@ def send_confirmation(pk: int) -> bool:
     sub = Subscriber.objects.filter(pk=pk, status=Subscriber.Status.PENDING).first()
     if sub is None:
         return False
-    site = SiteSettings.load()
+    site = SiteContent.load()
     unsubscribe_url = settings.SITE_URL + reverse(
         "newsletter:unsubscribe", args=[make_unsubscribe_token(sub)]
     )

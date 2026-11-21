@@ -20,9 +20,28 @@ from core.fields import EncryptedCharField, EncryptedEmailField, EncryptedTextFi
 from core.models import RetainedApplication, SingletonModel, SubmissionModel, TimeStampedModel
 from core.site_text import option_label
 
+# Where donors send money. Changed ONLY through BankDetailChange (re-authentication, a second person's
+# confirmation, email alerts, history); GivingSettings.save() refuses any other change (fraud prevention).
+BANK_FIELDS = (
+    "bank_transfer_enabled",
+    "account_name",
+    "bank_name",
+    "account_number",
+    "swift_code",
+    "branch_name",
+    "currency",
+    "transfer_instructions",
+    "mobile_money_enabled",
+    "mobile_money_instructions",
+)
+
+
+class BankDetailsLocked(PermissionError):
+    """Bank and payment details were changed outside the confirmation flow."""
+
 
 class GivingSettings(SingletonModel):
-    """Everything about how to give lives here, entered in the admin by Founder/Finance only."""
+    """How to give. Finance only (never the Technical Team); bank and payment details are protected (BANK_FIELDS)."""
 
     bank_transfer_enabled = models.BooleanField(
         default=False, help_text="Show bank transfer details on the Give page once they are filled in."
@@ -48,6 +67,15 @@ class GivingSettings(SingletonModel):
     receipt_prefix = models.CharField(max_length=10, default="RLM")
     give_intro = models.TextField(blank=True)
     partnership_intro = models.TextField(blank=True)
+    bank_details_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        editable=False,
+        help_text="When a second person last confirmed the bank details.",
+    )
+    bank_details_verified_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", editable=False
+    )
 
     class Meta:
         verbose_name = "giving settings"
@@ -56,11 +84,95 @@ class GivingSettings(SingletonModel):
     def __str__(self) -> str:
         return "Giving settings"
 
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk and not getattr(self, "_bank_change_confirmed", False):
+            stored = type(self).objects.filter(pk=self.pk).first()
+            if stored is not None and any(getattr(stored, f) != getattr(self, f) for f in BANK_FIELDS):
+                raise BankDetailsLocked(
+                    "Bank and payment details can only be changed through the confirmed change process "
+                    "(Staff portal > Finance > Bank details)."
+                )
+        super().save(*args, **kwargs)
+
+    @property
+    def masked_account_number(self) -> str:
+        return mask(self.account_number)
+
     @property
     def has_bank_details(self) -> bool:
         return self.bank_transfer_enabled and bool(
             self.account_name and self.bank_name and self.account_number
         )
+
+
+def mask(number: str) -> str:
+    """Last four characters only, for emails and lists (e.g. "****1234")."""
+    digits = "".join(ch for ch in (number or "") if not ch.isspace())
+    if not digits:
+        return ""
+    return "****" + digits[-4:] if len(digits) > 4 else "****"
+
+
+class BankDetailChange(TimeStampedModel):
+    """A proposed change to the bank / payment details: pending until a SECOND authorised person confirms it.
+
+    Proposed by the Finance & Resource Mobilization head (or the Super Admin) after password + 2FA; confirmed or
+    rejected by the Founder / Executive Director (another person, also after password + 2FA). Rows are never
+    deleted: together they are the full history, including the details that were replaced.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Waiting for confirmation"
+        CONFIRMED = "confirmed", "Confirmed and live"
+        REJECTED = "rejected", "Rejected"
+        CANCELLED = "cancelled", "Cancelled"
+
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
+    bank_transfer_enabled = models.BooleanField(default=False)
+    account_name = models.CharField(max_length=150, blank=True)
+    bank_name = models.CharField(max_length=150, blank=True)
+    account_number = EncryptedCharField(max_length=60, blank=True)
+    swift_code = models.CharField(max_length=20, blank=True)
+    branch_name = models.CharField(max_length=150, blank=True)
+    currency = models.CharField(max_length=10, blank=True)
+    transfer_instructions = models.TextField(blank=True)
+    mobile_money_enabled = models.BooleanField(default=False)
+    mobile_money_instructions = EncryptedTextField(blank=True)
+    previous = EncryptedTextField(
+        blank=True, editable=False, help_text="The details this change replaced (JSON)."
+    )
+    reason = models.CharField(max_length=300)
+    requested_by = models.ForeignKey(
+        "accounts.User", null=True, on_delete=models.SET_NULL, related_name="+", editable=False
+    )
+    decided_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", editable=False
+    )
+    decided_at = models.DateTimeField(null=True, blank=True, editable=False)
+    decision_note = models.CharField(max_length=300, blank=True, editable=False)
+
+    class Meta:
+        ordering: ClassVar = ["-created_at"]
+        verbose_name = "bank details change"
+        constraints: ClassVar = [
+            models.UniqueConstraint(
+                fields=["status"], condition=models.Q(status="pending"), name="one_pending_bank_change"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Bank details change #{self.pk} ({self.get_status_display()})"
+
+    @property
+    def audit_label(self) -> str:
+        return f"bank details change #{self.pk}"
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        raise PermissionError("Bank detail changes are kept as history and cannot be deleted.")
+
+    @property
+    def masked_account_number(self) -> str:
+        return mask(self.account_number)
 
 
 class GivingCategory(TimeStampedModel):
@@ -138,6 +250,8 @@ class Donation(TimeStampedModel):
     confirmed_at = models.DateTimeField(null=True, blank=True, editable=False)
     finance_notes = EncryptedTextField(blank=True)
 
+    is_finance_queue = True  # new-submission alerts go to the Finance heads only
+
     class Meta:
         ordering: ClassVar = ["-created_at"]
         permissions: ClassVar = [
@@ -202,6 +316,8 @@ class PartnershipEnquiry(RetainedApplication, SubmissionModel):
     message = EncryptedTextField(blank=True)
     consent = models.BooleanField(default=False)
     internal_notes = EncryptedTextField(blank=True)
+
+    is_finance_queue = True  # new-submission alerts go to the Finance heads only
 
     class Meta(SubmissionModel.Meta):
         verbose_name = "partnership registration"

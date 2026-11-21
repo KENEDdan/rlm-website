@@ -18,7 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from accounts.roles import ALL_ROLES, FOUNDER, MEDIA, MEMBERSHIP
+from accounts.roles import ALL_ROLES, FOUNDER, MEDIA, MEMBERSHIP, TECHNICAL
 from audit.models import AuditLog
 from branches.models import Branch, Country
 from core.models import HERO_SLIDE_LIMIT, HeroSlide, Partner
@@ -206,7 +206,7 @@ def test_slider_accessibility_and_no_js_fallback_markup(client: Client) -> None:
     assert 'aria-controls="hero-track" aria-label="Previous slide"' in hero
     assert 'aria-label="Next slide"' in hero
     # Card carousels never autoplay and announce manual changes politely.
-    programmes = _slider(html, "programmes")
+    programmes = _slider(html, "revival-programme")  # one activity carousel per category
     assert "data-autoplay" not in programmes and "data-slider-play" not in programmes
     assert 'aria-live="polite"' in programmes
 
@@ -382,7 +382,7 @@ SLIDE_MODELS = ["heroslide", "partner"]
 @pytest.mark.parametrize("role", ALL_ROLES)
 def test_only_founder_and_media_manage_slides(make_staff, role: str, model: str) -> None:  # type: ignore[no-untyped-def]
     user = make_staff(role)
-    allowed = role in (FOUNDER, MEDIA)
+    allowed = role in (FOUNDER, MEDIA, TECHNICAL)  # Technical Team: website content (D-034)
     for action in ("view", "add", "change", "delete"):
         assert user.has_perm(f"core.{action}_{model}") is allowed, (role, action, model)
 
@@ -408,6 +408,14 @@ def _slide_post(**overrides: str) -> dict[str, str]:
         "image_alt": "",
         "button_text": "Register",
         "button_link": "/events/",
+        "button2_text": "",
+        "button2_link": "",
+        "background_type": "theme",
+        "focal_x": "50",
+        "focal_y": "50",
+        "overlay_opacity": "45",
+        "text_align": "left",
+        "text_tone": "light",
         "order": "3",
         "is_active": "on",
         "start_at_0": "",

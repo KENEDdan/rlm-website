@@ -183,6 +183,7 @@ CONTENT_SECURITY_POLICY = {
         "style-src": [SELF, NONCE],
         "img-src": [SELF, "data:", "https://i.ytimg.com"],
         "font-src": [SELF],
+        "media-src": [SELF],  # hero background videos: our own storage only, never third-party embeds
         "connect-src": [SELF],
         "frame-src": ["https://www.youtube-nocookie.com", "https://challenges.cloudflare.com"],
         "frame-ancestors": [NONE],

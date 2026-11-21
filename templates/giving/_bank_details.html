@@ -9,6 +9,7 @@
     {% if giving.currency %}<div><dt class="text-rlm-grey">Currency</dt><dd class="font-semibold">{{ giving.currency }}</dd></div>{% endif %}
   </dl>
   {% if giving.transfer_instructions %}<p class="mt-4 text-sm">{{ giving.transfer_instructions|linebreaksbr }}</p>{% endif %}
+  {% if giving.bank_details_verified_at %}<p class="mt-4 text-xs text-rlm-grey">Last verified: {{ giving.bank_details_verified_at|date:"j F Y" }}. If these details ever differ from what someone sends you by message or email, do not pay: <a class="underline" href="{% url 'contact:contact' %}">contact us</a> first.</p>{% endif %}
 </div>
 {% else %}
 <div class="rounded-2xl bg-rlm-cream p-6 text-sm"><h3 class="text-lg font-bold">Bank details coming soon</h3><p class="mt-2">Our official giving account details will be published here shortly. In the meantime, please <a class="font-semibold underline" href="{% url 'contact:contact' %}">contact us</a> to give or partner.</p></div>

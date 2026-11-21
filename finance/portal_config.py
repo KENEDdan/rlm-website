@@ -11,6 +11,7 @@ from django.http import HttpRequest
 from django.urls import reverse
 from django.utils import timezone
 
+from contact.models import ContactMessage
 from core.retention import RetentionColumns
 from giving.models import Donation, PartnershipEnquiry
 from portal.access import FOUNDER, HEAD, MEMBER, Access
@@ -337,6 +338,38 @@ class EnquiryResource(RetentionColumns, _Finance):
                 "style": "primary",
             }
         ]
+
+
+@register
+class FinanceEnquiryResource(_Finance):
+    """Contact-form messages about giving, finance or partnership: ONLY Finance (and the Super Admin) see them."""
+
+    model = ContactMessage
+    slug = "enquiries"
+    label = "Giving and partnership enquiries"
+    label_singular = "Enquiry"
+    nav_group = "Resource mobilization"
+    list_fields: ClassVar = ["__str__", "category", "status", "created_at"]
+    filters: ClassVar = ["status", "category"]
+    detail_fields: ClassVar = [
+        "category",
+        "name",
+        "email",
+        "phone",
+        "subject",
+        "message",
+        "status",
+        "internal_notes",
+    ]
+    fields: ClassVar = ["status", "internal_notes"]
+    date_field = "created_at"
+    perms: ClassVar = {"add": FOUNDER + 1, "delete": HEAD, "export": HEAD}
+
+    def scope(self, access: Access, qs: QuerySet) -> QuerySet:
+        return qs.finance_queue()
+
+    def covers(self, obj: Model) -> bool:
+        return bool(getattr(obj, "is_finance_queue", False))
 
 
 @register

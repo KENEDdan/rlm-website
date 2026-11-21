@@ -1,0 +1,27 @@
+{% extends "portal/base.html" %}
+{% block title %}Bank details change #{{ change.pk }}{% endblock %}
+{% block content %}
+<div class="portal-head"><div>
+  <p class="eyebrow"><a class="underline" href="{% url 'portal:giving:bank_details' %}">Bank details</a></p>
+  <h1 class="portal-title">Change #{{ change.pk }}: {{ change.get_status_display }}</h1>
+  <p class="mt-1 text-sm text-rlm-grey">Proposed by {{ change.requested_by.full_name|default:"unknown" }} on {{ change.created_at|date:"j M Y H:i" }}. Reason: {{ change.reason }}{% if change.decided_by %} · Decided by {{ change.decided_by.full_name }} on {{ change.decided_at|date:"j M Y H:i" }}{% endif %}{% if change.decision_note %} · Note: {{ change.decision_note }}{% endif %}</p>
+</div></div>
+<div class="table-wrap panel"><table class="table-rlm">
+  <thead><tr><th scope="col">Detail</th><th scope="col">{% if change.status == "pending" %}Live now{% else %}Live today{% endif %}</th><th scope="col">In this change</th></tr></thead>
+  <tbody>{% for label, now, new in rows %}<tr{% if now != new %} class="font-semibold"{% endif %}><th scope="row">{{ label|capfirst }}{% if now != new %} <span class="portal-badge">Changed</span>{% endif %}</th><td class="font-mono">{{ now|default:"-"|linebreaksbr }}</td><td class="font-mono">{{ new|default:"-"|linebreaksbr }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% if change.status == "pending" %}
+<section class="panel mt-6" aria-labelledby="decide-title">
+  <h2 class="panel-title" id="decide-title">Decision</h2>
+  {% if can_confirm %}
+  <p class="mb-3 text-sm">Before confirming, check the new details with the bank yourself (for example by calling the branch on a number you already know). You will be asked for your password and an authenticator code.</p>
+  <form method="post" class="rlm-form flex flex-wrap items-end gap-3">{% csrf_token %}
+    <button type="submit" name="action" value="confirm" class="btn-primary" data-confirm="Confirm these bank details? Donors will see them immediately.">Confirm and publish</button>
+    <div><label for="id_note">Reason for rejecting</label><input id="id_note" name="note" maxlength="300"></div>
+    <button type="submit" name="action" value="reject" class="btn-outline">Reject</button>
+  </form>
+  {% else %}<p class="text-sm">Waiting for the Founder or the Executive Director (someone other than the person who proposed it).</p>{% endif %}
+  {% if can_cancel %}<form method="post" class="mt-4">{% csrf_token %}<button type="submit" name="action" value="cancel" class="btn-outline btn-sm">Cancel this change</button></form>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

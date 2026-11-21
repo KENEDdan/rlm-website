@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{% page_text "programs" as pt %}{% if pt.seo_title %}{{ pt.seo_title }}{% else %}Our activities · {{ site.ministry_name }}{% endif %}{% endblock %}
+{% block description %}{% page_text "programs" as pt %}{{ pt.seo_description|default:pt.intro|default:site.meta_description|truncatechars:158 }}{% endblock %}
+{% block content %}
+{% page_text "programs" as pt %}{% include "includes/page_header.html" with eyebrow=pt.eyebrow heading=pt.heading intro=pt.intro %}
+{% if categories %}
+<nav class="border-b border-rlm-line bg-white" aria-label="Activity categories"><ul class="container-rlm flex flex-wrap gap-x-6 gap-y-2 py-4 text-sm font-semibold">
+  {% for category in categories %}<li><a href="#{{ category.slug }}" class="text-rlm-flame-dark hover:underline">{{ category.title }}</a></li>{% endfor %}
+</ul></nav>
+{% for category in categories %}{% if category.activities.all %}{% include "activities/_category_section.html" with activities=category.activities.all alt=forloop.even link_category=True %}{% endif %}{% endfor %}
+{% else %}<section class="section"><p class="container-rlm text-rlm-grey">Our activities will be listed here soon.</p></section>{% endif %}
+{% include "includes/cta_band.html" %}
+{% endblock %}

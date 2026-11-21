@@ -236,7 +236,7 @@ def privacy_facts(context: dict[str, Any]) -> dict[str, Any]:
     drift from what the site really does."""
     from django.conf import settings
 
-    site = context.get("site")
+    site = context.get("site_config")  # SiteSettings (retention periods), not the public SiteContent
     retention = [
         ("Prayer requests", getattr(site, "retention_prayer_days", 0)),
         ("Contact messages", getattr(site, "retention_contact_days", 0)),
@@ -264,4 +264,4 @@ def privacy_facts(context: dict[str, Any]) -> dict[str, Any]:
             "Until the browser closes; 2 h idle",
         ),
     ]
-    return {"site": site, "retention": retention, "cookies": cookies}
+    return {"site_config": site, "retention": retention, "cookies": cookies}

@@ -241,6 +241,14 @@ class Cohort(TimeStampedModel):
 
     name = models.CharField(max_length=160)
     branch = models.ForeignKey("branches.Branch", null=True, blank=True, on_delete=models.SET_NULL)
+    activity = models.ForeignKey(
+        "programs.Activity",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="cohorts",
+        help_text="Ministry activity, e.g. Mentorship Programme or Internship Discipleship Course.",
+    )
     curriculum = models.ForeignKey(
         Curriculum, null=True, blank=True, on_delete=models.SET_NULL, related_name="cohorts"
     )

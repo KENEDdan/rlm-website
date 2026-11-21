@@ -1,0 +1,73 @@
+{% extends "portal/base.html" %}{% load static rlm %}
+{% block title %}Home page hero{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Website</p>
+    <h1 class="portal-title">Home page hero</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">You edit a <strong>draft</strong>; visitors keep seeing the live hero until you publish. {% if slides_live %}Hero slides are switched on, so the home page currently shows the slider instead of this hero (manage slides in the website admin).{% endif %}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a class="btn-outline btn-sm" href="{% url 'portal:website:hero_preview' %}" target="_blank" rel="noopener">Preview the draft full size</a>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="publish"><button type="submit" class="btn-primary btn-sm"{% if not pending %} disabled{% endif %} data-confirm="Publish the draft? Visitors will see it immediately.">Publish draft</button></form>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="revert"><button type="submit" class="btn-outline btn-sm"{% if not can_revert %} disabled{% endif %} data-confirm="Put the previous live hero back?">Revert to previous</button></form>
+  </div>
+</div>
+<p class="mb-4 text-sm">{% if pending %}{% include "portal/_status.html" with value="warn" label="Draft not published" %} The draft differs from the live hero.{% else %}{% include "portal/_status.html" with value="good" label="Up to date" %} The draft and the live hero are the same.{% endif %}{% if live.published_at %} Last published {{ live.published_at|date:"j M Y H:i" }}{% if live.published_by %} by {{ live.published_by.full_name }}{% endif %}.{% endif %}</p>
+
+<div class="grid gap-6 xl:grid-cols-2">
+  <section class="panel" aria-labelledby="form-title">
+    <h2 class="panel-title" id="form-title">Draft</h2>
+    {% if draft_warning %}<p class="mb-3 rounded-xl border border-rlm-amber bg-rlm-cream p-3 text-sm" role="status">{{ draft_warning }}</p>{% endif %}
+    <form method="post" enctype="multipart/form-data" class="rlm-form space-y-4" data-hero-form novalidate>{% csrf_token %}
+      {{ form.non_field_errors }}
+      <fieldset class="space-y-3"><legend class="font-bold">Wording</legend>
+        {% include "portal/website/_field.html" with field=form.title %}
+        {% include "portal/website/_field.html" with field=form.subtitle %}
+        <div class="grid gap-3 sm:grid-cols-2">{% include "portal/website/_field.html" with field=form.button_text %}{% include "portal/website/_field.html" with field=form.button_link %}</div>
+        <div class="grid gap-3 sm:grid-cols-2">{% include "portal/website/_field.html" with field=form.button2_text %}{% include "portal/website/_field.html" with field=form.button2_link %}</div>
+        {% include "portal/website/_field.html" with field=form.show_scripture %}
+      </fieldset>
+      <fieldset class="space-y-3"><legend class="font-bold">Layout</legend>
+        <div class="grid gap-3 sm:grid-cols-2">{% include "portal/website/_field.html" with field=form.text_align %}{% include "portal/website/_field.html" with field=form.text_tone %}</div>
+      </fieldset>
+      <fieldset class="space-y-3"><legend class="font-bold">Background</legend>
+        {% include "portal/website/_field.html" with field=form.background_type %}
+        <p class="text-xs text-rlm-grey">If the photo, or the video and its poster, are missing, visitors see the theme colour instead.</p>
+        <div data-show-for="photo">{% include "portal/website/_field.html" with field=form.image %}</div>
+        <div data-show-for="photo video">{% include "portal/website/_field.html" with field=form.image_alt %}</div>
+        <div data-show-for="video" class="space-y-3">
+          <p class="rounded-xl bg-rlm-cream p-3 text-xs">Recommended: a silent loop of 10 seconds or less, 1080p, under 10 MB (MP4 with H.264, or WebM). Maximum 15 seconds and 15 MB. It does not play for visitors who prefer reduced motion, use data saver or a slow connection: they see the poster.</p>
+          {% include "portal/website/_field.html" with field=form.video %}
+          {% include "portal/website/_field.html" with field=form.video_poster %}
+        </div>
+        <div data-show-for="photo video" class="grid gap-3 sm:grid-cols-3">
+          {% include "portal/website/_field.html" with field=form.focal_x %}
+          {% include "portal/website/_field.html" with field=form.focal_y %}
+          {% include "portal/website/_field.html" with field=form.overlay_opacity %}
+        </div>
+      </fieldset>
+      <div class="flex flex-wrap gap-3"><button type="submit" name="action" value="save" class="btn-primary">Save draft</button><button type="submit" name="action" value="discard" class="btn-outline" formnovalidate data-confirm="Throw away the draft and start again from the live hero?">Discard draft</button></div>
+    </form>
+  </section>
+
+  <section class="panel xl:sticky xl:top-4 xl:self-start" aria-labelledby="live-title">
+    <h2 class="panel-title" id="live-title">Live preview of the draft</h2>
+    <p class="text-xs text-rlm-grey">Updates as you type. Nothing is saved until you press Save draft.</p>
+    {% with bg_img=draft.image|rendition:960 poster=draft.video_poster|rendition:960 %}
+    <div class="hero-mini hero-tone-{{ draft.text_tone }} hero-align-{{ draft.text_align }}" data-hero-preview data-luminance="{{ draft.image_luminance|default_if_none:'' }}" data-poster-luminance="{{ draft.poster_luminance|default_if_none:'' }}" data-photo="{{ bg_img }}" data-poster="{{ poster }}" data-type="{{ draft.background_type }}">
+      <img alt="" class="hero-mini-img" data-preview-img hidden>
+      <div class="hero-mini-shade" data-preview-shade hidden></div>
+      <div class="hero-mini-text">
+        <p class="hero-mini-eyebrow">{{ site.ministry_name }}</p>
+        <p class="hero-mini-title" data-preview-title>{{ draft.title }}</p>
+        <p class="hero-mini-sub" data-preview-subtitle>{{ draft.subtitle }}</p>
+        <p class="hero-mini-buttons"><span class="btn-primary btn-sm" data-preview-button1>{{ draft.button_text }}</span> <span class="btn-outline-light btn-sm" data-preview-button2>{{ draft.button2_text }}</span></p>
+      </div>
+    </div>
+    {% endwith %}
+    <p class="mt-3 text-sm" data-preview-contrast aria-live="polite"></p>
+  </section>
+</div>
+<script src="{% static 'js/hero-editor.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+{% endblock %}

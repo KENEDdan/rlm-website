@@ -14,7 +14,7 @@
     <nav aria-label="Main" class="hidden lg:block">
       <ul class="flex items-center gap-0.5 whitespace-nowrap text-sm font-semibold xl:gap-1">
         <li><a href="{{ about_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if request.path == about_url %}text-rlm-flame-dark{% endif %}" {% if request.path == about_url %}aria-current="page"{% endif %}>About</a></li>
-        <li><a href="{{ programs_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if programs_url in request.path %}text-rlm-flame-dark{% endif %}">Programs</a></li>
+        <li><a href="{{ programs_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if programs_url in request.path %}text-rlm-flame-dark{% endif %}">Activities</a></li>
         <li><a href="{{ branches_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if branches_url in request.path %}text-rlm-flame-dark{% endif %}">Branches</a></li>
         <li><a href="{{ events_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if events_url in request.path %}text-rlm-flame-dark{% endif %}">Events</a></li>
         <li><a href="{{ media_url }}" class="rounded-full px-3 py-2 hover:bg-rlm-cream {% if media_url in request.path %}text-rlm-flame-dark{% endif %}">Media</a></li>
@@ -35,7 +35,7 @@
           <ul class="divide-y divide-rlm-line text-base font-semibold">
             <li><a class="block py-3" href="{{ about_url }}">About</a></li>
             <li><a class="block py-3" href="{% url 'leadership:list' %}">Leadership</a></li>
-            <li><a class="block py-3" href="{{ programs_url }}">Programs</a></li>
+            <li><a class="block py-3" href="{{ programs_url }}">Activities</a></li>
             <li><a class="block py-3" href="{{ branches_url }}">Branches</a></li>
             <li><a class="block py-3" href="{{ events_url }}">Events</a></li>
             <li><a class="block py-3" href="{{ media_url }}">Media &amp; gallery</a></li>

@@ -64,10 +64,12 @@ def test_page_headings_come_from_the_admin(client: Client, key: str, url: str) -
 
 
 def test_home_hero_sections_cards_cta_and_footer_are_editable(client: Client) -> None:
-    from core.models import HeroSlide
+    from core.models import HeroSettings, HeroSlide
 
-    HeroSlide.objects.update(is_active=False)  # the "home_hero" text is the fallback when no slide is live
-    _edit("home_hero", heading="Hope Restored.", highlight="Generations Rising.", intro="Hero intro")
+    HeroSlide.objects.update(is_active=False)  # the hero settings are shown when no slide is live
+    HeroSettings.objects.filter(state="live").update(
+        title="Hope Restored. Generations Rising.", subtitle="Hero intro"
+    )
     _edit("home_card_prayer", heading="Pray with us", intro="Card text")
     _edit("cta_band", heading="Join the rebuilding", intro="CTA text")
     _edit("footer_newsletter", heading="Keep in touch", intro="Footer text")
@@ -258,10 +260,10 @@ def _png() -> SimpleUploadedFile:
 
 
 def test_uploaded_logos_replace_built_in_ones(client: Client, settings, tmp_path) -> None:  # type: ignore[no-untyped-def]
-    from core.models import SiteSettings
+    from core.models import SiteContent
 
     settings.MEDIA_ROOT = tmp_path
-    site = SiteSettings.load()
+    site = SiteContent.load()
     site.logo = _png()
     site.logo_on_dark = _png()
     site.save()
@@ -273,9 +275,9 @@ def test_uploaded_logos_replace_built_in_ones(client: Client, settings, tmp_path
 
 
 def test_header_wordmark_follows_ministry_name(client: Client) -> None:
-    from core.models import SiteSettings
+    from core.models import SiteContent
 
-    site = SiteSettings.load()
+    site = SiteContent.load()
     site.ministry_name = "Restoration Fellowship Church"
     site.save()
     html = client.get("/contact/").content.decode()

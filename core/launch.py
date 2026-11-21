@@ -46,21 +46,21 @@ def _one(ok: bool, area: str, problem: str, fix: str, level: str = WARNING, good
 # ------------------------------------------------------------------ content and identity
 @check
 def ministry_text() -> list[Check]:
-    from .models import SiteSettings
+    from .models import SiteContent
 
-    site = SiteSettings.load()
+    site = SiteContent.load()
     placeholder = "placeholder" in f"{site.about_intro} {site.about_body}".lower()
     return _one(
         not placeholder and bool(site.about_intro),
         "About text",
         "The About text still contains placeholder wording.",
-        "Admin > Site settings > About: replace with the official text from the brief.",
+        "Admin > Site content > About: replace with the official text from the brief.",
         BLOCKER,
     ) + _one(
         bool(site.vision and site.mission),
         "Vision and mission",
         "Vision and/or mission are empty (the home page hides the section).",
-        "Admin > Site settings: fill in Vision and Mission.",
+        "Portal > Website > Vision and mission.",
     )
 
 
@@ -86,12 +86,12 @@ def legal_pages() -> list[Check]:
 
 @check
 def contacts() -> list[Check]:
-    from .models import SiteSettings, SocialLink
+    from .models import SiteContent, SiteSettings, SocialLink
 
-    site = SiteSettings.load()
+    site = SiteContent.load()
     return (
         _one(
-            bool(site.notification_email),
+            bool(SiteSettings.load().notification_email),
             "Staff alerts",
             "No notification email: nobody is told about new prayer requests, volunteers or messages.",
             "Admin > Site settings > Notification email (a ministry inbox, not a personal one).",
@@ -101,13 +101,13 @@ def contacts() -> list[Check]:
             bool(site.public_email or site.public_phone),
             "Public contact",
             "No public email or phone is shown on the site.",
-            "Admin > Site settings: Public email / Public phone.",
+            "Admin > Site content: Public email / Public phone.",
         )
         + _one(
             bool(site.whatsapp_number),
             "WhatsApp button",
             "No WhatsApp number: the floating WhatsApp button is hidden.",
-            "Admin > Site settings > WhatsApp number (international format).",
+            "Admin > Site content > WhatsApp number (international format).",
         )
         + _one(
             SocialLink.objects.filter(is_published=True).exists(),
@@ -120,14 +120,14 @@ def contacts() -> list[Check]:
 
 @check
 def branding() -> list[Check]:
-    from .models import SiteSettings
+    from .models import SiteContent
 
-    site = SiteSettings.load()
+    site = SiteContent.load()
     return _one(
         bool(site.logo and site.logo_on_dark),
         "Logos",
         "The built-in logos are in use (fine if they are the official ones).",
-        "Admin > Site settings > Logo / Logo on dark background (PNG with transparency).",
+        "Admin > Site content > Logo / Logo on dark background (PNG or WebP with transparency).",
     )
 
 

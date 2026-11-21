@@ -29,7 +29,7 @@ from media_library.models import Album, Photo, Testimony, Video
 from news.models import Post
 from newsletter.models import Subscriber
 from prayer.models import PrayerRequest
-from programs.models import Program
+from programs.models import Activity
 from registrations.models import EventRegistration, VolunteerApplication
 from resources.models import Resource, ResourceCategory, Series
 
@@ -107,7 +107,7 @@ class Command(BaseCommand):
         now = timezone.now()
         juba = Branch.objects.filter(slug="juba").first()
         yei = Branch.objects.filter(slug="yei").first()
-        program = Program.objects.order_by("order").first()
+        activity = Activity.objects.filter(slug="annual-youth-revival-conference").first()
 
         def get_or_create(model: Any, slug: str, image_field: str | None = None, **fields: Any) -> Any:
             obj, new = model.objects.get_or_create(slug=DEMO + slug, defaults=fields)
@@ -126,7 +126,7 @@ class Command(BaseCommand):
             title="DEMO Youth Revival Conference",
             summary="Three days of worship, teaching and prayer (demo).",
             description="This is demo content for local development.\n\nReplace it in the admin.",
-            program=program,
+            activity=activity,
             branch=juba,
             start=now + timedelta(days=21),
             end=now + timedelta(days=23),

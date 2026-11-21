@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{{ category.seo_title|default:category.title }} · {{ site.ministry_name }}{% endblock %}
+{% block description %}{{ category.seo_description|default:category.summary|default:site.meta_description|truncatechars:158 }}{% endblock %}
+{% block og_title %}{{ category.title }}{% endblock %}{% block og_description %}{{ category.summary|default:site.meta_description }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow="Our activities" heading=category.title intro=category.summary %}
+{% if category.body %}<section class="section pb-0"><div class="container-rlm"><div class="prose-rlm max-w-3xl">{{ category.body|paragraphs }}</div></div></section>{% endif %}
+{% include "activities/_category_section.html" with activities=category.activities.all %}
+<section class="section pt-0"><div class="container-rlm"><a href="{% url 'programs:list' %}" class="btn-outline btn-sm">All activities</a></div></section>
+{% include "includes/cta_band.html" %}
+{% endblock %}

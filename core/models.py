@@ -4,13 +4,13 @@ from typing import Any, ClassVar
 
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 
-from .uploads import RandomUploadTo, SafeImageField
+from .uploads import RandomUploadTo, SafeFileField, SafeImageField
 from .validators import SAFE_LINK_HELP, is_safe_link, validate_safe_link
 
 SITE_SETTINGS_CACHE_KEY = "core:site-settings:v1"
@@ -71,56 +71,27 @@ class SingletonModel(TimeStampedModel):
 
 
 class SiteSettings(SingletonModel):
+    """SYSTEM settings (Super Admin only): staff alerts, analytics, retention, approval rules.
+
+    Everything visitors see (name, logos, vision, mission, contacts, footer) is in ``SiteContent``, which the
+    Technical Team edits. Bank and payment details are in ``giving.GivingSettings`` (Finance only). Three
+    models, so each role's access is structural (Django permissions per model), not hidden form fields.
+    """
+
     class Analytics(models.TextChoices):
         NONE = "none", "Disabled"
         PLAUSIBLE = "plausible", "Plausible (cookieless)"
         UMAMI = "umami", "Umami (cookieless)"
 
-    ministry_name = models.CharField(max_length=120, default="Rebuilding Lives Ministry")
-    short_name = models.CharField(max_length=20, default="RLM")
-    tagline = models.CharField(max_length=160, default="Rebuilding Lives. Reviving Generations.")
-    scripture_reference = models.CharField(max_length=40, default="Acts 15:16")
-    scripture_text = models.TextField(
-        default=(
-            "After this I will return, and will build again the tabernacle of David, which is fallen "
-            "down; and I will build again the ruins thereof, and I will set it up."
-        ),
-        help_text="Shown with the scripture reference. Choose the translation the ministry prefers.",
-    )
-    vision = models.TextField(blank=True)
-    mission = models.TextField(blank=True)
-    about_intro = models.TextField(blank=True, help_text="Short paragraph used on the home page.")
-    about_body = models.TextField(
-        blank=True, help_text="Full About page text. Blank lines separate paragraphs."
-    )
-    logo = SafeImageField(
-        upload_to=RandomUploadTo("brand"),
-        policy="logo",
-        blank=True,
-        help_text="Logo for LIGHT backgrounds (site header). PNG with transparency works best. "
-        "Leave empty to use the built-in logo.",
-    )
-    logo_on_dark = SafeImageField(
-        upload_to=RandomUploadTo("brand"),
-        policy="logo",
-        blank=True,
-        help_text="Logo for DARK backgrounds (footer, home page hero, link previews). Leave empty for the built-in one.",
-    )
-
     notification_email = models.EmailField(
         blank=True,
         help_text="Where 'new submission' alerts are sent. They never contain the submission itself.",
     )
-    public_email = models.EmailField(blank=True)
-    public_phone = models.CharField(max_length=30, blank=True, validators=[phone_validator])
-    whatsapp_number = models.CharField(
-        max_length=30,
-        blank=True,
-        validators=[phone_validator],
-        help_text="International format. Enables the floating WhatsApp button.",
+    vision_mission_approval_required = models.BooleanField(
+        default=True,
+        help_text="Changes to the Vision and Mission need a draft, preview and approval by the Super Admin or "
+        "Executive Director before they are published.",
     )
-    address = models.TextField(blank=True)
-    footer_text = models.CharField(max_length=300, blank=True)
 
     analytics_provider = models.CharField(max_length=20, choices=Analytics.choices, default=Analytics.NONE)
     analytics_script_url = models.URLField(
@@ -176,9 +147,101 @@ class SiteSettings(SingletonModel):
             self.analytics_script_url and self.analytics_site_id
         )
 
+
+SITE_CONTENT_CACHE_KEY = "core:site-content:v1"
+VISION_MISSION_FIELDS = ("vision", "mission")
+
+
+class SiteContent(SingletonModel):
+    """What visitors see across the site: identity, logos, Vision and Mission, public contacts, footer.
+
+    Managed by the Technical Team (Website Administration) and the Super Admin. Vision and Mission are the
+    single source of truth for the About page, home page, footer and default meta description; while
+    ``SiteSettings.vision_mission_approval_required`` is on they change only through ``ContentChangeRequest``.
+    """
+
+    ministry_name = models.CharField(max_length=120, default="Rebuilding Lives Ministry")
+    short_name = models.CharField(max_length=20, default="RLM")
+    tagline = models.CharField(max_length=160, default="Rebuilding Lives. Reviving Generations.")
+    scripture_reference = models.CharField(max_length=40, default="Acts 15:16")
+    scripture_text = models.TextField(
+        default=(
+            "After this I will return, and will build again the tabernacle of David, which is fallen "
+            "down; and I will build again the ruins thereof, and I will set it up."
+        ),
+        help_text="Shown with the scripture reference. Choose the translation the ministry prefers.",
+    )
+    # Not editable in any form: changed only through ContentChangeRequest (draft -> preview -> approval ->
+    # publish, with version history and rollback). Seeded verbatim by migration core 0015.
+    vision = models.TextField(blank=True, editable=False)
+    mission = models.TextField(blank=True, editable=False)
+    about_intro = models.TextField(blank=True, help_text="Short paragraph used on the home page.")
+    about_body = models.TextField(
+        blank=True, help_text="Full About page text. Blank lines separate paragraphs."
+    )
+    logo = SafeImageField(
+        upload_to=RandomUploadTo("brand"),
+        policy="logo",
+        blank=True,
+        help_text="Logo for LIGHT backgrounds (site header). PNG with transparency works best. "
+        "Leave empty to use the built-in logo.",
+    )
+    logo_on_dark = SafeImageField(
+        upload_to=RandomUploadTo("brand"),
+        policy="logo",
+        blank=True,
+        help_text="Logo for DARK backgrounds (footer, home page hero, link previews). Leave empty for the built-in one.",
+    )
+
+    favicon = SafeImageField(
+        upload_to=RandomUploadTo("brand"),
+        policy="favicon",
+        blank=True,
+        help_text="Square PNG, at least 512 x 512 pixels. Leave empty for the built-in icon.",
+    )
+    public_email = models.EmailField(blank=True)
+    public_phone = models.CharField(max_length=30, blank=True, validators=[phone_validator])
+    whatsapp_number = models.CharField(
+        max_length=30,
+        blank=True,
+        validators=[phone_validator],
+        help_text="International format. Enables the floating WhatsApp button.",
+    )
+    address = models.TextField(blank=True)
+    footer_text = models.CharField(max_length=300, blank=True)
+
+    vision_mission_updated_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "site content"
+        verbose_name_plural = "site content"
+
+    def __str__(self) -> str:
+        return "Site content"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        super().save(*args, **kwargs)
+        cache.delete(SITE_CONTENT_CACHE_KEY)
+
+    @classmethod
+    def get(cls) -> SiteContent:
+        obj = cache.get(SITE_CONTENT_CACHE_KEY)
+        if obj is None:
+            obj = cls.load()
+            cache.set(SITE_CONTENT_CACHE_KEY, obj, 300)
+        return obj
+
     @property
     def whatsapp_digits(self) -> str:
         return "".join(ch for ch in self.whatsapp_number if ch.isdigit())
+
+    @property
+    def meta_description(self) -> str:
+        """Default meta description: the Mission (single source), cut at a word to fit 158 characters."""
+        text = " ".join(self.mission.split())
+        if len(text) <= 158:
+            return text
+        return text[:155].rsplit(" ", 1)[0] + "..."
 
 
 class SocialLink(TimeStampedModel):
@@ -430,39 +493,213 @@ class HeroSlideQuerySet(models.QuerySet):
         )
 
 
-class HeroSlide(TimeStampedModel):
-    """One slide of the home page hero slider (managed by Media & Communications and the Founder)."""
+class HeroContent(TimeStampedModel):
+    """Wording and background shared by the home page hero (``HeroSettings``) and each slider slide.
 
-    title = models.CharField(max_length=120, help_text="Large heading. Keep it short (under 60 characters).")
-    subtitle = models.TextField(
-        max_length=300, blank=True, help_text="One or two sentences under the heading (optional)."
+    Background: "Theme colour" (default; brand black with the flame gradient), "Photo" or "Video". Whatever is
+    chosen, a missing photo, video or poster falls back cleanly to the theme colour (``effective_background``).
+    """
+
+    class Background(models.TextChoices):
+        THEME = "theme", "Theme colour (brand black with the flame accent)"
+        PHOTO = "photo", "Photo"
+        VIDEO = "video", "Video (short silent loop)"
+
+    class Align(models.TextChoices):
+        LEFT = "left", "Left"
+        CENTER = "center", "Centre"
+
+    class Tone(models.TextChoices):
+        LIGHT = "light", "Light text (for dark backgrounds)"
+        DARK = "dark", "Dark text (for light backgrounds)"
+
+    title = models.CharField(
+        "headline", max_length=120, help_text="Large heading. Keep it short (under 60 characters)."
     )
+    subtitle = models.TextField(
+        "sub-headline",
+        max_length=300,
+        blank=True,
+        help_text="One or two sentences under the heading (optional).",
+    )
+    background_type = models.CharField(max_length=10, choices=Background.choices, default=Background.THEME)
     image = SafeImageField(
+        "background photo",
         upload_to=RandomUploadTo("hero"),
         policy="hero_photo",
         blank=True,
-        help_text="Landscape photo, ideally 1920 x 900 pixels (JPG, PNG or WebP, max size as for all "
-        "uploads). A dark shade is added automatically so the text stays readable. Leave empty for the "
-        "dark flame background with the logo.",
+        help_text="Landscape photo, at least 1600 pixels wide (ideally 1920 x 900). JPEG, PNG or WebP, max 5 MB. "
+        "Location data is removed automatically.",
     )
     image_alt = models.CharField(
         max_length=200,
         blank=True,
         help_text="Describe the photo for people using screen readers. Leave empty if it is only decoration.",
     )
+    focal_x = models.PositiveSmallIntegerField(
+        "focal point across (%)",
+        default=50,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Which part of the photo stays visible on narrow screens: 0 = left edge, 100 = right edge.",
+    )
+    focal_y = models.PositiveSmallIntegerField(
+        "focal point down (%)",
+        default=50,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="0 = top edge, 100 = bottom edge.",
+    )
+    overlay_opacity = models.PositiveSmallIntegerField(
+        "dark overlay (%)",
+        default=45,
+        validators=[MinValueValidator(0), MaxValueValidator(80)],
+        help_text="0 to 80. A darker overlay keeps light text readable on bright photos.",
+    )
+    video = SafeFileField(
+        "background video",
+        upload_to=RandomUploadTo("hero-video"),
+        policy="hero_video",
+        blank=True,
+        help_text="MP4 (H.264) or WebM, max 15 MB and 15 seconds, no sound. Recommended: a loop of 10 seconds or "
+        "less, 1080p, under 10 MB. Visitors who prefer reduced motion, use data saver or a slow connection see "
+        "the poster instead.",
+    )
+    video_poster = SafeImageField(
+        "video poster image",
+        upload_to=RandomUploadTo("hero"),
+        policy="hero_photo",
+        blank=True,
+        help_text="REQUIRED with a video: shown before the video loads and instead of it on slow connections.",
+    )
+    text_align = models.CharField(max_length=10, choices=Align.choices, default=Align.LEFT)
+    text_tone = models.CharField("text colour", max_length=10, choices=Tone.choices, default=Tone.LIGHT)
     button_text = models.CharField(
+        "button 1 label",
         max_length=40,
         blank=True,
         help_text="e.g. Give, Volunteer, Register, Watch. Leave empty for no button.",
     )
     button_link = models.CharField(
-        max_length=300, blank=True, validators=[validate_safe_link], help_text=SAFE_LINK_HELP
+        "button 1 link", max_length=300, blank=True, validators=[validate_safe_link], help_text=SAFE_LINK_HELP
+    )
+    button2_text = models.CharField("button 2 label", max_length=40, blank=True)
+    button2_link = models.CharField(
+        "button 2 link", max_length=300, blank=True, validators=[validate_safe_link], help_text=SAFE_LINK_HELP
     )
     show_scripture = models.BooleanField(
-        default=False, help_text="Show the scripture from Site settings (Acts 15:16) under the text."
+        default=False, help_text="Show the scripture from Site content (Acts 15:16) under the text."
     )
+    # Brightest-area luminance (0-1) of the photo / poster, measured when it is uploaded (contrast check).
+    image_luminance = models.FloatField(null=True, blank=True, editable=False)
+    poster_luminance = models.FloatField(null=True, blank=True, editable=False)
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        from .hero import measure_luminance
+
+        # A photo or video just uploaded while the type is still "Theme colour" is meant to be shown.
+        if self.background_type == self.Background.THEME:
+            if self.video and not self.video._committed:
+                self.background_type = self.Background.VIDEO
+            elif self.image and not self.image._committed:
+                self.background_type = self.Background.PHOTO
+        for field, target in (("image", "image_luminance"), ("video_poster", "poster_luminance")):
+            file = getattr(self, field)
+            if not file:
+                setattr(self, target, None)
+            elif not file._committed or getattr(self, target) is None:
+                setattr(self, target, measure_luminance(file))
+        super().save(*args, **kwargs)
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        for text, link, n in (("button_text", "button_link", "1"), ("button2_text", "button2_link", "2")):
+            if getattr(self, text) and not getattr(self, link):
+                errors[link] = f"Add the page button {n} should open."
+            if getattr(self, link) and not getattr(self, text):
+                errors[text] = f"Add the words shown on button {n}."
+        if self.video and not self.video_poster:
+            errors["video_poster"] = "A poster image is required with a background video."
+        if errors:
+            raise ValidationError(errors)
+
+    # ------------------------------------------------------------------ display helpers
+    @property
+    def effective_background(self) -> str:
+        """What visitors actually get: a chosen photo/video only when its files exist, else the theme colour."""
+        if self.background_type == self.Background.PHOTO and self.image:
+            return "photo"
+        if self.background_type == self.Background.VIDEO and self.video and self.video_poster:
+            return "video"
+        return "theme"
+
+    @property
+    def background_image(self) -> Any:
+        """The image behind the text: the photo, or the video's poster."""
+        return {"photo": self.image, "video": self.video_poster}.get(self.effective_background)
+
+    @property
+    def background_luminance(self) -> float | None:
+        return {"photo": self.image_luminance, "video": self.poster_luminance}.get(self.effective_background)
+
+    @property
+    def contrast_ratio(self) -> float:
+        from .hero import contrast_ratio
+
+        return contrast_ratio(
+            self.effective_background, self.background_luminance, self.overlay_opacity, self.text_tone
+        )
+
+    @property
+    def contrast_ok(self) -> bool:
+        from .hero import AA_NORMAL
+
+        return self.contrast_ratio >= AA_NORMAL
+
+    @property
+    def safe_button_link(self) -> str:
+        """The button link, re-checked at display time (defence in depth against rows saved outside forms)."""
+        return self.button_link if is_safe_link(self.button_link) else ""
+
+    @property
+    def safe_button2_link(self) -> str:
+        return self.button2_link if is_safe_link(self.button2_link) else ""
+
+    @property
+    def buttons(self) -> list[tuple[str, str]]:
+        out = []
+        if self.button_text and self.safe_button_link:
+            out.append((self.button_text, self.safe_button_link))
+        if self.button2_text and self.safe_button2_link:
+            out.append((self.button2_text, self.safe_button2_link))
+        return out
+
+    @property
+    def dom_id(self) -> str:
+        return f"hero-{self._meta.model_name}-{self.pk or 'new'}"
+
+    @property
+    def video_mime(self) -> str:
+        return "video/webm" if self.video and self.video.name.lower().endswith(".webm") else "video/mp4"
+
+    @property
+    def object_position(self) -> str:
+        return f"{self.focal_x}% {self.focal_y}%"
+
+    @property
+    def overlay_alpha(self) -> str:
+        return f"{self.overlay_opacity / 100:.2f}"
+
+
+class HeroSlide(HeroContent):
+    """One slide of the home page hero slider (Technical Team, Media & Communications and the Founder)."""
+
     order = models.PositiveSmallIntegerField(default=0, help_text="Lower numbers show first.")
-    is_active = models.BooleanField(default=True, help_text="Untick to hide the slide without deleting it.")
+    is_active = models.BooleanField(
+        default=True, help_text="Untick to hide the slide without deleting it (preview it first)."
+    )
     start_at = models.DateTimeField(
         null=True, blank=True, help_text="Optional: do not show before this date and time."
     )
@@ -481,20 +718,8 @@ class HeroSlide(TimeStampedModel):
 
     def clean(self) -> None:
         super().clean()
-        errors: dict[str, str] = {}
         if self.start_at and self.end_at and self.end_at <= self.start_at:
-            errors["end_at"] = "The end must be after the start."
-        if self.button_text and not self.button_link:
-            errors["button_link"] = "Add the page the button should open."
-        if self.button_link and not self.button_text:
-            errors["button_text"] = "Add the words shown on the button."
-        if errors:
-            raise ValidationError(errors)
-
-    @property
-    def safe_button_link(self) -> str:
-        """The button link, re-checked at display time (defence in depth against rows saved outside forms)."""
-        return self.button_link if is_safe_link(self.button_link) else ""
+            raise ValidationError({"end_at": "The end must be after the start."})
 
     @property
     def status(self) -> str:
@@ -506,6 +731,68 @@ class HeroSlide(TimeStampedModel):
         if self.end_at and self.end_at <= now:
             return "Ended"
         return "Showing"
+
+
+class HeroSettings(HeroContent):
+    """The home page hero shown when no slider slides are live. Two rows: the DRAFT the Technical Team edits and
+    previews, and the LIVE one visitors see. Publishing copies the draft to live (versioned, so the previous live
+    hero can be restored with "Revert to previous")."""
+
+    class State(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        LIVE = "live", "Live"
+
+    state = models.CharField(max_length=5, choices=State.choices, unique=True, editable=False)
+    published_at = models.DateTimeField(null=True, blank=True, editable=False)
+    published_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", editable=False
+    )
+
+    COPY_FIELDS = (
+        "title", "subtitle", "background_type", "image", "image_alt", "focal_x", "focal_y", "overlay_opacity",
+        "video", "video_poster", "text_align", "text_tone", "button_text", "button_link", "button2_text",
+        "button2_link", "show_scripture", "image_luminance", "poster_luminance",
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "hero settings"
+        verbose_name_plural = "hero settings"
+
+    def __str__(self) -> str:
+        return f"Home hero ({self.get_state_display().lower()})"
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        raise PermissionError("The hero settings cannot be deleted.")
+
+    @classmethod
+    def get(cls, state: str) -> HeroSettings:
+        obj = cls.objects.filter(state=state).first()
+        if obj is None:
+            live = cls.objects.filter(state=cls.State.LIVE).first()
+            obj = cls(state=state, title="Rebuilding Lives. Reviving Generations.")
+            if live is not None:
+                obj.copy_from(live)
+            obj.save()
+        return obj
+
+    @classmethod
+    def live(cls) -> HeroSettings:
+        return cls.get(cls.State.LIVE)
+
+    @classmethod
+    def draft(cls) -> HeroSettings:
+        return cls.get(cls.State.DRAFT)
+
+    def copy_from(self, other: HeroContent) -> None:
+        for name in self.COPY_FIELDS:
+            setattr(self, name, getattr(other, name))
+
+    def differs_from(self, other: HeroContent) -> bool:
+        def value(obj: Any, name: str) -> Any:
+            v = getattr(obj, name)
+            return v.name if hasattr(v, "name") and not isinstance(v, str) else v
+
+        return any(value(self, n) != value(other, n) for n in self.COPY_FIELDS)
 
 
 class Partner(TimeStampedModel):
@@ -596,3 +883,124 @@ class UploadLimit(TimeStampedModel):
             errors["min_width"] = "Only image policies have a minimum width."
         if errors:
             raise ValidationError(errors)
+
+
+# ---------------------------------------------------------------------------------------------- website versions
+class AppendOnlyModel(models.Model):
+    """Rows are written once: no updates (after creation) and no deletes, even from the admin."""
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk and not getattr(self, "_allow_update", False):
+            raise PermissionError(f"{type(self).__name__} rows cannot be changed.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> Any:
+        raise PermissionError(f"{type(self).__name__} rows cannot be deleted.")
+
+
+class ContentVersion(AppendOnlyModel):
+    """A snapshot of a website-content record after every change (who, when, what), for rollback.
+
+    Written by ``core.versioning`` for every Technical Team model, in the admin and the portal.
+    """
+
+    class Action(models.TextChoices):
+        ADD = "add", "Added"
+        CHANGE = "change", "Changed"
+        DELETE = "delete", "Deleted"
+        PUBLISH = "publish", "Published"
+        ROLLBACK = "rollback", "Rolled back"
+
+    content_type = models.ForeignKey("contenttypes.ContentType", on_delete=models.PROTECT, related_name="+")
+    object_id = models.CharField(max_length=40, db_index=True)
+    object_repr = models.CharField(max_length=200)
+    action = models.CharField(max_length=10, choices=Action.choices)
+    data = models.JSONField(help_text="Field values after the change (files as stored names).")
+    changed_fields = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    created_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    note = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering: ClassVar = ["-created_at", "-pk"]
+        indexes: ClassVar = [models.Index(fields=["content_type", "object_id", "-created_at"])]
+        verbose_name = "content version"
+
+    def __str__(self) -> str:
+        return f"{self.object_repr}: {self.get_action_display()} {self.created_at:%d %b %Y %H:%M}"
+
+    @property
+    def model_label(self) -> str:
+        return f"{self.content_type.app_label}.{self.content_type.model}"
+
+
+class ContentChangeRequest(TimeStampedModel):
+    """A proposed new Vision or Mission: draft -> preview -> (approval) -> publish. Published rows are the
+    version history; rolling back proposes an earlier published text again."""
+
+    class Field(models.TextChoices):
+        VISION = "vision", "Vision"
+        MISSION = "mission", "Mission"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Waiting for approval"
+        APPROVED = "approved", "Approved, ready to publish"
+        REJECTED = "rejected", "Not approved"
+        PUBLISHED = "published", "Published"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+        SUPERSEDED = "superseded", "Replaced by a later change"
+
+    field = models.CharField(max_length=10, choices=Field.choices)
+    text = models.TextField(max_length=2000)
+    previous_text = models.TextField(blank=True, editable=False)
+    reason = models.CharField(max_length=300, blank=True, help_text="Why the wording should change.")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT, db_index=True)
+    rollback_of = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="+", editable=False
+    )
+    created_by = models.ForeignKey(
+        "accounts.User", null=True, on_delete=models.SET_NULL, related_name="+", editable=False
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True, editable=False)
+    decided_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", editable=False
+    )
+    decided_at = models.DateTimeField(null=True, blank=True, editable=False)
+    decision_note = models.CharField(max_length=300, blank=True, editable=False)
+    published_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+", editable=False
+    )
+    published_at = models.DateTimeField(null=True, blank=True, editable=False, db_index=True)
+    approval_was_required = models.BooleanField(default=True, editable=False)
+
+    class Meta:
+        ordering: ClassVar = ["-created_at"]
+        verbose_name = "vision/mission change"
+
+    def __str__(self) -> str:
+        return f"{self.get_field_display()} change #{self.pk} ({self.get_status_display()})"
+
+    @property
+    def audit_label(self) -> str:
+        return f"{self.field} change #{self.pk}"
+
+
+class BackupRun(models.Model):
+    """One nightly backup result, written by docker/backup/backup.sh (shown on the Website dashboard)."""
+
+    finished_at = models.DateTimeField(db_index=True)
+    ok = models.BooleanField()
+    detail = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering: ClassVar = ["-finished_at"]
+        get_latest_by = "finished_at"
+
+    def __str__(self) -> str:
+        return f"Backup {'OK' if self.ok else 'FAILED'} {self.finished_at:%d %b %Y %H:%M}"

@@ -27,6 +27,7 @@ from core.admin_mixins import Echo, csv_safe
 
 from . import reports
 from .access import HEAD, MEMBER, get_access, portal_view
+from .activity_panel import activity_rows
 from .dashboards import DASHBOARDS, KPI, PERIOD_CHOICES, Dashboard, financial_years, read_filters
 from .models import Department
 from .resources import Resource, format_value, get_resource, resources_for
@@ -77,6 +78,7 @@ def dashboard(request: HttpRequest, department: str) -> HttpResponse:
         "can_export": access.is_head(department),
         "indicators": reports.indicator_progress(department),
         "reports": reports.recent_reports(department),
+        "activities": activity_rows(access, department),
     }
     if is_htmx(request):
         return render(request, "portal/_dashboard_body.html", context)

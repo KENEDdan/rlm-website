@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load rlm %}
+{% block title %}{{ activity.seo_title|default:activity.title }} · {{ site.ministry_name }}{% endblock %}
+{% block description %}{{ activity.seo_description|default:activity.summary }}{% endblock %}
+{% block og_title %}{{ activity.title }}{% endblock %}{% block og_description %}{{ activity.summary }}{% endblock %}
+{% block content %}
+{% include "includes/page_header.html" with eyebrow=activity.category.title heading=activity.title intro=activity.summary %}
+<section class="section"><div class="container-rlm grid gap-10 lg:grid-cols-12">
+  <div class="lg:col-span-7">
+    <div class="prose-rlm">{{ activity.body|paragraphs|default:activity.summary }}</div>
+    <dl class="mt-8 grid gap-4 sm:grid-cols-2">
+      {% if activity.schedule %}<div class="rounded-2xl bg-rlm-cream p-4"><dt class="text-xs font-bold uppercase tracking-widest text-rlm-grey">When</dt><dd class="mt-1 font-semibold">{{ activity.schedule }}</dd></div>{% endif %}
+      <div class="rounded-2xl bg-rlm-cream p-4"><dt class="text-xs font-bold uppercase tracking-widest text-rlm-grey">Where</dt><dd class="mt-1 font-semibold">{% for branch in activity.branches.all %}<a href="{{ branch.get_absolute_url }}" class="hover:underline">{{ branch.name }}</a>{% if not forloop.last %}, {% endif %}{% empty %}All our branches{% endfor %}</dd></div>
+    </dl>
+    <div class="mt-8 rounded-2xl border border-rlm-line p-6">
+      <h2 class="text-lg font-bold">Get involved</h2>
+      <p class="mt-1 text-sm text-rlm-grey">Serve, pray, attend or support {{ activity.title }}.</p>
+      <div class="mt-4 flex flex-wrap gap-3"><a href="{{ activity.safe_cta_link }}" class="btn-primary">{{ activity.cta_label|default:"Get involved" }}</a><a href="{% url 'giving:give' %}" class="btn-outline">Support this activity</a></div>
+    </div>
+  </div>
+  <div class="relative aspect-[4/3] overflow-hidden rounded-2xl bg-rlm-cream lg:col-span-5">{% if activity.image %}{% responsive_img activity.image activity.image_alt|default:activity.title "(min-width: 1024px) 40vw, 100vw" %}{% else %}<div class="hero-glow flex h-full items-center justify-center text-rlm-flame">{% icon activity.icon "h-16 w-16" %}</div>{% endif %}</div>
+</div></section>
+{% if events %}<section class="section bg-rlm-cream"><div class="container-rlm"><h2 class="section-title">Upcoming events</h2>
+  <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{% for event in events %}{% include "includes/event_card.html" %}{% endfor %}</div></div></section>{% endif %}
+{% if related %}<section class="section"><div class="container-rlm"><h2 class="section-title">More in {{ activity.category.title }}</h2>
+  <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{% for activity in related %}{% include "includes/activity_card.html" %}{% endfor %}</div></div></section>{% endif %}
+{% endblock %}

@@ -8,7 +8,7 @@ from django.urls import reverse
 from branches.models import Branch
 from events.models import Event
 from news.models import Post
-from programs.models import Program
+from programs.models import Activity, ActivityCategory
 from resources.models import Resource
 
 from .models import Page
@@ -63,8 +63,12 @@ class BranchSitemap(PublishedSitemap):
     model = Branch
 
 
-class ProgramSitemap(PublishedSitemap):
-    model = Program
+class ActivitySitemap(PublishedSitemap):
+    model = Activity
+
+
+class ActivityCategorySitemap(PublishedSitemap):
+    model = ActivityCategory
 
 
 class EventSitemap(PublishedSitemap):
@@ -88,7 +92,8 @@ class PageSitemap(PublishedSitemap):
 SITEMAPS = {
     "static": StaticSitemap,
     "branches": BranchSitemap,
-    "programs": ProgramSitemap,
+    "activities": ActivitySitemap,
+    "activity-categories": ActivityCategorySitemap,
     "events": EventSitemap,
     "resources": ResourceSitemap,
     "news": PostSitemap,

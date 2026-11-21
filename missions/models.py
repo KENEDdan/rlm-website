@@ -144,6 +144,14 @@ class Campaign(BudgetApproval, TimeStampedModel):
     )
     location = models.CharField(max_length=200, blank=True)
     branch = models.ForeignKey("branches.Branch", null=True, blank=True, on_delete=models.SET_NULL)
+    activity = models.ForeignKey(
+        "programs.Activity",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="campaigns",
+        help_text="Ministry activity, e.g. School Outreach Programme or Open-Air Crusades.",
+    )
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
     team = models.ForeignKey(Team, null=True, blank=True, on_delete=models.SET_NULL, related_name="campaigns")

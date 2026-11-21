@@ -41,11 +41,19 @@ def _nav(request: HttpRequest) -> dict[str, Any]:
                 ),
             }
         )
+    from core import vision_mission
     from finance.approvals import is_approver, pending_items
     from finance.executive import can_view as executive_can_view
+    from giving import bank_details
 
     approver = is_approver(request.user)
+    vm_approver = vision_mission.is_approver(request.user)
     return {
+        "show_website": access.is_technical,
+        "show_bank_details": bank_details.can_view(request.user),
+        "bank_pending": bank_details.pending() is not None if bank_details.can_view(request.user) else False,
+        "show_vm_approvals": vm_approver and not access.is_technical,
+        "vm_pending": vision_mission.open_changes().filter(status="submitted").count() if vm_approver else 0,
         "approvals_url": reverse("portal:finance:approvals") if (approver or access.is_super_admin) else "",
         "approvals_pending": len(pending_items()) if approver else 0,
         "access": access,

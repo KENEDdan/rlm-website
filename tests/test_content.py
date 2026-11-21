@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from branches.models import Branch, Country
-from core.models import SiteSettings
+from core.models import SiteContent, SiteSettings
 from events.models import Event
 from leadership.models import Leader
 from media_library.models import (
@@ -19,7 +19,7 @@ from media_library.models import (
 )  # alias: a name starting with "Test" is collected by pytest
 from media_library.models import Video, parse_youtube_id
 from news.models import Post
-from programs.models import Program
+from programs.models import Activity, ActivityCategory
 from resources.models import Resource
 
 pytestmark = pytest.mark.django_db
@@ -28,7 +28,7 @@ PUBLIC_URLS = [
     "/",
     "/about/",
     "/leadership/",
-    "/programs/",
+    "/activities/",
     "/branches/",
     "/branches/juba/",
     "/branches/yei/",
@@ -100,13 +100,19 @@ def test_leadership_only_confirmed_and_published(client: Client) -> None:
     assert b"To be confirmed by leadership</h2>" not in client.get("/leadership/").content
 
 
-def test_programs_seeded() -> None:
-    assert Program.objects.published().count() >= 5
+def test_activities_seeded() -> None:
+    assert Activity.objects.published().count() == 13
+
+
+def _category() -> ActivityCategory:
+    return ActivityCategory.objects.get(slug="revival-programme")
 
 
 def test_unpublished_content_is_404(client: Client) -> None:
-    Program.objects.create(title="Hidden", slug="hidden", summary="x", is_published=False)
-    assert client.get("/programs/hidden/").status_code == 404
+    Activity.objects.create(
+        category=_category(), title="Hidden", slug="hidden", summary="x", is_published=False
+    )
+    assert client.get("/activities/hidden/").status_code == 404
     juba = Branch.objects.get(slug="juba")
     juba.is_published = False
     juba.save()
@@ -233,23 +239,27 @@ def test_resources_search_and_filters(client: Client) -> None:
 
 
 def test_user_content_is_escaped(client: Client) -> None:
-    Program.objects.create(
+    Activity.objects.create(
+        category=_category(),
         title="<script>alert(1)</script>",
         slug="xss",
         summary="<img src=x onerror=alert(1)>",
         body="Hello\n\n## <b>Heading</b>",
         is_published=True,
     )
-    html = client.get("/programs/xss/").content.decode()
+    html = client.get("/activities/xss/").content.decode()
     assert "<script>alert(1)</script>" not in html and "&lt;script&gt;" in html
     assert "<img src=x" not in html
     assert "<h2>&lt;b&gt;Heading&lt;/b&gt;</h2>" in html
 
 
 def test_sitemap_lists_published_only(client: Client) -> None:
-    Program.objects.create(title="Secret", slug="secret-prog", summary="x", is_published=False)
+    Activity.objects.create(
+        category=_category(), title="Secret", slug="secret-prog", summary="x", is_published=False
+    )
     xml = client.get("/sitemap.xml").content.decode()
-    assert "/programs/discipleship/" in xml and "secret-prog" not in xml
+    assert "/activities/mentorship-programme/" in xml and "secret-prog" not in xml
+    assert "/activities/category/discipleship/" in xml
     assert "/branches/juba/" in xml
 
 
@@ -259,10 +269,10 @@ def test_robots_points_to_sitemap(client: Client) -> None:
 
 
 def test_site_settings_singleton_and_whatsapp(client: Client) -> None:
-    s = SiteSettings.get()
+    s = SiteContent.get()
     s.whatsapp_number = "+211 912 000 000"
     s.save()
-    assert SiteSettings.objects.count() == 1
+    assert SiteContent.objects.count() == 1 and SiteSettings.objects.count() == 1
     with pytest.raises(PermissionError):
         s.delete()
     assert b"https://wa.me/211912000000" in client.get("/").content

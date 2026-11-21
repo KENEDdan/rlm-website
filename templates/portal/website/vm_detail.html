@@ -1,0 +1,54 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ change.get_field_display }} change #{{ change.pk }}{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow"><a class="underline" href="{% url 'portal:website:vision_mission' %}">Vision and mission</a></p>
+    <h1 class="portal-title">{{ change.get_field_display }} change #{{ change.pk }}</h1>
+    <p class="mt-1 text-sm text-rlm-grey">Status: <strong>{{ change.get_status_display }}</strong>{% if change.created_by %} · written by {{ change.created_by.full_name }}{% endif %}{% if change.decided_by %} · decided by {{ change.decided_by.full_name }} on {{ change.decided_at|date:"j M Y H:i" }}{% endif %}</p>
+    {% if change.decision_note %}<p class="mt-1 text-sm">Note: {{ change.decision_note }}</p>{% endif %}
+    {% if change.reason %}<p class="mt-1 text-sm">Reason: {{ change.reason }}</p>{% endif %}
+  </div>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-2">
+  <section class="panel" aria-labelledby="cur-title"><h2 class="panel-title" id="cur-title">Published now</h2><p>{{ current }}</p></section>
+  <section class="panel" aria-labelledby="new-title"><h2 class="panel-title" id="new-title">Proposed</h2><p class="font-semibold">{{ change.text }}</p></section>
+</div>
+
+<section class="panel mt-6" aria-labelledby="prev-title">
+  <h2 class="panel-title" id="prev-title">Preview (as visitors would see it)</h2>
+  <div class="rounded-2xl bg-rlm-cream p-6">{% include "includes/vision_mission.html" with vision=preview.vision mission=preview.mission %}</div>
+</section>
+
+<section class="panel mt-6" aria-labelledby="act-title">
+  <h2 class="panel-title" id="act-title">Next step</h2>
+  <div class="flex flex-wrap items-start gap-4">
+    {% if change.status == "draft" and is_author %}
+      <form method="post" class="rlm-form w-full space-y-3">{% csrf_token %}<input type="hidden" name="action" value="edit">
+        <div><label for="id_text">Wording</label><textarea id="id_text" name="text" rows="5" maxlength="2000">{{ change.text }}</textarea></div>
+        <div><label for="id_reason">Why (optional)</label><input id="id_reason" name="reason" maxlength="300" value="{{ change.reason }}"></div>
+        <button type="submit" class="btn-outline btn-sm">Save changes to the draft</button>
+      </form>
+      {% if approval_required %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="submit"><button type="submit" class="btn-primary">Submit for approval</button></form>{% endif %}
+    {% endif %}
+    {% if change.status == "submitted" %}
+      {% if is_approver and not is_author %}
+      <form method="post" class="rlm-form flex flex-wrap items-end gap-3">{% csrf_token %}
+        <div><label for="id_note">Note (required when not approving)</label><input id="id_note" name="note" maxlength="300"></div>
+        <button type="submit" name="action" value="approve" class="btn-primary">Approve</button>
+        <button type="submit" name="action" value="reject" class="btn-outline">Do not approve</button>
+        <p class="w-full text-xs text-rlm-grey">You will be asked for your password and an authenticator code first.</p>
+      </form>
+      {% elif is_author %}<p class="text-sm">Waiting for the Super Admin or the Executive Director.</p>
+      {% else %}<p class="text-sm">Waiting for approval.</p>{% endif %}
+    {% endif %}
+    {% if can_publish and is_author or can_publish and is_approver %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="publish"><button type="submit" class="btn-primary" data-confirm="Publish this wording on every page now?">Publish</button></form>
+    {% endif %}
+    {% if change.status == "draft" or change.status == "submitted" or change.status == "approved" %}{% if is_author or request.user.is_super_admin %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="withdraw"><button type="submit" class="btn-outline btn-sm">Withdraw</button></form>
+    {% endif %}{% endif %}
+  </div>
+</section>
+{% endblock %}
