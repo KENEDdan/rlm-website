@@ -176,3 +176,22 @@ def test_campaign_and_purchase_order_show_ledger_payments(make_staff, verified_c
     from finance.approvals import line_position
 
     assert line_position(line).committed == Decimal("200")  # 500 approved - 300 already paid
+
+
+def test_development_cannot_edit_a_finance_draft_tagged_with_a_project(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]
+    project = _project()
+    finance_draft = LedgerEntry.objects.create(
+        kind="expense",
+        amount=Decimal("90"),
+        category="construction",
+        description="Finance preparing",
+        department=dept("finance"),
+        project=project,
+        status="draft",
+        recorded_by=make_staff(FINANCE),
+    )
+    dev_head = verified_client(make_staff(DEVELOPMENT, heads={"development"}))
+    assert dev_head.get(P + f"development/project-costs/{finance_draft.pk}/edit/").status_code == 403
+    assert dev_head.post(P + f"development/project-costs/{finance_draft.pk}/delete/").status_code == 403
+    finance_draft.refresh_from_db()
+    assert finance_draft.department.code == "finance"

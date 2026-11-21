@@ -195,8 +195,9 @@ def test_dashboard_export_is_head_only_and_audited(make_staff, verified_client) 
     head = verified_client(make_staff(MEDIA, heads={"media"}))
     resp = head.get(P + "media/export/csv/")
     assert resp.status_code == 200 and resp["Content-Type"].startswith("text/csv")
-    assert head.get(P + "media/export/print/").status_code == 200
-    assert AuditLog.objects.filter(action=AuditLog.Action.EXPORT, extra__dashboard="media").count() == 2
+    assert head.get(P + "media/print/").status_code == 200
+    assert AuditLog.objects.filter(action=AuditLog.Action.EXPORT, extra__dashboard="media").count() == 1
+    assert AuditLog.objects.filter(action=AuditLog.Action.PRINT, extra__dashboard="media").count() == 1
 
 
 def test_every_registered_resource_denies_outsiders(make_staff, verified_client) -> None:  # type: ignore[no-untyped-def]

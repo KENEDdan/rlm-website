@@ -114,12 +114,6 @@ def dashboard_export(request: HttpRequest, department: str, fmt: str) -> HttpRes
         response["Content-Disposition"] = f'attachment; filename="{department}-dashboard-{stamp}.csv"'
         response["Cache-Control"] = "no-store"
         return response
-    if fmt == "print":
-        return render(
-            request,
-            "portal/dashboard_print.html",
-            {"department": department, "board": board, "filters": filters, "now": timezone.now()},
-        )
     raise Http404
 
 

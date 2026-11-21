@@ -11,6 +11,7 @@ from django.http import HttpRequest
 from django.urls import reverse
 from django.utils import timezone
 
+from core.retention import RetentionColumns
 from giving.models import Donation, PartnershipEnquiry
 from portal.access import FOUNDER, HEAD, MEMBER, Access
 from portal.charts import Chart, monthly_series
@@ -277,7 +278,7 @@ class DonationResource(_Finance):
 
 
 @register
-class EnquiryResource(_Finance):
+class EnquiryResource(RetentionColumns, _Finance):
     model = PartnershipEnquiry
     slug = "partner-registrations"
     label = "Partnership registrations"
@@ -293,11 +294,33 @@ class EnquiryResource(_Finance):
         "country",
         "message",
         "status",
+        "outcome",
+        "retention_deadline",
+        "record_reference",
     ]
     date_field = "created_at"
     perms: ClassVar = {"add": FOUNDER + 1, "change": FOUNDER + 1, "delete": HEAD, "export": HEAD}
 
     def actions(self, request: HttpRequest, access: Access, obj: Model) -> list[dict[str, Any]]:
+        out = []
+        if obj.outcome == "pending" and access.is_head(DEPT):  # type: ignore[attr-defined]
+            out += [
+                {
+                    "label": "Taken forward: partner pipeline",
+                    "url": reverse("portal:finance:enquiry_outcome", args=[obj.pk, "successful"]),
+                    "style": "primary",
+                    "confirm": "Mark as successful? The registration keeps only a reference; the partner record keeps "
+                    "the details.",
+                },
+                {
+                    "label": "Not taken forward",
+                    "url": reverse("portal:finance:enquiry_outcome", args=[obj.pk, "unsuccessful"]),
+                    "confirm": "Mark as unsuccessful? It will be deleted after the retention period.",
+                },
+            ]
+        return out + self._pipeline_actions(obj)
+
+    def _pipeline_actions(self, obj: Model) -> list[dict[str, Any]]:
         if Donor.objects.filter(source_enquiry=obj).exists():
             donor = Donor.objects.get(source_enquiry=obj)
             return [
@@ -434,7 +457,7 @@ class ProposalResource(_Finance):
 
 
 @register
-class VolunteerResource(_Finance):
+class VolunteerResource(RetentionColumns, _Finance):
     model = FinanceVolunteer
     slug = "volunteers"
     label = "Finance volunteers (vetting)"
@@ -453,6 +476,9 @@ class VolunteerResource(_Finance):
     filters: ClassVar = ["status", "finance_experience", "references_checked"]
     fields: ClassVar = ["references_checked", "vetting_notes"]
     detail_fields: ClassVar = [
+        "outcome",
+        "retention_deadline",
+        "record_reference",
         "status",
         "full_name",
         "gender",

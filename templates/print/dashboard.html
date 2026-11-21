@@ -1,0 +1,27 @@
+{% extends "print/base.html" %}
+{% block body %}
+<section class="print-section" aria-labelledby="figs">
+  <h2 id="figs">Key figures</h2>
+  <dl class="print-kpis">{% for kpi in board.kpis %}<div><dt>{{ kpi.label }}</dt><dd>{{ kpi.value }}</dd>{% if kpi.hint %}<p class="text-[11px]">{{ kpi.hint }}</p>{% endif %}{% if kpi.status == "bad" %}<p class="text-[11px] font-bold">Needs attention</p>{% elif kpi.status == "warn" %}<p class="text-[11px] font-bold">Watch</p>{% endif %}</div>{% endfor %}</dl>
+</section>
+{% for chart in board.charts %}
+<section class="print-section">
+  <h2>{{ chart.title }}</h2>
+  <table><thead><tr><th scope="col">Item</th><th scope="col">{{ chart.unit|default:"Value" }}</th></tr></thead>
+    <tbody>{% for label, value in chart.rows %}<tr><td>{{ label }}</td><td>{{ value }}</td></tr>{% empty %}<tr><td colspan="2">No data</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endfor %}
+{% for section in board.sections %}
+<section class="print-section">
+  <h2>{{ section.title }}</h2>
+  <table><thead><tr>{% for c in section.columns %}<th scope="col">{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in section.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ section.columns|length }}">{{ section.empty|default:"Nothing to show." }}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endfor %}
+{% if board.attention %}
+<section class="print-section">
+  <h2>Needs attention</h2>
+  <table><tbody>{% for item in board.attention %}<tr><td>{{ item.text }}</td><td>{{ item.meta }}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+{% endblock %}

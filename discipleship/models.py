@@ -16,7 +16,7 @@ from django.utils import timezone
 
 from core.crypto import blind_index
 from core.fields import EncryptedCharField, EncryptedEmailField, EncryptedTextField
-from core.models import TimeStampedModel
+from core.models import RetainedApplication, TimeStampedModel
 from core.people import AgeBand, Gender, YesNo, band_for_age
 from core.private_files import PrivateFileField
 from core.uploads import RandomUploadTo
@@ -32,7 +32,7 @@ class GrowthArea(models.TextChoices):
     MATURITY = "maturity", "Spiritual maturity"
 
 
-class Registration(TimeStampedModel):
+class Registration(RetainedApplication, TimeStampedModel):
     """Public 'Discipleship Registration' form."""
 
     class Status(models.TextChoices):

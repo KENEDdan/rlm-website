@@ -273,16 +273,59 @@
   .hbar-label { @apply truncate; }
   .hbar-track { @apply h-3 w-full; }
   .hbar-value { @apply font-semibold tabular-nums; }
-  .print-page { @apply mx-auto max-w-4xl bg-white p-6 text-rlm-ink; }
-  .print-header { @apply mb-6 flex items-center gap-4 border-b-4 border-rlm-flame pb-4; }
-  .print-section { @apply mt-6 break-inside-avoid; }
-  .print-toolbar { @apply mb-4 flex gap-2; }
+  /* Printable reports (ministry decision 7): A4, brand colours with a black-and-white fallback
+     (every status is also written as a word, borders not fills carry structure), no cut-off tables. */
+  .print-page { @apply mx-auto max-w-4xl bg-white p-6 text-[13px] leading-snug text-rlm-ink; }
+  .print-toolbar { @apply mb-4 flex flex-wrap items-center gap-2; }
+  .print-header { @apply mb-3 flex items-center gap-4 border-b-4 border-rlm-flame pb-3; }
+  .print-logo { @apply h-16 w-16 shrink-0; }
+  .print-heading { @apply min-w-0 flex-1; }
+  .print-ministry { @apply font-display text-lg font-extrabold text-rlm-black; }
+  .print-title { @apply text-xl font-bold text-rlm-black; }
+  .print-stamp { @apply rounded border-2 border-rlm-black px-2 py-1 text-xs font-extrabold uppercase tracking-widest; }
+  .print-meta { @apply mb-4 grid grid-cols-2 gap-x-6 gap-y-1 border-b border-rlm-line pb-3 text-xs sm:grid-cols-3; }
+  .print-meta dt { @apply font-semibold uppercase tracking-wide text-rlm-grey; }
+  .print-meta dd { @apply font-semibold text-rlm-ink; }
+  .print-section { @apply mt-5; }
+  .print-section h2, .print-approval h2 { @apply mb-2 border-l-4 border-rlm-flame pl-2 text-base font-bold text-rlm-black; }
+  .print-body table { @apply w-full border-collapse text-xs; table-layout: auto; }
+  .print-body th, .print-body td { @apply border border-rlm-line px-2 py-1 text-left align-top; overflow-wrap: anywhere; }
+  .print-body thead th { @apply bg-rlm-cream font-bold; }
+  .print-kpis { @apply grid grid-cols-2 gap-2 sm:grid-cols-4; }
+  .print-kpis div { @apply rounded border border-rlm-line p-2; }
+  .print-kpis dt { @apply text-[11px] font-semibold uppercase text-rlm-grey; }
+  .print-kpis dd { @apply text-base font-bold tabular-nums; }
+  .print-approval { @apply mt-8 break-inside-avoid; }
+  .print-sign { @apply w-full border-collapse text-xs; }
+  .print-sign th, .print-sign td { @apply border border-rlm-black px-2 py-3 text-left; }
+  .print-sign td { @apply h-10 w-1/4; }
+  .print-footer { @apply mt-6 border-t border-rlm-line pt-2 text-[11px] text-rlm-grey; }
+  .is-confidential .print-footer p:first-child { @apply font-bold text-rlm-black; }
   @media print {
-    .print-toolbar, .portal-top, .portal-sidebar, .portal-filters, [data-print], .skip-link { display: none !important; }
+    .print-toolbar, .portal-top, .portal-sidebar, .portal-filters, [data-print], .skip-link, .btn, .btn-primary,
+    .btn-outline, .btn-dark, .btn-danger, form button { display: none !important; }
     .portal-main { padding: 0; }
     .panel { box-shadow: none; break-inside: avoid; }
+    html, body { background: #fff !important; }
+    .print-page { max-width: none; margin: 0; padding: 0; }
+    /* keep brand colour where the printer can; text stays black, so a black-and-white printer loses nothing */
+    .print-header, .print-section h2, .print-approval h2, .badge-unbudgeted { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    thead { display: table-header-group; }   /* repeat table headings on every page */
+    tfoot { display: table-footer-group; }
+    tr, .print-kpis div, .print-sign { break-inside: avoid; }
+    h2 { break-after: avoid; }
+    a { color: inherit; text-decoration: none; }
+    .print-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; }
+    .print-body { margin-bottom: 18mm; }
   }
 
   .htmx-request .htmx-indicator { display: inline-block; }
   .htmx-indicator { display: none; }
+}
+
+/* A4 pages with page numbers for printed reports (outside any layer: page rules are global). */
+@page {
+  size: A4 portrait;
+  margin: 15mm 12mm 20mm 12mm;
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 9pt; color: #1C1C1C; }
 }

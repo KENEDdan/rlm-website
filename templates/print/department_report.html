@@ -1,0 +1,18 @@
+{% extends "print/base.html" %}
+{% block body %}
+<p>Status: <strong>{{ obj.get_status_display }}</strong>{% if obj.submitted_at %} · submitted {{ obj.submitted_at|date:"j M Y" }}{% endif %}{% if obj.reviewed_at %} · reviewed {{ obj.reviewed_at|date:"j M Y" }}{% endif %}</p>
+<section class="print-section">
+  <h2>Figures for the period</h2>
+  <table><tbody>{% for f in obj.figures %}<tr><th scope="row">{{ f.label }}</th><td>{{ f.value }}</td></tr>{% empty %}<tr><td>No figures.</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="print-section">
+  <h2>Targets</h2>
+  <table><thead><tr><th scope="col">Indicator</th><th scope="col">Branch</th><th scope="col">Actual</th><th scope="col">Target</th><th scope="col">Progress</th></tr></thead>
+    <tbody>{% for i in obj.indicators %}<tr><th scope="row">{{ i.name }}</th><td>{{ i.branch|default:"All branches" }}</td><td>{{ i.value|default:"—" }}</td><td>{{ i.target }}</td><td>{% if i.progress is not None %}{{ i.progress }}%{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="5">No targets for this period.</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="print-section"><h2>What went well</h2><p>{{ obj.highlights|linebreaksbr|default:"—" }}</p></section>
+<section class="print-section"><h2>Challenges</h2><p>{{ obj.challenges|linebreaksbr|default:"—" }}</p></section>
+<section class="print-section"><h2>Plans for the next period</h2><p>{{ obj.plans_next_period|linebreaksbr|default:"—" }}</p></section>
+<section class="print-section"><h2>Support needed from leadership</h2><p>{{ obj.support_needed|linebreaksbr|default:"—" }}</p></section>
+{% if obj.review_comment %}<section class="print-section"><h2>Founder's comment</h2><p>{{ obj.review_comment|linebreaksbr }}</p></section>{% endif %}
+{% endblock %}

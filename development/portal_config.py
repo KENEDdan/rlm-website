@@ -206,8 +206,11 @@ class ProjectCostResource(_ProjectChild):
     def object_allows(self, access: Access, action: str, obj: Model) -> bool:
         if action in ("change", "delete"):
             entry: LedgerEntry = obj  # type: ignore[assignment]
-            return entry.status in ("draft", "rejected") and (
-                entry.recorded_by_id == access.user.pk or access.is_head(DEPT)
+            return (
+                entry.status in ("draft", "rejected")
+                and entry.department is not None
+                and entry.department.code == DEPT  # never a draft Finance is preparing
+                and (entry.recorded_by_id == access.user.pk or access.is_head(DEPT))
             )
         return True
 

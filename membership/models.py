@@ -16,13 +16,13 @@ from django.utils import timezone
 
 from core.crypto import blind_index
 from core.fields import EncryptedCharField, EncryptedEmailField, EncryptedTextField
-from core.models import TimeStampedModel
+from core.models import RetainedApplication, TimeStampedModel
 from core.people import AgeBand, Gender, YesNo, age_on, band_for_age, parse_iso_date
 from core.private_files import PrivateFileField
 from core.uploads import RandomUploadTo
 
 
-class Member(TimeStampedModel):
+class Member(RetainedApplication, TimeStampedModel):
     class Status(models.TextChoices):
         SUBMITTED = "submitted", "Application received"
         UNDER_REVIEW = "under_review", "Under review"

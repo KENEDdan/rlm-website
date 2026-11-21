@@ -9,7 +9,8 @@
   </div>
   <div class="flex flex-wrap gap-2">
     {% if can_add %}<a class="btn-primary btn-sm" href="{% url 'portal:resource_create' department resource.slug %}">Add {{ resource.label_singular|lower }}</a>{% endif %}
-    {% if can_export %}<a class="btn-outline btn-sm" href="{% url 'portal:resource_export' department resource.slug %}?{{ query }}" title="The export is recorded in the audit log">Export CSV</a>{% endif %}
+    {% if can_export %}<a class="btn-outline btn-sm" href="{% url 'portal:resource_export' department resource.slug %}?{{ query }}" title="The export is recorded in the audit log">Export CSV</a>
+    <a class="btn-outline btn-sm" href="{% url 'portal:resource_print' department resource.slug %}?{{ query }}" title="Printing is recorded in the audit log">Print / Save as PDF</a>{% endif %}
   </div>
 </div>
 {% if filter_specs or resource.search_fields or resource.date_field %}

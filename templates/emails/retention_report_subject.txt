@@ -1,0 +1,1 @@
+{% autoescape off %}Applications due for deletion in the next {{ days }} days{% endautoescape %}

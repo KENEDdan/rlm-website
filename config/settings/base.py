@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 from csp.constants import NONCE, NONE, SELF
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -277,6 +278,16 @@ CELERY_BEAT_SCHEDULE = {
     "dormant-accounts": {
         "task": "accounts.tasks.dormant_accounts",
         "schedule": 60 * 60 * 24,
+    },
+    # Ministry decision 8: unsuccessful applications deleted after the retention period (daily, 02:30) and a
+    # monthly count of applications nearing deletion for department heads (1st of the month, 07:00).
+    "purge-unsuccessful-applications": {
+        "task": "core.tasks.purge_unsuccessful_applications",
+        "schedule": crontab(hour=2, minute=30),
+    },
+    "report-applications-nearing-purge": {
+        "task": "core.tasks.report_applications_nearing_purge",
+        "schedule": crontab(day_of_month="1", hour=7, minute=0),
     },
 }
 

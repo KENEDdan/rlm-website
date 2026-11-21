@@ -40,3 +40,35 @@ def executive_finance(request: HttpRequest) -> HttpResponse:
     if is_htmx(request):
         return render(request, "finance/executive/_body.html", context)
     return render(request, "finance/executive/page.html", context)
+
+
+@never_cache
+@portal_view()
+def executive_finance_print(request: HttpRequest) -> HttpResponse:
+    """Printable Executive Finance summary (decision 7): confidential, summaries only."""
+    from django.urls import reverse
+
+    from portal.printing import print_context
+
+    access = get_access(request)
+    if not executive.can_view(access):
+        raise PermissionDenied
+    filters = read_filters(request, access, "finance")
+    data = executive.summary(filters, department_code=request.GET.get("department", "")[:40])
+    context = {
+        "data": data,
+        "filters": filters,
+        **print_context(
+            request,
+            title="Executive finance summary",
+            department="Finance & Resource Mobilization (summaries only)",
+            branch=filters.branch_name,
+            start=filters.start,
+            end=filters.end,
+            period_label=f"{filters.period_label}: {filters.start:%d %b %Y} to {filters.end:%d %b %Y}",
+            fy=filters.fy,
+            sensitive=True,
+            back_url=reverse("portal:finance:executive_finance"),
+        ),
+    }
+    return render(request, "print/executive_finance.html", context)

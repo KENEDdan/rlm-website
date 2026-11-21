@@ -1,0 +1,28 @@
+{% extends "print/base.html" %}
+{% block body %}
+{% with o=overview %}
+<section class="print-section">
+  <h2>Flags across the ministry</h2>
+  <table><tbody>{% for item in o.flags %}<tr><td>{{ item.text }}</td><td>{{ item.meta }}</td></tr>{% empty %}<tr><td>No red flags.</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="print-section">
+  <h2>Departments (totals only)</h2>
+  <table><thead><tr><th scope="col">Department</th><th scope="col">Figure</th><th scope="col">Value</th></tr></thead>
+    <tbody>{% for card in o.cards %}{% for kpi in card.kpis %}<tr>{% if forloop.first %}<th scope="row" rowspan="{{ card.kpis|length }}">{{ card.department.name|default:card.code }}</th>{% endif %}<td>{{ kpi.label }}</td><td>{{ kpi.value }}{% if kpi.status == "bad" %} (needs attention){% endif %}</td></tr>{% endfor %}{% endfor %}</tbody></table>
+</section>
+<section class="print-section">
+  <h2>Performance targets {{ o.targets.year }} (year to date up to {{ o.targets.month_label }})</h2>
+  <table><thead><tr><th scope="col">Category</th><th scope="col">Targets</th><th scope="col">Green</th><th scope="col">Amber</th><th scope="col">Red</th><th scope="col">Overdue</th></tr></thead>
+    <tbody>{% for cat in o.targets.categories %}<tr><th scope="row">{{ cat.label }}</th><td>{{ cat.rows|length }}</td><td>{{ cat.green }}</td><td>{{ cat.amber }}</td><td>{{ cat.red }}</td><td>{{ cat.overdue }}</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="print-section">
+  <h2>Pending approvals</h2>
+  <table><tbody>{% for item in o.pending %}<tr><td>{{ item.text }}</td><td>{{ item.meta }}</td></tr>{% empty %}<tr><td>Nothing waiting.</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="print-section">
+  <h2>Monthly reports</h2>
+  <table><thead><tr><th scope="col">Department</th><th scope="col">Status</th></tr></thead>
+    <tbody>{% for row in o.reports %}<tr><td>{{ row.department.name }}</td><td>{% if row.overdue %}Overdue{% elif row.awaiting_review %}Awaiting review{% else %}{{ row.status }}{% endif %}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endwith %}
+{% endblock %}

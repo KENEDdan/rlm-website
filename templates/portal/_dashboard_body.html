@@ -66,7 +66,7 @@
       <p class="mb-3 text-xs text-rlm-grey">Exports are recorded in the audit log.</p>
       <div class="flex flex-wrap gap-2">
         <a class="btn-outline btn-sm" href="{% url 'portal:dashboard_export' department 'csv' %}?{% for k, v in filters.as_query.items %}{{ k }}={{ v|urlencode }}&amp;{% endfor %}">CSV</a>
-        <a class="btn-outline btn-sm" href="{% url 'portal:dashboard_export' department 'print' %}?{% for k, v in filters.as_query.items %}{{ k }}={{ v|urlencode }}&amp;{% endfor %}">Printable / PDF</a>
+        <a class="btn-outline btn-sm" href="{% url 'portal:dashboard_print' department %}?{% for k, v in filters.as_query.items %}{{ k }}={{ v|urlencode }}&amp;{% endfor %}">Print / Save as PDF</a>
       </div>
     </section>
     {% endif %}

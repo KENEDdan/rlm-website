@@ -1,0 +1,40 @@
+{% extends "print/base.html" %}
+{% block body %}
+{% with d=data %}
+<section class="print-section">
+  <h2>Summary</h2>
+  <dl class="print-kpis">
+    <div><dt>Income</dt><dd>{{ d.income|floatformat:2 }}</dd></div>
+    <div><dt>Expenditure</dt><dd>{{ d.expenditure|floatformat:2 }}</dd></div>
+    <div><dt>Net</dt><dd>{{ d.net|floatformat:2 }}</dd></div>
+    <div><dt>Cash position</dt><dd>{{ d.cash|floatformat:2 }}</dd></div>
+    <div><dt>Outstanding pledges</dt><dd>{{ d.outstanding_pledges|floatformat:2 }}</dd></div>
+    <div><dt>Approved budget {{ d.year }}</dt><dd>{{ d.approved_budget|floatformat:2 }}</dd></div>
+    <div><dt>Waiting for executive approval</dt><dd>{{ d.waiting }}{% if d.waiting_unbudgeted %} ({{ d.waiting_unbudgeted }} UNBUDGETED){% endif %}</dd></div>
+    <div><dt>Unbudgeted spending approved</dt><dd>{{ d.unbudgeted_spent|floatformat:2 }}</dd></div>
+  </dl>
+</section>
+<section class="print-section">
+  <h2>Budget vs actual by department</h2>
+  <table><thead><tr><th scope="col">Department</th><th scope="col">Budget</th><th scope="col">Actual</th><th scope="col">Remaining</th><th scope="col">Used</th></tr></thead>
+    <tbody>{% for r in d.by_department %}<tr><th scope="row">{{ r.label }}</th><td>{{ r.budget|floatformat:2 }}</td><td>{{ r.actual|floatformat:2 }}</td><td>{{ r.remaining|floatformat:2 }}</td><td>{% if r.percent is None %}—{% else %}{{ r.percent }}%{% endif %}{% if r.over %} OVER BUDGET{% endif %}</td></tr>{% empty %}<tr><td colspan="5">No budget or spending.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% if d.drill %}
+<section class="print-section">
+  <h2>{{ d.drill.department }}: by category</h2>
+  <table><thead><tr><th scope="col">Category</th><th scope="col">Budget</th><th scope="col">Actual</th><th scope="col">Remaining</th><th scope="col">Used</th></tr></thead>
+    <tbody>{% for r in d.drill.rows %}<tr><th scope="row">{{ r.label }}</th><td>{{ r.budget|floatformat:2 }}</td><td>{{ r.actual|floatformat:2 }}</td><td>{{ r.remaining|floatformat:2 }}</td><td>{% if r.percent is None %}—{% else %}{{ r.percent }}%{% endif %}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}
+<section class="print-section">
+  <h2>Budget vs actual by branch</h2>
+  <table><thead><tr><th scope="col">Branch</th><th scope="col">Budget</th><th scope="col">Actual</th><th scope="col">Remaining</th><th scope="col">Used</th></tr></thead>
+    <tbody>{% for r in d.by_branch %}<tr><th scope="row">{{ r.label }}</th><td>{{ r.budget|floatformat:2 }}</td><td>{{ r.actual|floatformat:2 }}</td><td>{{ r.remaining|floatformat:2 }}</td><td>{% if r.percent is None %}—{% else %}{{ r.percent }}%{% endif %}{% if r.over %} OVER BUDGET{% endif %}</td></tr>{% endfor %}</tbody></table>
+</section>
+<section class="print-section">
+  <h2>Income and expenditure by month, {{ d.year }}</h2>
+  <table><thead><tr><th scope="col">Month</th><th scope="col">Income</th><th scope="col">Expenditure</th></tr></thead>
+    <tbody>{% for m in d.months %}<tr><th scope="row">{{ m.label }}</th><td>{{ m.income|floatformat:2 }}</td><td>{{ m.expenditure|floatformat:2 }}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endwith %}
+{% endblock %}

@@ -401,3 +401,56 @@ pledges, donations and exports remain Finance + Founder only (tested). Each view
   unchanged), year = year created, category from the department (Logistics -> Development).
 * `seed_indicators` is demo-only: nothing without `--demo`; samples are named "[DEMO] ...", flagged `is_demo`,
   badged "Demo", and removed with `--remove`.
+
+## D-032: Application retention (ministry decision 8)
+(2026-11-20) `core/retention.py`; Super Admin screen `/portal/retention/`.
+* The four application types and their records: membership (`membership.Member`), discipleship
+  (`discipleship.Registration`), partnership (`giving.PartnershipEnquiry`) and finance volunteer
+  (`finance.FinanceVolunteer`). Each has `outcome` (pending / successful / unsuccessful), `outcome_at` (the
+  decision date that starts the retention clock), `legal_hold` + reason and `record_reference`. The outcome
+  follows the status automatically; partnership registrations get it from two Finance-head actions
+  ("Taken forward: partner pipeline" / "Not taken forward").
+* **Conversion (default chosen):** a successful membership application IS the member-register entry and a
+  successful finance-volunteer application IS the vetted-list entry: the same row moves on, so no second copy of
+  anyone's data exists and the reference is "Member register" / "Vetted finance-volunteer list". A discipleship
+  registration becomes a Disciple (+ cohort enrolment) and a partnership registration a partner-pipeline record;
+  their application rows are then emptied of personal data and keep only "Disciple #n" / "Partner #n".
+* **Unsuccessful:** deleted `SiteSettings.retention_unsuccessful_days` (365) after the decision; applicants under
+  18: `retention_unsuccessful_minor_days` (90, never longer than the adult period; 0 for adults switches deletion
+  off for everyone). The row, everything that cascades from it and their stored files are deleted; for a
+  partnership registration the prospect created from it goes too (unless it already has pledges, then it is only
+  unlinked). Only `ApplicationStat` (type, branch, month received, outcome, count) remains.
+* Jobs: `core.tasks.purge_unsuccessful_applications` nightly 02:30 (every run audit-logged, also when nothing was
+  due); `core.tasks.report_applications_nearing_purge` on the 1st of each month to the heads of the owning
+  departments (Membership; Discipleship; Finance for partnership and finance volunteers): counts only, deadlines
+  within `retention_notice_days` (30) and legal holds. `manage.py purge_applications --dry-run` and the Super
+  Admin screen show what would be deleted without deleting.
+* Legal hold (Super Admin, reason required) pauses deletion. Early deletion on a person's valid request (Super
+  Admin, re-authentication, a note of how the request was verified; refused while on hold; a live member or
+  volunteer record goes through the existing data-subject erase instead). Both audit-logged.
+* Minors: pending/unsuccessful membership applications of under-18s are visible to the Membership head only
+  (discipleship already hid minors from non-heads), and they are deleted sooner.
+* The retention deadline is shown on each application screen. Applicants are told on all four forms (from the
+  live settings), and the privacy policy gained an "Applications" section plus the live periods in its facts list.
+  Existing applications were back-filled from their status (clock from `decided_at`, else last change).
+
+## D-033: Printable reports (ministry decision 7)
+(2026-11-20) `portal/printing.py`, `portal/print_views.py`, templates in `templates/print/`.
+* Every report prints from a **standalone** template extending `print/base.html` (no portal chrome, laid out by
+  CSS only), so the same templates can feed a server-side PDF renderer later without changes. Reports:
+  department dashboards (all seven, incl. procurement), Executive overview, Executive finance, performance
+  targets, monthly department reports, and every resource list (member register, finance volunteers, purchase
+  orders, ...). Each shows logo and ministry name, title, department, branch or "All branches", period and
+  financial year, generated date/time and by whom, page numbers, a CONFIDENTIAL footer for sensitive reports
+  (finance, membership, discipleship dashboards and reports; every resource marked sensitive; Executive
+  finance) and an approval section (Prepared / Reviewed / Approved by with name, signature and date lines;
+  "Prepared by" is pre-filled on monthly reports).
+* Print CSS: A4 portrait, 15/12/20 mm margins, "Page n of m" via `@page` margin boxes, repeating table headers,
+  rows never split, long values wrap instead of being cut off, toolbar/navigation/buttons hidden, brand colours
+  kept with `print-color-adjust` while all text is black and every status is written as a word (black-and-white
+  printers lose nothing).
+* Permissions: a list prints only for users who may export it; personal/financial dashboards print only for the
+  department head or Founder; other dashboards for anyone who can open them. Every print is audit-logged
+  (`AuditLog.Action.PRINT`) with title, filters and row counts, never record contents. Lists print up to 2,000
+  rows (the page says when it is cut).
+* The old `<dept>/export/print/` URL was replaced by `<dept>/print/`; CSV export is unchanged.

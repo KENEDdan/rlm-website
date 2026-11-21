@@ -8,14 +8,16 @@ from __future__ import annotations
 
 from django import forms
 
-from core.forms import ConsentMixin, ProtectedFormMixin, SectionedFormMixin
+from core.forms import ApplicationRetentionNotice, ConsentMixin, ProtectedFormMixin, SectionedFormMixin
 from core.models import phone_validator
 from core.people import Gender, YesNo
 
 from .models import FinanceVolunteer
 
 
-class FinanceVolunteerForm(SectionedFormMixin, ProtectedFormMixin, ConsentMixin, forms.Form):
+class FinanceVolunteerForm(
+    SectionedFormMixin, ProtectedFormMixin, ApplicationRetentionNotice, ConsentMixin, forms.Form
+):
     full_name = forms.CharField(
         max_length=150, label="Full name", widget=forms.TextInput(attrs={"autocomplete": "name"})
     )

@@ -13,7 +13,7 @@ from django.utils import timezone
 from accounts.models import User
 from core.models import SiteSettings
 from core.privacy import erase_person, export_person
-from core.tasks import _admin_change_url, purge_expired_submissions
+from core.tasks import _admin_change_url
 from discipleship.models import Registration
 from finance.models import Donor, FinanceVolunteer
 from giving.models import PartnershipEnquiry
@@ -229,12 +229,14 @@ def test_staff_alert_links_point_to_the_portal_queues() -> None:
 
 
 def test_unsuccessful_applications_are_purged_after_retention() -> None:
-    old = timezone.now() - timedelta(days=400)
+    """Counted from the decision (outcome_at), not the last edit; see tests/test_retention.py for the full rules."""
+    from core.tasks import purge_unsuccessful_applications
+
     Member.objects.create(full_name="Old reject", status="rejected")
     Member.objects.create(full_name="Active", status="active")
-    Member.objects.update(updated_at=old)
-    result = purge_expired_submissions()
-    assert result["membership.Member(rejected)"] == 1
+    Member.objects.update(outcome_at=timezone.now() - timedelta(days=400))
+    result = purge_unsuccessful_applications()
+    assert result["deleted"] == 1
     assert list(Member.objects.values_list("status", flat=True)) == ["active"]
 
 

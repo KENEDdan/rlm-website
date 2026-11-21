@@ -409,14 +409,18 @@ been spent this year. It shows totals only; the transactions themselves are kept
 1. **Income & expenditure ledger → Add**: kind, date, amount, department, budget line, category (expenditure)
    or source (income), description, payer/payee, voucher or receipt number, and a scan of the receipt.
 2. Open it and press **Submit for approval**.
-3. **Someone else** in Finance opens it and presses **Approve and post** (or **Reject**, with a reason that
-   goes back to the recorder). Entries above the **approval threshold** (Finance settings, head only) can only
-   be approved by the Founder.
+3. **Income:** someone else in Finance opens it and presses **Approve and post** (or **Reject**, with a reason
+   that goes back to the recorder).
+   **Expenditure (any payment, of any amount):** it waits for **executive approval** by the Founder, the
+   Executive Director or the acting approver (see 12.1). Finance does not approve spending any more and there
+   is no longer a "small amounts" threshold.
 4. **Posted entries can never be edited or deleted.** If one is wrong, the head presses **Reverse
    (correct)**: a matching negative entry is created and must be approved by someone else; then record the
    correct entry.
 
-**Budget:** **Annual budget** (head): one line per department and purpose. The dashboard shows budget vs
+**Budget:** **Annual budget** (head): one line per department, branch and purpose. A new line starts as a
+**draft**: press **Submit for executive approval**; only approved lines count as budget. Approved lines cannot
+be edited; changes go through a reallocation or supplementary budget at approval time (12.1). The dashboard shows budget vs
 actual per department, burn rate (average monthly spending over the last three months, and how many months
 the cash would last), cash position and income by source. Every department sees only its own totals in **Our
 budget**.
@@ -437,6 +441,38 @@ money is in the bank. This issues the receipt and creates an income entry for so
   quotations and choose the requesting department's budget line, then **Confirm budget**.
 * **Capital proposals** from Development arrive in **Appeals & proposals**.
 
+### 12.1 Executive approval (Founder, Executive Director, acting approver)
+**Everything that spends or commits money needs executive approval before it is paid or committed:**
+expenditure entries (including project costs and reimbursements), purchase requests (after Finance has checked
+the budget), outreach campaign and mission-trip budgets, event budgets, and new budget lines.
+* Approvers open **Approvals** at the top of the menu (the number shows what is waiting). Open an item, read it,
+  and press **Approve** or **Do not approve**. You are asked for your **password and an authenticator code**
+  before the decision is saved. Every decision is kept permanently and the person who asked gets an email (it
+  says only "approved" or "not approved", never amounts or details).
+* **Nobody decides their own item.** If you recorded, requested or budget-checked something yourself, another
+  approver must decide it.
+* **UNBUDGETED** (black-on-gold label) means: no approved budget line, or more than what is left on the line
+  after other approved commitments. To approve it you must write a **justification**. If Finance settings say
+  "unbudgeted spending requires an adjustment", you must also choose a **reallocation** (move money from
+  another approved line that has enough left) or a **supplementary budget**. Unbudgeted items are listed first
+  and also appear on the Finance dashboard and the Executive overview.
+* **Who approves:** the Super Admin sets this under **Accounts & security → Executive approvers**: the Founder,
+  the Executive Director and, when the Founder travels, an **acting approver with start and end dates**. Each
+  change asks for the Super Admin's password and code again. Until the list has anyone in it, the Super Admins
+  approve.
+
+### 12.2 Financial years
+The financial year is **1 January to 31 December**. Every screen has a **Financial year** and **Period**
+(quarter or month) filter. At year end the Finance head (or Super Admin) presses **Close year** under
+**Financial years**: nothing can then be posted, changed or budgeted in that year. Only the Super Admin can
+**Reopen** a closed year, with a reason and their password and code again.
+
+### 12.3 Executive finance page
+Executive Leadership, the Founder and Finance see **Executive finance**: income, spending, cash position,
+outstanding pledges, approved budgets and budget vs actual per department and branch, with year/quarter/month
+and branch filters. Click a department to see its **category totals**. It never shows individual entries,
+donors, vouchers or receipts; those stay with Finance and the Founder.
+
 **Finance volunteers (vetting):** applications from the website form. **Start reference check** → tick
 *References checked* (Edit) and add notes → **Move to interview** → **Approve volunteer** or **Do not take
 forward** (head). Approving a volunteer does **not** give them any access: only the Super Admin can create an
@@ -449,7 +485,9 @@ account, and should do so only after vetting.
   3. The page shows them **side by side, cheapest first**. Choose one and press **Recommend this supplier**.
      If it is not the cheapest, you must explain why.
   4. **Finance confirms the budget** (section 12).
-  5. The **Logistics head (or the Founder) approves**. Whoever asked for the purchase can never approve it.
+  5. **Executive approval** (Founder, Executive Director or acting approver, section 12.1). If Finance found no
+     budget line with enough money left, the request is marked **UNBUDGETED** and needs a written justification.
+     Whoever asked for the purchase, or checked its budget, can never approve it.
   6. **Issue purchase order** (PO number), then **Record a delivery** when goods arrive (tick *complete* only
      when everything arrived in good condition), **Add to inventory** if needed, and **Close request**.
 * **Supplier register** with a 1-5 rating; **Assets & inventory** (quantity, condition, location, custodian,
@@ -491,6 +529,11 @@ account, and should do so only after vetting.
 * **Dashboard:** campaigns held, people reached, decisions, follow-up completion, communities engaged, and an
   **impact by location** table.
 
+* **Budgets of campaigns and mission trips:** fill in *Budget request* and choose a budget line, then press
+  **Submit budget for executive approval**. A campaign with a budget cannot be marked approved, in progress or
+  completed until the budget is approved. What has actually been paid shows on the campaign (from the Finance
+  ledger). Logistics does the same for **event budgets** on an event-logistics plan.
+
 ## 16. Discipleship
 * **New-convert follow-up:** converts handed over by Missions. Assign a person and work through **Mark
   contacted → First visit done → Enrol in discipleship** (choose a class) **→ Milestone review → Follow-up
@@ -513,6 +556,15 @@ account, and should do so only after vetting.
   exported; only the author can edit a note.
 
 ## 17. Development & Infrastructure
+*Project money is kept in the Finance ledger only (one set of books).*
+* Each project needs a **budget line** (its cost centre) created by Finance and approved by the executive;
+  choose it on the project. The project's budget is that line.
+* **Project costs (Finance ledger) → Add**: project, date, amount, description, reference. Then **Submit for
+  approval**: it goes to executive approval like every payment. Finance sees exactly the same entry.
+* The project page shows **budget, committed (waiting or approved but not yet paid), spent, remaining**, and
+  money spent next to milestones done. The dashboard warns about **overspent** projects, **UNBUDGETED** costs,
+  **money ahead of progress** and projects **without a budget line**.
+
 * **Project register** (offices, conference halls, hostels, training centres, worship facilities): phase,
   budget, funding secured, dates, project manager and contractors. On a project's page add **milestones**,
   **costs**, **documents** (designs, bills of quantities, permits, contracts: private files), **site visits**
@@ -526,10 +578,22 @@ account, and should do so only after vetting.
   fundraising** and it appears in Finance's appeals & proposals.
 
 ## 18. Targets and monthly reports (monitoring & evaluation)
-* **Targets** (each department's menu → *Indicators*): the head sets what the department measures, the target
-  and the period (monthly, quarterly or annual), and whether higher or lower is better. Members record the
-  values. `manage.py seed_indicators` can create a set of suggested indicators to start from; **change the
-  targets to the ministry's own**.
+* **Performance targets** (top of the menu) are set by **leadership** (the Founder / Super Admin and Executive
+  Leadership). Each target has a **category** (evangelism, discipleship, youth fellowships, membership,
+  partnerships, missions, finance, development, media, prayer), an owner department, a unit, a **financial
+  year**, a **branch** (or all branches) and an **annual target**, which is split into **monthly targets**
+  automatically (evenly; percentages stay the same every month). Change any month or the annual figure on the
+  target's page; a **reason is required** and every change is listed under *Change history* (who, old, new,
+  why).
+* **Importing many targets:** *Import CSV* → download the template, fill one row per target, upload, check the
+  preview, then **Import these targets**. If any row is wrong, nothing is imported and every problem is listed.
+* **Monthly actuals:** department members open a target and **Record a monthly actual** (only for months that
+  have started, and only for their own branch if their role is branch-limited).
+* **Colours:** Green = 90% of target or better, Amber = 70-89%, Red = below 70% (for "lower is better" targets
+  the percentage is turned round). A month's actual is **overdue** if it is still missing on the 10th of the next
+  month. The Executive overview shows every category and the overdue list.
+* `manage.py seed_indicators --demo` creates **fake sample targets** for a demonstration only (named
+  "[DEMO] ..."); remove them with `manage.py seed_indicators --remove` before real use.
 * **Automatic values:** an indicator can be linked to a dashboard figure ("auto source"). The suggested ones
   already are; the codes are listed under each dashboard box in the CSV export (e.g. `active_members`,
   `decisions`, `follow_up_rate`, `late_deliveries`, `milestones_overdue`).
@@ -553,6 +617,38 @@ long), a summary card per department, **pending approvals**, **cross-department 
 Discipleship, Logistics → Finance, design requests to Media, capital proposals to Finance), the state of last
 month's reports and progress against every department's targets. It shows **totals only**. Executive
 Leadership can open a department only if they also belong to it; the Founder can open everything.
+
+## 20a. Printing reports
+Every report has a **Print / Save as PDF** button: department dashboards, the Executive overview, Executive
+finance, performance targets, monthly department reports, and lists such as the member register, finance
+volunteers or purchase orders. The printout is an A4 page with the logo, title, department, branch, period and
+financial year, who printed it and when, page numbers and an **approval box** (Prepared / Reviewed / Approved
+by, with name, signature and date). Choose *Save as PDF* in the print window to keep a file.
+* Reports with personal or financial information are marked **CONFIDENTIAL** at the bottom: keep them safe and
+  shred them when done.
+* Printing a list of people needs the same permission as exporting it (usually the department head), and
+  every print is recorded in the audit log.
+
+## 20b. Applications: what happens to them (retention)
+This covers the **membership, discipleship, partnership and finance-volunteer** applications from the website.
+* Each application is **pending**, **successful** or **unsuccessful**. The application screen shows its
+  **retention deadline**.
+* **Successful:** the person moves into the proper record (member register, discipleship class, partner list,
+  vetted volunteer list). For discipleship and partnership the application is then emptied and keeps only a
+  reference such as "Disciple #12". (Partnership: the Finance head presses **Taken forward** or **Not taken
+  forward**.)
+* **Unsuccessful:** deleted automatically **365 days after the decision** (under-18s: **90 days**), including
+  any documents; only anonymous counts (type, branch, month, outcome) are kept. The periods are in **Site
+  settings** (Super Admin).
+* On the **1st of each month** department heads get an email with how many of their applications will be
+  deleted in the next 30 days (no names). If one must be kept (for example a legal dispute), ask the Super
+  Admin for a **legal hold** before the deadline.
+* **Super Admin → Accounts & security → Application retention:** see what *would* be deleted now (a dry run
+  that deletes nothing), place or lift **legal holds**, run the deletion now, and **delete an application early
+  when the person asks** (password and code required; write down how the request was checked).
+* Applications from **under-18s** are visible only to the department head and the Founder.
+* If the privacy policy page has been edited so much that it no longer has a "How long we keep it" heading,
+  add the "Applications" section yourself (text in `core/migrations/0012_privacy_policy_applications.py`).
 
 ## 21. How the Super Admin creates and manages accounts
 *Only the Super Admin (the Founder, at most two people) can create, activate, change, deactivate or delete

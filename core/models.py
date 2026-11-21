@@ -137,8 +137,15 @@ class SiteSettings(SingletonModel):
     retention_partnership_days = models.PositiveIntegerField(default=1095)
     retention_unsuccessful_days = models.PositiveIntegerField(
         default=365,
-        help_text="Delete membership, discipleship and finance-volunteer applications that were NOT taken forward "
-        "this many days after the decision (0 = keep forever).",
+        help_text="Delete membership, discipleship, partnership and finance-volunteer applications that were NOT "
+        "successful this many days after the decision, keeping only anonymous statistics (0 = keep forever).",
+    )
+    retention_unsuccessful_minor_days = models.PositiveIntegerField(
+        default=90,
+        help_text="The same for applicants under 18 (never longer than the period above).",
+    )
+    retention_notice_days = models.PositiveIntegerField(
+        default=30, help_text="Applications deleted within this many days are listed in the monthly report."
     )
 
     class Meta:
@@ -226,6 +233,61 @@ class Page(PublishableModel):
         if self.slug in ("privacy", "terms"):
             return reverse(f"core:{self.slug}")
         return reverse("core:page", args=[self.slug])
+
+
+class RetainedApplication(models.Model):
+    """Lifecycle and retention fields shared by the four application forms (ministry decision 8).
+
+    ``outcome_at`` starts the retention clock. An unsuccessful application is deleted (keeping only an anonymous
+    statistic) after ``SiteSettings.retention_unsuccessful_days`` (minors: ``retention_unsuccessful_minor_days``)
+    unless it is on legal hold. A successful one is converted into the proper ministry record and keeps only
+    ``record_reference``.
+    """
+
+    class Outcome(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SUCCESSFUL = "successful", "Approved (successful)"
+        UNSUCCESSFUL = "unsuccessful", "Unsuccessful"
+
+    outcome = models.CharField(
+        max_length=12, choices=Outcome.choices, default=Outcome.PENDING, db_index=True, editable=False
+    )
+    outcome_at = models.DateTimeField(null=True, blank=True, editable=False, db_index=True)
+    legal_hold = models.BooleanField(
+        default=False, editable=False, help_text="Pauses automatic deletion (set by the Super Admin)."
+    )
+    legal_hold_reason = models.CharField(max_length=300, blank=True, editable=False)
+    record_reference = models.CharField(
+        max_length=80, blank=True, editable=False, help_text="Where a successful application now lives."
+    )
+
+    class Meta:
+        abstract = True
+
+
+class ApplicationStat(models.Model):
+    """Anonymous counts kept after applications are converted or deleted: type, branch, month, outcome only."""
+
+    kind = models.CharField(max_length=30, db_index=True)
+    branch = models.ForeignKey(
+        "branches.Branch", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    month = models.DateField(help_text="First day of the month the application was received.")
+    outcome = models.CharField(max_length=12, choices=RetainedApplication.Outcome.choices)
+    count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering: ClassVar = ["-month", "kind"]
+        constraints: ClassVar = [
+            models.UniqueConstraint(
+                fields=["kind", "branch", "month", "outcome"],
+                name="unique_application_stat",
+                nulls_distinct=False,
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.kind} {self.month:%b %Y} {self.outcome}: {self.count}"
 
 
 class SubmissionStatus(models.TextChoices):

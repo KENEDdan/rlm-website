@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.people import AgeBand, Gender
+from core.retention import RetentionColumns
 from portal.access import HEAD, MEMBER, Access
 from portal.charts import Chart, grouped_counts, monthly_series
 from portal.dashboards import (
@@ -55,7 +56,7 @@ class _Membership(Resource):
 
 
 @register
-class MemberResource(_Membership):
+class MemberResource(RetentionColumns, _Membership):
     model = Member
     slug = "members"
     label = "Member register"
@@ -77,7 +78,18 @@ class MemberResource(_Membership):
     search_fields: ClassVar = ["member_number"]
     form_class = MemberForm
     fields: ClassVar = MemberForm.Meta.fields
+
+    def scope(self, access: Access, qs: QuerySet) -> QuerySet:
+        qs = super().scope(access, qs)
+        # Decision 8: applications of under-18s (pending or unsuccessful) are visible to the head only.
+        if not access.is_head(DEPT):
+            qs = qs.exclude(is_minor=True, outcome__in=["pending", "unsuccessful"])
+        return qs
+
     detail_fields: ClassVar = [
+        "outcome",
+        "retention_deadline",
+        "record_reference",
         "member_number",
         "status",
         "source",

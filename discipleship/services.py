@@ -118,6 +118,10 @@ def enroll_registration(
         disciple.save(update_fields=["stage", "updated_at"])
     registration.status = Registration.Status.ENROLLED
     registration.save()
+    # Decision 8: the disciple record now holds the person; the registration keeps only a reference.
+    from core.retention import convert
+
+    convert(registration, f"Disciple #{disciple.pk}")
     log_event(AuditLog.Action.APPROVE, request=request, obj=registration, extra={"disciple": disciple.pk})
     return disciple
 

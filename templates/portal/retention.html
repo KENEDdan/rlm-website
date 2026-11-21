@@ -1,0 +1,53 @@
+{% extends "portal/base.html" %}
+{% block title %}Application retention{% endblock %}
+{% block content %}
+<div class="portal-head">
+  <div>
+    <p class="eyebrow">Super Admin · Privacy</p>
+    <h1 class="portal-title">Application retention</h1>
+    <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Unsuccessful membership, discipleship, partnership and finance-volunteer applications are deleted {{ site.retention_unsuccessful_days }} days after the decision (applicants under 18: {{ site.retention_unsuccessful_minor_days }} days), unless on legal hold. Only anonymous counts (type, branch, month, outcome) are kept. The job runs every night; change the periods in Site settings.</p>
+  </div>
+</div>
+
+<section class="panel" aria-labelledby="due-title">
+  <h2 class="panel-title" id="due-title">Dry run: would be deleted now ({{ due|length }})</h2>
+  <p class="text-xs text-rlm-grey">Nothing is deleted by viewing this page.</p>
+  <div class="table-wrap"><table class="table-rlm">
+    <thead><tr><th scope="col">Application</th><th scope="col">Decided</th><th scope="col">Deadline</th><th scope="col">Under 18</th><th scope="col">Legal hold</th></tr></thead>
+    <tbody>{% for c in due %}<tr><th scope="row">{{ c.reference }}</th><td>{{ c.obj.outcome_at|date:"j M Y" }}</td><td>{{ c.deadline|date:"j M Y" }}</td><td>{% if c.is_minor %}Yes{% else %}No{% endif %}</td>
+      <td><form method="post" class="flex flex-wrap items-end gap-2 rlm-form">{% csrf_token %}<input type="hidden" name="action" value="hold"><input type="hidden" name="kind" value="{{ c.spec.code }}"><input type="hidden" name="pk" value="{{ c.obj.pk }}"><label class="sr-only" for="hold-{{ c.spec.code }}-{{ c.obj.pk }}">Reason</label><input id="hold-{{ c.spec.code }}-{{ c.obj.pk }}" name="reason" placeholder="Reason" maxlength="300" class="w-40"><button class="btn-outline btn-sm" type="submit">Place on hold</button></form></td></tr>
+    {% empty %}<tr><td colspan="5">Nothing is due for deletion.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if due %}<form method="post" class="mt-4">{% csrf_token %}<input type="hidden" name="action" value="purge">{% if not fresh %}<p class="mb-2 text-xs text-rlm-grey">You will be asked for your password and an authenticator code first.</p>{% endif %}<button class="btn-danger btn-sm" type="submit" data-confirm="Delete these {{ due|length }} application(s) now? This cannot be undone.">Run deletion now</button></form>{% endif %}
+</section>
+
+<section class="panel mt-6" aria-labelledby="near-title">
+  <h2 class="panel-title" id="near-title">Due in the next {{ site.retention_notice_days }} days ({{ nearing|length }})</h2>
+  <div class="table-wrap"><table class="table-rlm"><thead><tr><th scope="col">Application</th><th scope="col">Deleted on</th><th scope="col">Under 18</th></tr></thead>
+    <tbody>{% for c in nearing %}<tr><th scope="row">{{ c.reference }}</th><td>{{ c.deadline|date:"j M Y" }}</td><td>{% if c.is_minor %}Yes{% else %}No{% endif %}</td></tr>{% empty %}<tr><td colspan="3">None.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+
+<section class="panel mt-6" aria-labelledby="held-title">
+  <h2 class="panel-title" id="held-title">On legal hold ({{ held|length }})</h2>
+  <div class="table-wrap"><table class="table-rlm"><thead><tr><th scope="col">Application</th><th scope="col">Reason</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
+    <tbody>{% for c in held %}<tr><th scope="row">{{ c.reference }}</th><td>{{ c.obj.legal_hold_reason }}</td><td><form method="post">{% csrf_token %}<input type="hidden" name="action" value="release"><input type="hidden" name="kind" value="{{ c.spec.code }}"><input type="hidden" name="pk" value="{{ c.obj.pk }}"><button class="btn-outline btn-sm" type="submit">Lift hold</button></form></td></tr>{% empty %}<tr><td colspan="3">No legal holds.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-2">
+  <section class="panel" aria-labelledby="erase-title">
+    <h2 class="panel-title" id="erase-title">Delete early on the person's request</h2>
+    <p class="text-xs text-rlm-grey">Use the application type and number shown on the application screen. Applications on legal hold cannot be deleted.</p>
+    <form method="post" class="rlm-form mt-3 space-y-3">{% csrf_token %}<input type="hidden" name="action" value="erase">
+      <div><label for="e-kind">Application type</label><select id="e-kind" name="kind">{% for code, label in kinds %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></div>
+      <div><label for="e-pk">Number</label><input id="e-pk" name="pk" inputmode="numeric" pattern="[0-9]+" required></div>
+      <div><label for="e-reason">How the request was received and verified</label><input id="e-reason" name="reason" maxlength="300" required></div>
+      <button class="btn-danger btn-sm" type="submit" data-confirm="Delete this application permanently?">Delete now</button>
+    </form>
+  </section>
+  <section class="panel" aria-labelledby="stats-title">
+    <h2 class="panel-title" id="stats-title">Anonymous statistics (last 12 months)</h2>
+    <div class="table-wrap"><table class="table-rlm"><thead><tr><th scope="col">Type</th><th scope="col">Successful</th><th scope="col">Unsuccessful (deleted)</th></tr></thead>
+      <tbody>{% for s in stats %}<tr><th scope="row">{{ s.label }}</th><td>{{ s.successful }}</td><td>{{ s.unsuccessful }}</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+</div>
+{% endblock %}

@@ -6,14 +6,23 @@ from typing import Any
 
 from django import forms
 
-from core.forms import GUARDIAN_REQUIRED, MINOR_HELP, ConsentMixin, ProtectedFormMixin, SectionedFormMixin
+from core.forms import (
+    GUARDIAN_REQUIRED,
+    MINOR_HELP,
+    ApplicationRetentionNotice,
+    ConsentMixin,
+    ProtectedFormMixin,
+    SectionedFormMixin,
+)
 from core.models import phone_validator
 from core.people import ADULT_AGE, Gender, YesNo
 
 from .models import GrowthArea, Registration
 
 
-class DiscipleshipRegistrationForm(SectionedFormMixin, ProtectedFormMixin, ConsentMixin, forms.Form):
+class DiscipleshipRegistrationForm(
+    SectionedFormMixin, ProtectedFormMixin, ApplicationRetentionNotice, ConsentMixin, forms.Form
+):
     full_name = forms.CharField(
         max_length=150, label="Full name", widget=forms.TextInput(attrs={"autocomplete": "name"})
     )

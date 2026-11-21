@@ -1,0 +1,12 @@
+{% autoescape off %}Hello,
+
+This is the monthly retention report for your department. Unsuccessful applications are deleted automatically after the retention period; only anonymous counts are kept.
+
+{% for label, soon, held in rows %}- {{ label }}: {{ soon }} to be deleted in the next {{ days }} days{% if held %}, {{ held }} on legal hold{% endif %}
+{% endfor %}
+If any of these must be kept (for example because of a dispute or legal claim), ask the Super Admin to place a legal hold before the deadline. Sign in to the staff portal for details:
+{{ site_url }}
+
+For privacy this email contains no names or other personal details.
+
+This is an automated message.{% endautoescape %}

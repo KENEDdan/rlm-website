@@ -1,0 +1,8 @@
+{% extends "print/base.html" %}
+{% block body %}
+<p class="text-xs">{{ total }} record{{ total|pluralize }}{% if truncated %}; the first {{ rows|length }} are printed. Narrow the filters to print the rest{% endif %}.</p>
+<section class="print-section">
+  <table><thead><tr>{% for name, label in columns %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for values in rows %}<tr>{% for value in values %}<td>{{ value }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ columns|length }}">No records.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

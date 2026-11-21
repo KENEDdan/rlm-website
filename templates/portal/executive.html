@@ -6,7 +6,8 @@
     <p class="eyebrow">Founder &amp; leadership</p>
     <h1 class="portal-title">Executive overview</h1>
     <p class="mt-1 text-sm text-rlm-grey">All departments at a glance. Figures are totals only; open a department for the records.</p>
-    <p class="mt-2"><a class="portal-link text-sm font-semibold" href="{% url 'portal:finance:executive_finance' %}">Executive finance: income, spending, cash, budgets →</a></p>
+    <p class="mt-2 flex flex-wrap gap-3"><a class="portal-link text-sm font-semibold" href="{% url 'portal:finance:executive_finance' %}">Executive finance: income, spending, cash, budgets →</a>
+      <a class="btn-outline btn-sm" href="{% url 'portal:executive_print' %}?{{ request.GET.urlencode }}">Print / Save as PDF</a></p>
   </div>
 </div>
 {% url 'portal:executive' as filter_url %}

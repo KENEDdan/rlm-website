@@ -7,10 +7,12 @@
     <h1 class="portal-title">Performance targets {{ board.year }}</h1>
     <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Year to date up to {{ board.month_label }}. {{ rag_rule }}. A month's actual is overdue when it is still missing on the 10th of the next month.</p>
   </div>
-  {% if can_manage %}<div class="flex flex-wrap gap-2">
+  <div class="flex flex-wrap gap-2">
+    <a class="btn-outline btn-sm" href="{% url 'portal:targets_print' %}?{{ request.GET.urlencode }}">Print / Save as PDF</a>
+  {% if can_manage %}
     <a class="btn-primary btn-sm" href="{% url 'portal:target_create' %}">New target</a>
     <a class="btn-outline btn-sm" href="{% url 'portal:target_import' %}">Import CSV</a>
-  </div>{% endif %}
+  {% endif %}</div>
 </div>
 <form method="get" class="portal-filters rlm-form">
   <div><label for="t-year">Financial year</label><select id="t-year" name="year">{% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select></div>

@@ -6,6 +6,7 @@
     <p class="eyebrow">Founder &amp; leadership</p>
     <h1 class="portal-title">Executive finance</h1>
     <p class="mt-1 max-w-3xl text-sm text-rlm-grey">Ministry-wide totals only. Ledger lines, donors, vouchers and receipts stay with Finance and the Founder.</p>
+    <p class="mt-2"><a class="btn-outline btn-sm" href="{% url 'portal:finance:executive_finance_print' %}?{{ request.GET.urlencode }}">Print / Save as PDF</a></p>
   </div>
 </div>
 {% url 'portal:finance:executive_finance' as filter_url %}

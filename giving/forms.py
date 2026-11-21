@@ -5,7 +5,7 @@ from typing import Any
 
 from django import forms
 
-from core.forms import ConsentMixin, ProtectedFormMixin, SectionedFormMixin
+from core.forms import ApplicationRetentionNotice, ConsentMixin, ProtectedFormMixin, SectionedFormMixin
 from core.models import phone_validator
 from core.site_text import option_choices
 
@@ -65,7 +65,9 @@ class PledgeForm(ProtectedFormMixin, ConsentMixin, forms.ModelForm):
         self.fields["category"].queryset = GivingCategory.objects.filter(is_active=True)
 
 
-class PartnershipForm(SectionedFormMixin, ProtectedFormMixin, ConsentMixin, forms.ModelForm):
+class PartnershipForm(
+    SectionedFormMixin, ProtectedFormMixin, ApplicationRetentionNotice, ConsentMixin, forms.ModelForm
+):
     """'Partnership Registration' form (docs/membership_policy_questionnaire.md, form 3).
 
     Choice lists are admin-managed (Form options: partner_type, partner_area, partnership_type).

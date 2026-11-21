@@ -1,0 +1,19 @@
+{% extends "print/base.html" %}
+{% block body %}
+<p class="text-xs">Status: Green = 90% of target or better, Amber = 70-89%, Red = below 70%. "Overdue" = a month's actual still missing on the 10th of the next month.</p>
+{% for cat in board.categories %}{% if cat.rows %}
+<section class="print-section">
+  <h2>{{ cat.label }} (Green {{ cat.green }}, Amber {{ cat.amber }}, Red {{ cat.red }}{% if cat.overdue %}, Overdue {{ cat.overdue }}{% endif %})</h2>
+  <table><thead><tr><th scope="col">Target</th><th scope="col">Department</th><th scope="col">Branch</th><th scope="col">Annual</th><th scope="col">YTD target</th><th scope="col">YTD actual</th><th scope="col">%</th><th scope="col">Status</th></tr></thead>
+    <tbody>{% for row in cat.rows %}<tr>
+      <th scope="row">{{ row.indicator.name }}{% if row.overdue %} (overdue: {{ row.overdue_labels }}){% endif %}</th>
+      <td>{{ row.indicator.department.name }}</td><td>{{ row.indicator.branch|default:"All branches" }}</td>
+      <td>{{ row.indicator.annual_target|floatformat:"-2" }}</td><td>{{ row.ytd_target|floatformat:"-2" }}</td>
+      <td>{% if row.ytd_actual is None %}—{% else %}{{ row.ytd_actual|floatformat:"-2" }}{% endif %}</td>
+      <td>{% if row.progress is None %}—{% else %}{{ row.progress }}%{% endif %}</td>
+      <td>{{ row.rag_status.1 }}</td>
+    </tr>{% endfor %}</tbody></table>
+</section>
+{% endif %}{% endfor %}
+{% if not board.count %}<p>No targets for {{ board.year }}.</p>{% endif %}
+{% endblock %}

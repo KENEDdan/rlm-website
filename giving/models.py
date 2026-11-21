@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from core.crypto import blind_index
 from core.fields import EncryptedCharField, EncryptedEmailField, EncryptedTextField
-from core.models import SingletonModel, SubmissionModel, TimeStampedModel
+from core.models import RetainedApplication, SingletonModel, SubmissionModel, TimeStampedModel
 from core.site_text import option_label
 
 
@@ -184,7 +184,7 @@ class WebhookEvent(models.Model):
         return f"{self.provider}:{self.event_id}"
 
 
-class PartnershipEnquiry(SubmissionModel):
+class PartnershipEnquiry(RetainedApplication, SubmissionModel):
     # Admin-managed lists "partner_type" and "partner_interest" (core.FormOption).
     partner_type = models.CharField(max_length=20)
     interest = models.CharField(max_length=20, default="financial")

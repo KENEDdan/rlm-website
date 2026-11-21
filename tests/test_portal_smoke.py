@@ -28,11 +28,13 @@ def test_every_dashboard_and_screen_renders(demo, make_staff, verified_client) -
     assert client.get(P + "executive/").status_code == 200
     for code in DEPARTMENT_ORDER:
         assert client.get(P + f"{code}/").status_code == 200, code
-        assert client.get(P + f"{code}/export/print/").status_code == 200, code
+        assert client.get(P + f"{code}/print/").status_code == 200, code
         assert client.get(P + f"{code}/my-budget/").status_code == 200, code
     for (department, slug), resource in REGISTRY.items():
         base = P + f"{department}/{slug}/"
         assert client.get(base).status_code == 200, base
+        if resource.can(resource_access(client), "export"):
+            assert client.get(f"{base}print/").status_code == 200, base  # every list prints (decision 7)
         obj = resource.get_queryset(resource_access(client)).first()
         if obj is None:
             continue

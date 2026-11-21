@@ -48,6 +48,28 @@ class ConsentMixin(forms.Form):
     )
 
 
+class ApplicationRetentionNotice(forms.Form):
+    """Tells applicants how long an unsuccessful application is kept (ministry decision 8), from live settings."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        from .models import SiteSettings
+
+        site = SiteSettings.load()
+        days = site.retention_unsuccessful_days
+        if "consent" in self.fields:
+            if days:
+                minors = min(days, site.retention_unsuccessful_minor_days or days)
+                text = (
+                    f"If your application is not successful, we delete it {days} days after the decision "
+                    f"({minors} days for under-18s), keeping only anonymous statistics. If it is successful, your "
+                    "details move into the ministry's records. You can ask us to delete your details sooner."
+                )
+            else:
+                text = "You can ask us at any time to delete your application."
+            self.fields["consent"].help_text = text
+
+
 class SectionedFormMixin:
     """``sections = [("A. Personal information", ["full_name", ...], "optional help"), ...]``."""
 

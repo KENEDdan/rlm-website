@@ -23,7 +23,7 @@ from django.utils import timezone
 
 from core.crypto import blind_index
 from core.fields import EncryptedCharField, EncryptedEmailField, EncryptedTextField
-from core.models import SingletonModel, TimeStampedModel
+from core.models import RetainedApplication, SingletonModel, TimeStampedModel
 from core.people import Gender, YesNo
 from core.private_files import PrivateFileField
 from core.uploads import RandomUploadTo
@@ -740,7 +740,7 @@ class Proposal(TimeStampedModel):
 
 
 # ------------------------------------------------------------------------------------------ finance volunteers
-class FinanceVolunteer(TimeStampedModel):
+class FinanceVolunteer(RetainedApplication, TimeStampedModel):
     """Public 'Finance & Accountability Volunteer' form. Vetting never grants access by itself."""
 
     class Status(models.TextChoices):

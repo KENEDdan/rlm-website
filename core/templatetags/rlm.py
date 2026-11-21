@@ -224,6 +224,12 @@ def page_text(key: str) -> Any:
     return lookup(key)
 
 
+def _minor_days(site: Any) -> int:
+    adults = getattr(site, "retention_unsuccessful_days", 0)
+    minors = getattr(site, "retention_unsuccessful_minor_days", 0)
+    return min(adults, minors) if adults and minors else adults
+
+
 @register.inclusion_tag("core/_privacy_facts.html", takes_context=True)
 def privacy_facts(context: dict[str, Any]) -> dict[str, Any]:
     """Cookie list and retention periods generated from the live settings, so the privacy page can never
@@ -237,6 +243,12 @@ def privacy_facts(context: dict[str, Any]) -> dict[str, Any]:
         ("Volunteer applications", getattr(site, "retention_volunteer_days", 0)),
         ("Event registrations", getattr(site, "retention_event_registration_days", 0)),
         ("Partnership enquiries", getattr(site, "retention_partnership_days", 0)),
+        (
+            "Membership, discipleship, partnership and finance-volunteer applications that are not successful "
+            "(counted from the decision; only anonymous statistics are kept)",
+            getattr(site, "retention_unsuccessful_days", 0),
+        ),
+        ("The same applications from people under 18 (counted from the decision)", _minor_days(site)),
         ("Unconfirmed newsletter sign-ups", 30),
     ]
     cookies = [

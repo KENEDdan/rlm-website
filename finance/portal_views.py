@@ -137,6 +137,28 @@ def enquiry_to_donor(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @never_cache
+@portal_view(DEPT, level=HEAD)
+@require_POST
+def enquiry_outcome(request: HttpRequest, pk: int, outcome: str) -> HttpResponse:
+    """Decision 8: a partnership registration is successful (converted into the partner pipeline, keeping only a
+    reference) or unsuccessful (deleted after the retention period)."""
+    from core import retention
+
+    resource, enquiry = post_action(request, DEPT, "partner-registrations", pk, "view")
+    if outcome == "successful":
+        donor = services.donor_from_enquiry(enquiry)
+        retention.convert(enquiry, f"Partner #{donor.pk}")
+        log_event(AuditLog.Action.APPROVE, request=request, obj=enquiry, extra={"donor": donor.pk})
+        messages.success(request, "Taken forward. The partner record now holds the details.")
+        return redirect(DonorResource().url("detail", donor))
+    if outcome == "unsuccessful":
+        retention.set_outcome(request, enquiry, "unsuccessful")
+        messages.success(request, "Marked as not taken forward.")
+        return redirect(resource.url("detail", enquiry))
+    raise PermissionDenied
+
+
+@never_cache
 @portal_view(DEPT, level=MEMBER)
 @require_POST
 def volunteer_step(request: HttpRequest, pk: int, step: str) -> HttpResponse:

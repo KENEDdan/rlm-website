@@ -119,6 +119,22 @@ reversed automatically; if one must be undone, restore the pre-deploy backup (`d
 * Weekly: `tail /var/log/rlm-backup.log` (a line `backup ok: ...` per night) and `df -h` (disk space).
 * Monthly: restore test (`docs/BACKUP_RESTORE.md` §4), review the admin **Audit log**, `docker compose ps`.
 
+## 5a. Scheduled jobs (Celery beat)
+The `worker` container runs Celery with `--beat`, so exactly **one** worker container must run (two would run
+every job twice). Times are the server time zone (`TIME_ZONE` in settings). Each job is safe to run again.
+
+| Job | When | What it does |
+|---|---|---|
+| `core.tasks.purge_expired_submissions` | daily | deletes old prayer requests, contact messages, event registrations, volunteer and partnership submissions after their Site-settings periods; unconfirmed newsletter sign-ups after 30 days |
+| `core.tasks.purge_unsuccessful_applications` | daily 02:30 | ministry decision 8: deletes unsuccessful membership / discipleship / partnership / finance-volunteer applications past their retention deadline (legal holds skipped), keeps anonymous counts, removes their files; **every run is written to the audit log** |
+| `core.tasks.report_applications_nearing_purge` | 1st of the month 07:00 | emails department heads the number of their applications to be deleted within `retention_notice_days` (no personal data) |
+| `accounts.tasks.account_integrity_check` | every 15 min | detects account/role changes made outside the portal and alerts the Super Admins |
+| `accounts.tasks.dormant_accounts` | daily | flags staff accounts unused for too long |
+
+Check they run: `docker compose logs worker | grep -i "succeeded"`, and the admin **Audit log** shows one
+*Retention purge* entry per night (actor `system:application-retention`). A dry run on the server:
+`docker compose exec web python manage.py purge_applications --dry-run`.
+
 ## 6. Secret rotation
 
 * `DJANGO_SECRET_KEY`: replace in `.env`, `scripts/deploy.sh --no-pull` (everyone is signed out).

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
 
 from celery import shared_task
 from django.apps import apps
@@ -88,14 +89,6 @@ RETENTION = {
 }
 
 
-# Applications that were not taken forward: (model, status field, status value), kept retention_unsuccessful_days.
-UNSUCCESSFUL = [
-    ("membership.Member", "status", "rejected"),
-    ("discipleship.Registration", "status", "declined"),
-    ("finance.FinanceVolunteer", "status", "declined"),
-]
-
-
 @shared_task
 def purge_expired_submissions() -> dict[str, int]:
     """Delete submissions older than the retention periods set in SiteSettings (0 = keep)."""
@@ -109,13 +102,6 @@ def purge_expired_submissions() -> dict[str, int]:
         model = apps.get_model(label)
         deleted, _ = model.objects.filter(created_at__lt=now - timedelta(days=days)).delete()
         result[label] = deleted
-    unsuccessful_days = site.retention_unsuccessful_days
-    if unsuccessful_days:
-        cutoff = now - timedelta(days=unsuccessful_days)
-        for label, field, status in UNSUCCESSFUL:
-            model = apps.get_model(label)
-            deleted, _ = model.objects.filter(**{field: status, "updated_at__lt": cutoff}).delete()
-            result[f"{label}({status})"] = deleted
     # Unconfirmed newsletter sign-ups older than 30 days are removed too.
     subscriber = apps.get_model("newsletter.Subscriber")
     deleted, _ = subscriber.objects.filter(status="pending", created_at__lt=now - timedelta(days=30)).delete()
@@ -124,3 +110,57 @@ def purge_expired_submissions() -> dict[str, int]:
         log_event(AuditLog.Action.PURGE, actor_email="system:retention", extra=result)
     logger.info("Retention purge finished: %s", result)
     return result
+
+
+@shared_task
+def purge_unsuccessful_applications() -> dict[str, Any]:
+    """Daily: delete unsuccessful applications past their retention deadline (ministry decision 8)."""
+    from .retention import purge
+
+    result = purge(dry_run=False)
+    logger.info("Application retention: %s", {k: v for k, v in result.items() if k != "candidates"})
+    return {k: v for k, v in result.items() if k != "candidates"}
+
+
+@shared_task
+def report_applications_nearing_purge() -> int:
+    """Monthly: tell each department head how many of their applications will be deleted soon. Counts only."""
+    from portal.models import DepartmentMembership
+
+    from .retention import SPECS, held, nearing
+
+    site = SiteSettings.load()
+    soon = nearing()
+    on_hold = held()
+    sent = 0
+    for department in sorted({spec.department for spec in SPECS.values()}):
+        rows = []
+        for spec in SPECS.values():
+            if spec.department != department:
+                continue
+            n = sum(1 for c in soon if c.spec.code == spec.code)
+            h = sum(1 for c in on_hold if c.spec.code == spec.code)
+            if n or h:
+                rows.append((spec.label, n, h))
+        if not rows:
+            continue
+        heads = DepartmentMembership.objects.filter(
+            department__code=department, is_head=True, user__is_active=True
+        ).select_related("user")
+        recipients = sorted({m.user.email for m in heads if m.user.email})
+        if not recipients:
+            continue
+        context = {
+            "rows": rows,
+            "days": site.retention_notice_days,
+            "site": site,
+            "site_url": settings.SITE_URL,
+        }
+        send_mail(
+            subject=render_to_string("emails/retention_report_subject.txt", context).strip(),
+            message=render_to_string("emails/retention_report.txt", context),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=recipients,
+        )
+        sent += 1
+    return sent

@@ -12,6 +12,7 @@ from django.http import HttpRequest
 from django.urls import reverse
 from django.utils import timezone
 
+from core.retention import RetentionColumns
 from portal.access import HEAD, MEMBER, Access
 from portal.charts import Chart, grouped_counts, monthly_series
 from portal.dashboards import (
@@ -73,7 +74,7 @@ def _post(url: str, label: str, style: str = "", confirm: str = "") -> dict[str,
 
 
 @register
-class RegistrationResource(_Discipleship):
+class RegistrationResource(RetentionColumns, _Discipleship):
     model = Registration
     slug = "registrations"
     label = "Registrations (website)"
@@ -82,6 +83,9 @@ class RegistrationResource(_Discipleship):
     filters: ClassVar = ["status", "gender", "age_band", "branch"]
     fields: ClassVar = ["branch", "guardian_name", "guardian_contact", "guardian_consent"]
     detail_fields: ClassVar = [
+        "outcome",
+        "retention_deadline",
+        "record_reference",
         "status",
         "full_name",
         "gender",
