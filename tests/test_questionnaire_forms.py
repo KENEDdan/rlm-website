@@ -34,7 +34,7 @@ MEMBER = {
     "nationality": "South Sudanese",
     "country": "South Sudan",
     "city": "Juba",
-    "phone": "+211 912 345 678",
+    "phone": "+211 900 000 001",
     "email": "grace@example.test",
     "occupation": "Teacher",
     "born_again": "yes",

@@ -192,7 +192,7 @@ def test_500_page_renders_without_details(rf: RequestFactory) -> None:
 # ---------------------------------------------------------------- logging
 def test_pii_scrub_filter_masks_email_phone_and_ciphertext() -> None:
     record = logging.LogRecord(
-        "x", logging.INFO, __file__, 1, "user %s phone %s", ("a.b@example.org", "+211 912 345 678"), None
+        "x", logging.INFO, __file__, 1, "user %s phone %s", ("a.b@example.org", "+211 900 000 001"), None
     )
     PIIScrubFilter().filter(record)
     msg = record.getMessage()
@@ -207,14 +207,14 @@ def test_sentry_before_send_strips_request_body_and_user() -> None:
             "headers": {"Cookie": "x", "User-Agent": "ua"},
         },
         "user": {"email": "x@example.org"},
-        "extra": {"email": "y@example.org", "note": "call +211912345678"},
+        "extra": {"email": "y@example.org", "note": "call +211900000002"},
     }
     out = sentry_before_send(event, {})
     assert "data" not in out["request"] and "cookies" not in out["request"]
     assert out["request"]["headers"] == {"User-Agent": "ua"}
     assert "user" not in out
     assert out["extra"]["email"] == "[scrubbed]" and "[phone]" in out["extra"]["note"]
-    assert scrub_data(["a@b.co"]) == ["[email]"]
+    assert scrub_data(["a@b.example"]) == ["[email]"]
 
 
 # ---------------------------------------------------------------- honeypot / Turnstile

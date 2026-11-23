@@ -1,4 +1,4 @@
-"""Break-glass: ``manage.py emergency_disable --email someone@ministry.org [--reset-2fa]``.
+"""Break-glass: ``manage.py emergency_disable --email someone@example.org [--reset-2fa]``.
 
 For when a Super Admin account itself is compromised (or no Super Admin can sign in) and the technical lead
 must cut access from the server. It can only REMOVE access (deactivate, end sessions, optionally remove 2FA);

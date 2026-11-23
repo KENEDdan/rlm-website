@@ -48,7 +48,7 @@ def test_new_convert_is_handed_to_discipleship(make_staff, verified_client, juba
             "campaign": campaign.pk,
             "decision_date": timezone.localdate().isoformat(),
             "full_name": "John Lado",
-            "phone": "+211 922 000 111",
+            "phone": "+211 900 000 001",
             "gender": "male",
             "age_band": "26_35",
             "location": "Gudele",
@@ -149,7 +149,7 @@ def test_minor_registrations_hidden_and_need_guardian(make_staff, verified_clien
     assert minor.status == "submitted"
     Registration.objects.filter(pk=minor.pk).update(guardian_consent=True)
     minor.refresh_from_db()
-    minor.guardian_contact = "+211 900 111 222"
+    minor.guardian_contact = "+211 900 000 002"
     minor.save()
     head.post(P + f"discipleship/registrations/{minor.pk}/enroll/")
     minor.refresh_from_db()

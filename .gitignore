@@ -48,3 +48,21 @@ Thumbs.db
 
 # Local Lighthouse reports
 lh/
+
+# Raw source documents from the ministry (may contain bank details, phone numbers, personal data).
+# Only sanitised Markdown copies (e.g. docs/responsibilities.md) are committed.
+*.docx
+*.doc
+*.docm
+*.odt
+*.rtf
+*.xlsx
+*.xls
+*.xlsm
+*.pptx
+*.pdf
+docs/source/
+docs/raw/
+~$*
+# Stray backup folders (e.g. a mistyped Windows path)
+backups*/
