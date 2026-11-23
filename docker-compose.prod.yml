@@ -175,7 +175,7 @@ services:
   # Optional virus scan of every upload (CLAMAV_ENABLED=true in .env, then
   # `docker compose --profile clamav up -d`). Only on the private data network; downloads signatures daily.
   clamav:
-    image: clamav/clamav:1.4.3
+    image: clamav/clamav:1.5.4
     profiles: ["clamav"]
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
