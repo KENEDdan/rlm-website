@@ -1,3 +1,91 @@
+# Security audit, re-run 3: website requirements update (activities, Vision/Mission, hero, Technical Team, uploads)
+
+Date: 2026-11-22. Scope: everything changed for the November 2026 website requirements (docs/DECISIONS.md
+D-034 to D-038): the central upload policy, the settings split and Technical Team role, the bank-detail change
+flow, enquiry routing, content versioning and rollback, the Vision/Mission approval flow, hero backgrounds
+(including video), and the activities that replaced the programmes. Earlier audits (below) still apply.
+
+## R3.1 Summary
+
+| Severity | Found | Fixed | Accepted |
+|---|---|---|---|
+| High | 0 | 0 | 0 |
+| Medium | 2 | 2 | 0 |
+| Low | 4 | 4 | 0 |
+
+No Critical or High issue. Bandit: 0 issues (35,172 lines). pip-audit: no known vulnerabilities (no package
+was added). ruff and black clean. `manage.py check` clean; `makemigrations --check` clean.
+Tests: full suite 3,345 passed (fresh test database), plus 10 refusal-path tests added afterwards
+(`tests/test_approval_rules.py`, passing). Coverage of the new security code: upload policy 89 %, uploads 94 %,
+private files 87 %, versioning 85 %, Vision/Mission approvals 97 %, bank-detail flow 99 %, hero 97 %, portal access
+97 %, roles 96 %; core + giving + accounts + portal + programs + contact together 93 %.
+
+## R3.2 Method
+
+* Code review of every new view, service and template against CLAUDE.md rules 2-15, focusing on access control
+  (who reaches each URL, admin page and queryset), re-authentication, segregation of duties, output escaping and
+  the CSP, and on upload parsing (malformed input must be refused, never crash or over-read).
+* Tests for each boundary (tests/test_technical_team.py, test_vision_mission.py, test_hero.py,
+  test_activities.py, test_upload_policies.py), including hand-built malicious files: wrong extension, renamed
+  executable, JPEG/HTML polyglot, oversized file, pixel bombs (49 MP and 100 MP), SVG with script (by name and
+  disguised as PNG), HTML disguised as PDF, macro documents (.docm, .xlsm, and a .docx carrying vbaProject.bin),
+  embedded OLE objects, a 60 MB zip bomb, PDFs with JavaScript (plain, `#xx`-obfuscated and inside a compressed
+  object stream), encrypted PDF, double extensions, path traversal, NUL and right-to-left-override names,
+  long/non-H.264/audio-carrying/4K videos, UTF-16 CSV, ClamAV infected/unreachable.
+* Tools: bandit, pip-audit, ruff, Django system checks, full test suite.
+
+## R3.3 Findings fixed
+
+### M-1 Bank details could be changed by any single Finance user, silently (Medium, rules 2, 5, 6)
+Before: the Finance group could edit the account number in the admin with no second person, no alert and no
+history beyond the generic audit row. Fix: `giving.BankDetailChange` two-person flow (D-034) with
+re-authentication at both steps, masked email alerts, append-only history (previous details kept encrypted),
+"Last verified" date for donors; `GivingSettings.save()` refuses any other change and the admin no longer renders
+the fields. Test: `test_bank_change_needs_reauth_second_person_and_alerts`, `test_no_other_role_can_read_or_edit_bank_details`.
+
+### M-2 Finance enquiries reached the general inbox and Membership (Medium, rule 5)
+Before: every contact message, including giving and partnership questions, went to the general notification
+address and was visible to Membership in the admin. Fix: subject selector, finance-queue routing in the admin
+queryset and a Finance-only portal screen; alerts for finance-related submissions go only to the Finance heads.
+Test: `test_finance_enquiries_go_only_to_the_finance_queue`.
+
+### Lows fixed
+* **L-1 Singleton admin pages redirected before checking permission:** a user without access to Site settings or
+  Giving settings got a redirect to the change page (then a 403), confirming the row exists. Now 403 first.
+* **L-2 Privacy facts read retention from the wrong settings object** after the split, so the privacy page would
+  have listed "kept" for every type (rule 13 accuracy). Fixed and covered by the existing privacy tests.
+* **L-3 CSV formula neutralisation missed cells with leading spaces** (`"  =cmd"`). Now stripped before the check.
+* **L-4 Upload validation opened stored files during form validation** (an unreadable or missing file raised a
+  500). Stored files are now trusted as validated at upload time; only new uploads are checked.
+
+## R3.4 Accepted risks and decisions for the ministry
+
+* **ClamAV is off by default** (needs ~1.5 GB RAM). All other upload checks run regardless; re-encoding destroys
+  image payloads and executables are refused by content. Enabling it is one env flag plus a compose profile, and
+  it fails closed. **Confirm** whether to run it on the server.
+* **External links are not fetched** by the broken-link check (no outbound requests from the server, no SSRF
+  surface); only their form (`https://`) is checked.
+* **The video parser is in-house** (MP4 boxes, WebM EBML) to avoid adding ffmpeg to the image. It only reads
+  container headers and is bounded by the 15 MB cap; malformed files are refused. Browsers then decode the file in
+  their own sandbox; videos are served from our origin with `nosniff` and the `/uploads/` sandbox CSP.
+* **Vision/Mission approvers** are the Super Admin or a current `finance.Approver` row with role Founder or
+  Executive Director; acting approvers are not included (they cover expenditure only). **Confirm.**
+* **Who may open the bank-detail screens:** Finance head, Founder/Executive Director, Super Admin. Ordinary
+  Finance members cannot. **Confirm.**
+
+## R3.5 Areas reviewed and found sound
+
+| Area | Evidence |
+|---|---|
+| Technical Team boundary | Role matrix + `TECHNICAL_FORBIDDEN_*` asserted; admin and portal URLs of finance, giving, donors, members, prayer, discipleship, registrations, contacts, accounts, audit, system settings and upload limits return 403/404 for the role (parametrised tests). |
+| Separation of duties | Vision/Mission: author never approves; approval needs password + 2FA. Bank details: proposer never confirms; both steps re-authenticate; one pending change at a time (DB constraint). |
+| Versioning | `ContentVersion` and `BankDetailChange` refuse updates and deletes in the model; rollback re-checks the user's change permission on that model and skips fields with their own controlled path (Vision/Mission, Activity.department unless Super Admin). |
+| Output / CSP | Hero focal point and overlay are integers rendered into a nonce'd `<style>` (no inline style attributes); button links validated on save and re-checked at render; `media-src 'self'`; the hero editor preview uses `data:` URLs (already allowed for images) and CSSOM only; previews are `noindex` and staff-only. |
+| Uploads (rule 8) | One policy per field, enforced in forms and before storage; enumeration test; `accept` is a hint only; public forms have no file inputs (tested); request bodies capped in Caddy and Django; private files outside the web root, served only through the permission-checked, audit-logged download view as attachments with generated names. |
+| Activities | Public queries return only published activities in published categories; department routing editable only by the Super Admin; dashboard counts respect per-assignment branch scope (tested). |
+
+---
+
 # Security audit, re-run 2: staff portal, departments and the account system
 
 **Date:** 2026-11-19 · **Scope:** everything added since the Phase I audit below: the `portal` app, the seven

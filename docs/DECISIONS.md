@@ -454,3 +454,135 @@ pledges, donations and exports remain Finance + Founder only (tested). Each view
   (`AuditLog.Action.PRINT`) with title, filters and row counts, never record contents. Lists print up to 2,000
   rows (the page says when it is cut).
 * The old `<dept>/export/print/` URL was replaced by `<dept>/print/`; CSV export is unchanged.
+
+## Website requirements update (Nov 2026)
+
+Received 2026-11-21 in five parts: (1) Activities replace the five programmes; (2) the official Vision and
+Mission, verbatim, with an approval flow; (3) hero background options; (4) a Technical Team role with separation
+of duties and protected bank details; (5) strict validation of every upload. How each was implemented, and the
+defaults chosen where the requirements left something open, are in D-034 to D-038. Items the ministry must
+confirm are marked **Confirm**.
+
+## D-034: Technical Team (Website Administration) and separation of duties (Part 4)
+(2026-11-21)
+* **Role:** Django group "Technical Team" (`accounts.roles.TECHNICAL`), assigned only by the Super Admin on the
+  roles screen (re-authentication, like every role). It is not a department: it has no portal records, lands on
+  `/portal/website/` (dashboard: drafts awaiting publish, pages needing updates, recent changes, broken links and
+  missing images, site health with uptime and last backup, upload storage use) and edits content in the Django
+  admin. Its permission set is in the role matrix; `TECHNICAL_FORBIDDEN_APPS/MODELS` lists what it may never
+  hold (finance, giving, donors, members, prayer, discipleship, registrations, contact, accounts, audit, portal,
+  system settings, upload limits), and a test fails if the matrix ever grants one.
+* **Settings split into three models so access is structural:** `core.SiteContent` (what visitors see: name,
+  logos, favicon, Vision/Mission, about text, public email/phone/WhatsApp/address, footer: Technical Team +
+  Super Admin), `core.SiteSettings` (system: notification inbox, analytics, retention periods, approval rule:
+  Super Admin only) and `giving.GivingSettings` (Finance only). The data moved with a migration; nothing was lost.
+  Branch addresses and phones stay on each branch (Technical Team may edit branches).
+* **Media & Communications keeps** its existing website rights (news, gallery, resources, slides, page text);
+  both teams' edits are versioned. **Missions** now has view-only access to activities (they are website content).
+* **Versioning:** every add/change/delete of a Technical Team model (admin or portal) stores an append-only
+  `ContentVersion` snapshot plus an audit-log entry; "Changes and rollback" restores any version in one click
+  (deleted items too) and records the rollback as a new version. Vision/Mission have their own history
+  (D-036); bank details are never versioned there (they have their own, below).
+* **Bank and payment details (fraud prevention):** bank transfer and mobile-money fields can only change through
+  `giving.BankDetailChange`: the Finance & Resource Mobilization head (or Super Admin) proposes after password +
+  2FA; it is saved as pending (one at a time); an email alert goes to the Finance heads and the Super Admins with
+  the last four digits only; a second person - Founder or Executive Director (Super Admin or `finance.Approver`
+  row), never the proposer - confirms after password + 2FA; only then the details go live and "Last verified"
+  (shown on the Give page) is set. Rejections and cancellations are kept; rows cannot be deleted; the replaced
+  details are stored encrypted on the change. `GivingSettings.save()` refuses any other change, and the Django
+  admin no longer shows these fields. Only the Finance head, the Founder/Executive Director and the Super Admin
+  can open the screens; ordinary Finance members cannot (default chosen: **Confirm**).
+* **Finance enquiries go only to Finance:** the contact form has a "Subject: General / Giving and finance /
+  Partnership" selector. Giving and partnership messages appear only in Finance > "Giving and partnership
+  enquiries" (portal) and are hidden from the general contact list in the admin (Membership); their alerts, and
+  alerts for partnership registrations, pledges and finance-volunteer applications, go to the Finance heads
+  instead of the general notification inbox.
+* **Backups:** `docker/backup/backup.sh` writes ok/failed (no names or sizes) to `core.BackupRun` for the
+  dashboard; more than 36 hours since the last success shows a warning.
+
+## D-035: Activities replace the five programmes (Part 1)
+(2026-11-21) `programs.ActivityCategory` and `programs.Activity` (title, slug, summary, body, image, icon,
+schedule/frequency, branches (empty = all), department, "Get involved" button, order, published, featured, SEO).
+Seeded with exactly the four categories and thirteen activities given; summaries are short neutral placeholders
+for the Technical Team to replace. Pages: `/activities/` (grouped by category), `/activities/category/<slug>/`,
+`/activities/<slug>/` (related upcoming events, "Get involved" and "Support this activity"); the home page shows
+each category as a card carousel; About lists the categories. Old `/programs/...` URLs redirect permanently.
+* **Department routing (defaults, Super Admin changes them; ministry must confirm):** Charitable and
+  Humanitarian Services -> Development & Infrastructure; Evangelism and Missions -> Missions & Outreach;
+  Discipleship -> Discipleship; Revival Programme -> Missions & Outreach. **Confirm.** Each department dashboard
+  shows "Our activities" (upcoming events, open campaigns / classes, targets this year; branch-scoped).
+  `Activity.department` is read-only in the admin for everyone but the Super Admin; a category's department is
+  the default for new activities in it.
+* **Links:** events, outreach campaigns, discipleship classes and indicators (targets) can reference an activity;
+  the event admin filters by activity and category; the finance budget category "Programmes & events" is now
+  labelled "Activities & events" (same code, no data change).
+* **Old programme data:** programme text, image and SEO that staff had written were copied to the activity that
+  replaced the programme (Youth Revival Conferences -> Annual Youth Revival Conference, Prayer & Intercession ->
+  Prayer and Intercession, Discipleship -> Mentorship Programme, Youth & Leadership Development -> Leadership and
+  Ministerial Trainings; Evangelism & Missions text went to its category, as it covers three activities). Events
+  were relinked the same way; events of "Evangelism & Missions" are left unlinked for staff to assign. Any
+  programme the ministry had added itself became an unpublished activity under Revival Programme for review.
+  The programme table was then removed.
+
+## D-036: Vision and Mission, verbatim, with approval (Part 2)
+(2026-11-21) Seeded by migration `core 0015` exactly as received; `tests/test_vision_mission.py` asserts both
+strings character for character and that no template or code carries a second copy. They are printed only from
+`SiteContent` (home and About through `includes/vision_mission.html`, the footer, and the default meta
+description = the Mission cut at 160 characters).
+* The fields are not editable in any form. Changes go draft -> preview (real layout, side by side with the
+  published text) -> submit -> approval by the Super Admin or the Executive Director (`finance.Approver` row with
+  role Founder/Executive Director), never the author, after password + 2FA -> publish (by the author or an
+  approver). A rejection needs a reason. Other open changes to the same field are marked "superseded" when one
+  is published. Every step is audit-logged.
+* "Approval required" is `SiteSettings.vision_mission_approval_required` (default ON, Super Admin only). When
+  off, the Technical Team publishes after preview; history still records it.
+* Version history = the published changes; "Restore this version" proposes the earlier text again: one click
+  (with re-authentication) for an approver, otherwise it waits for approval.
+
+## D-037: Hero background options (Part 3)
+(2026-11-21) `core.HeroContent` (shared by the home hero `HeroSettings` and each `HeroSlide`): headline,
+sub-headline, up to two buttons (labels + links validated as site paths or https, re-checked when shown), text
+alignment (left / centre), text colour (light / dark preset), show scripture, and background "Theme colour"
+(default), "Photo" or "Video".
+* **Fallback:** a photo without a file, or a video without its file or poster, is shown as the theme colour.
+  Without JavaScript, or when the video may not play, the poster shows.
+* **Photo:** hero-photo upload policy (JPEG/PNG/WebP, 5 MB, at least 1600 px wide), WebP srcset 480/960/1600,
+  focal point (0-100 % across and down, used as `object-position`), dark overlay 0-80 % (default 45 %).
+* **Video:** hero-video policy (MP4 H.264 or WebM, 15 MB, 15 s, no audio track - the file must be silent, a
+  default chosen so no sound can ever play; **Confirm**), required poster. Rendered `muted loop playsinline
+  preload="none"` without a `src`; `static/js/hero-video.js` adds the source only after the load event and idle
+  time, and only when reduced motion is not requested, Save-Data is off, the connection is not 2G/3G or under
+  1.5 Mbit/s, and on phones only on a 4G-class connection. A visible button pauses it; off-screen videos pause.
+  CSP gained `media-src 'self'`; videos come from our own storage only. The admin shows the recommendation
+  (<= 10 s loop, 1080p, under 10 MB).
+* **Readability:** on upload, the brightest 10 % of the photo/poster is measured; with the overlay blended in, the
+  contrast against the text colour is computed (WCAG formula). Below 4.5:1 the portal, the admin and the dashboard
+  warn (not blocked). The portal editor shows the same check live while editing.
+* **Draft, preview, publish, revert:** the home hero has a draft and a live row; the portal editor
+  (`/portal/website/hero/`) edits the draft with a live preview, "Preview the draft full size" shows it on the real
+  layout (not indexed), "Publish draft" copies it to live (versioned) and "Revert to previous" restores the previous
+  live hero. Slides: save switched off, preview (works while off), switch on; any earlier version can be restored.
+  The old "home_hero" page text was folded into the hero settings and removed.
+
+## D-038: One upload policy for every file field (Part 5)
+(2026-11-21) `core/upload_policy.py` holds the policy table; `SafeImageField`, `SafeFileField` and
+`PrivateFileField` require `policy=` and validate in every ModelForm and again before storing. Policies as given;
+**defaults chosen for fields the table did not name (Confirm):** partner logos, branch, event and testimony
+images use "content image" (3 MB); album covers "gallery photo"; member documents, meeting minutes and
+correspondence "private record" (PDF/JPEG/PNG, 10 MB); the media design-request artwork "design file"
+(PDF/JPEG/PNG/WebP, 20 MB); discipleship curriculum files "study material" (PDF, 10 MB, private); quotations and
+property title documents "office document"; delivery notes "receipts and vouchers"; field photos (Missions)
+"site photo". The new favicon field is PNG only, 2 MB.
+* Super Admin adjusts size, minimum width and video length per policy in Admin > Upload limits (never above the
+  60 MB request cap or 30 s); formats are fixed in code.
+* Video is parsed in-house (MP4 boxes, WebM/EBML): no ffmpeg or new package. PDFs are scanned (including inflated
+  streams, name obfuscation `#xx`) for JavaScript, launch/submit actions, embedded files, rich media, XFA and
+  encryption; DOCX/XLSX are opened as zip and refused with macros, ActiveX, embedded objects, encryption, path
+  tricks, more than 2,000 parts, 200 MB uncompressed or a 100:1 ratio on a large part.
+* ClamAV is optional (`CLAMAV_ENABLED`, `docker compose --profile clamav`), on the private network plus an
+  egress-only network for signature updates; when enabled and unreachable, uploads are refused (fail closed).
+  **Confirm** whether to run it (about 1.5 GB RAM).
+* Request bodies: Caddy 60 MB; Django middleware 1 MB on public pages (they take no files) and 60 MB for the admin
+  and portal; `DATA_UPLOAD_MAX_MEMORY_SIZE` and `FILE_UPLOAD_MAX_MEMORY_SIZE` 2 MB (larger files are streamed to a
+  temporary file). CSV import uses the "CSV import" policy (2 MB, UTF-8) plus the existing row validation; CSV
+  exports neutralise formula cells, now also after leading spaces.

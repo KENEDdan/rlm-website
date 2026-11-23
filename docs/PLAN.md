@@ -17,7 +17,7 @@ User-facing content also inherits `core.models.PublishableModel` (`is_published`
 | core | `SiteSettings` (singleton): ministry name, tagline, scripture ref + text, vision, mission, about text, logo, ministry notification email, public email/phone, WhatsApp number, address, footer text, analytics provider/domain/script URL, retention periods (days) per data type. `SocialLink` (platform, url, order). `Page` (privacy, terms; title, body) | SiteSettings: Founder only. SocialLink: Media. |
 | accounts | `User` (email login, full name, staff flags, `branch` FK, `department` FK) | TOTP devices + static backup codes come from django-otp. |
 | branches | `Country` (name, ISO code), `Branch` (country, name, city, description, activities, meeting times, contact email/phone/address, image, order) | Juba + Yei seeded **without** contacts. A new country or branch is just a new row. |
-| programs | `Program` (title, summary, body, icon, image, department, order) | 5 programmes seeded. |
+| programs | `ActivityCategory`, `Activity` (title, summary, body, icon, image, schedule, branches, department, order, CTA) | 4 categories, 13 activities seeded (D-035). Replaced `Program`. |
 | leadership | `Department`, `Leader` (name, role title, department, branch, bio, photo, order, `confirmation_status`) | Founder seeded + published; all other posts seeded unpublished, "To be confirmed by leadership". |
 | events | `Event` (title, summary, description, program, branch, department, start/end, venue, registration_open, deadline, capacity, poster) | upcoming/past managers, `spots_left`, `can_register`. |
 | registrations | `VolunteerApplication` (🔒 full name, email#, phone, church affiliation, skills, experience, testimony, notes; country, location, branch, interests, availability, consent, status). `EventRegistration` (event, 🔒 name, email#, phone, notes; attendees, status; unique(event, email_hash)) | |
@@ -37,7 +37,7 @@ User-facing content also inherits `core.models.PublishableModel` (`is_published`
 | `/` | Home |
 | `/about/` | About (vision, mission, Acts 15:16) |
 | `/leadership/` | Published leaders |
-| `/programs/`, `/programs/<slug>/` | Programmes |
+| `/activities/`, `/activities/category/<slug>/`, `/activities/<slug>/` | Activities (old `/programs/...` redirect) |
 | `/branches/`, `/branches/<slug>/` | Branches, grouped by country |
 | `/events/`, `/events/past/`, `/events/<slug>/`, `/events/<slug>/register/` | Events + registration |
 | `/gallery/`, `/gallery/<slug>/`, `/gallery/videos/`, `/gallery/reports/`, `/testimonies/` | Media & gallery |

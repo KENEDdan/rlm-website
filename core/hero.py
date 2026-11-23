@@ -35,9 +35,10 @@ def measure_luminance(file: Any) -> float | None:
         with Image.open(file) as img:
             small = img.convert("RGB")
             small.thumbnail((64, 64))
+            raw = small.tobytes()  # RGB triples (getdata() is deprecated in Pillow 12+)
             values = sorted(
-                0.2126 * _channel(r) + 0.7152 * _channel(g) + 0.0722 * _channel(b)
-                for r, g, b in small.getdata()
+                0.2126 * _channel(raw[i]) + 0.7152 * _channel(raw[i + 1]) + 0.0722 * _channel(raw[i + 2])
+                for i in range(0, len(raw), 3)
             )
         file.seek(0)
     except Exception:  # noqa: BLE001 - a missing or unreadable file just means "unknown"

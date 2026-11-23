@@ -110,12 +110,23 @@ topics, partnership types and interests.
 ### 3.1 Adding a staff member
 Staff accounts are created **only in the staff portal** (section 21), never in the admin (the admin's user
 pages are read-only). Roles are the seven departments (member or head), **Branch Coordinator**, **Executive
-Leadership** and **Super Admin (Founder)**.
+Leadership**, **Technical Team (Website Administration)** and **Super Admin (Founder)**.
 
-### 3.2 Site settings
-**Site settings** holds the ministry name, tagline, vision, mission, About text, public email/phone, WhatsApp
-number (for the floating chat button), address, footer, the **notification email** (where "new submission"
-alerts go), analytics and the **data retention** periods. Social media links are under **Social links**.
+### 3.2 Site settings and Site content
+There are two separate screens, so each team only sees its own:
+* **Site settings** (Super Admin only): the **notification email** (where "new submission" alerts go;
+  giving, partnership and other finance enquiries go to the Finance heads instead), analytics, the **data
+  retention** periods, and **Approval rules > Vision and mission approval required** (on by default).
+* **Site content** (Technical Team and Super Admin): ministry name, tagline, logos, favicon, scripture, About
+  text, public email/phone, WhatsApp number (for the floating chat button), address and footer. The Vision and
+  Mission are shown there but changed only in the portal (section 5A.3).
+
+Bank details are in neither: see section 6.1.
+
+### 3.2a Upload limits
+**Upload limits** (Super Admin only): for each kind of upload (hero photo, gallery photo, receipt...) you can
+change the maximum size, the minimum width or (background video) the maximum length. Leave a box empty to keep
+the built-in rule shown on the screen. The accepted file formats cannot be changed here, on purpose.
 
 ### 3.3 Privacy policy, terms and extra pages
 **Pages → Privacy policy / Terms**. Have them reviewed before launch, and update **Last reviewed**.
@@ -129,9 +140,9 @@ To add another page (e.g. "Statement of faith"): **Pages → Add page**, tick **
 **Show in footer**. It appears at `/pages/<slug>/` and in the footer.
 
 ### 3.3a Logos and ministry name
-**Site settings → Identity**: **Logo** (for light backgrounds, the header) and **Logo on dark background**
-(footer, home page hero, link previews on WhatsApp/Facebook). PNG with a transparent background works
-best. Leave empty to keep the built-in logos. The header wordmark is the **Ministry name**; its last word
+**Site content → Identity**: **Logo** (for light backgrounds, the header) and **Logo on dark background**
+(footer, home page hero, link previews on WhatsApp/Facebook), and **Favicon** (square PNG). PNG or WebP with a
+transparent background, up to 2 MB. Leave empty to keep the built-in logos. The header wordmark is the **Ministry name**; its last word
 is shown in flame orange.
 
 ### 3.4 Someone asks to see or delete their data
@@ -152,11 +163,11 @@ needed.
 ---
 
 ## 4. Missions & Outreach: website content
-*Programmes, events and event registrations (formerly the "Programs & Events" role).*
+*Events and event registrations (formerly the "Programs & Events" role); activities are managed by the Technical Team.*
 
 ### 4.1 Creating an event
 1. **Events → Add event**: title, summary, description, start and end, venue/address, branch (empty =
-   ministry-wide), programme, poster with alt text.
+   ministry-wide), activity, poster with alt text.
 2. To take registrations: tick **Registration open**, optionally set a **deadline** and a **capacity**
    (empty = unlimited). The form closes by itself when the event is full, the deadline passes or the
    event ends.
@@ -168,8 +179,10 @@ Past events move to "Past events" automatically.
 **Event registrations** → filter by event on the right. Each person can register once per event (same
 email). Mark people as cancelled to free their seats. Export only when needed (2.2).
 
-### 4.3 Programmes
-**Programmes → Add**: title, summary, body, icon, image, order (lower numbers appear first).
+### 4.3 Activities
+The ministry's activities (School Outreach Programme, Open-Air Crusades, Revival Programme...) are website
+content managed by the Technical Team (section 5A.4). When you create an event or an outreach campaign, choose
+its **Activity** so it appears on that activity's page and on your dashboard.
 
 ---
 
@@ -230,15 +243,21 @@ Communications and the Founder can change them.
 **Add a slide**
 1. **Hero slides → Add hero slide**.
 2. **Title**: the big heading, short (under 60 characters). **Subtitle**: one or two sentences.
-3. **Image**: a landscape photo, **1920 x 900 pixels** is ideal (JPG, PNG or WebP). A dark shade is added
-   automatically so white text stays readable; keep the important part of the photo on the **right**,
-   because the text sits on the left. Fill in **Image alt** to describe the photo for blind visitors. No
-   photo? Leave it empty: the slide uses the dark flame background with the logo.
-4. **Button text** (e.g. Give, Volunteer, Register, Watch) and **Button link**. The link must be a page of
-   this website starting with **/** (for example `/give/`, `/get-involved/`, `/events/`, `/resources/`) or
-   a full secure address starting with **https://**. Anything else is refused.
+3. **Background**: *Theme colour* (the dark flame background with the logo), *Photo* or *Video*. A photo
+   must be at least **1600 pixels wide** (1920 x 900 is ideal; JPEG, PNG or WebP, up to 5 MB). Set the
+   **focal point** (which part stays visible on phones) and the **dark overlay** (0-80 %) so the text stays
+   readable; the **Readability** line warns if the text would be hard to read. For a video see section 5A.2.
+   Fill in **Image alt** to describe the photo for blind visitors. Empty or missing? The slide uses the theme
+   colour.
+4. Up to two buttons: **label** (e.g. Give, Volunteer, Register, Watch) and **link**. The link must be a
+   page of this website starting with **/** (for example `/give/`, `/get-involved/`, `/events/`) or a full
+   secure address starting with **https://**. Anything else is refused. Choose **text alignment** (left or
+   centre) and **text colour** (light text for dark backgrounds, dark text for light ones).
 5. Tick **Show scripture** to add Acts 15:16 (from Site settings) under the text.
-6. The **Live preview** at the top changes as you type or choose a photo. Press **Save**.
+6. The **Live preview** at the top changes as you type or choose a photo. To check a new slide before
+   visitors see it: untick **Is active**, press **Save**, then **Open a full-size preview**; tick **Is active**
+   when it looks right. Every save is kept: **Website > Changes and rollback** in the portal puts an earlier
+   version back.
 
 **Reorder slides**: in the **Hero slides** list, change the numbers in the **Order** column (lower shows
 first, e.g. 10, 20, 30) and press **Save** at the bottom of the list. Leave gaps (10, 20, 30) so a new slide
@@ -255,13 +274,13 @@ button, and never moves for visitors who have asked their device to reduce motio
 
 ### 5.8 Other sliders on the website (nothing to set up)
 These fill themselves from what is already published:
-* **Home**: programmes marked "featured", upcoming published events (with a Register button when
+* **Home**: activities marked "featured" (one carousel per category), upcoming published events (with a Register button when
   registration is open), approved testimonies, every published branch (new branches appear
   automatically), and the latest news.
 * **About**: confirmed and published leaders.
 * **Albums**: the photos of the album (see 5.2).
 
-**Image sizes** for cards in these sliders (events, news, programmes, branches): **1200 x 800 pixels**
+**Image sizes** for cards in these sliders (events, news, activities, branches): **1200 x 800 pixels**
 (landscape, 3:2). Larger photos are fine; the website makes smaller copies automatically and removes hidden
 location data from every photo.
 
@@ -273,18 +292,95 @@ slowly, pauses on hover and has a pause button.
 
 ---
 
+## 5A. Technical Team (Website Administration)
+*The website's wording, pictures and layout. You never see money, donors, members, prayer requests,
+discipleship records or staff accounts, and you cannot change bank details.*
+
+### 5A.1 Your dashboard
+After signing in you land on **Website dashboard** (portal). It shows:
+* **Drafts awaiting publish**: a hero draft not yet published, Vision/Mission changes, switched-off slides.
+* **Pages needing updates**: pages never reviewed, reviewed more than a year ago, still marked "Draft", and
+  activities without a photo. Click one to open it.
+* **Broken links and missing images**: buttons pointing to a page that does not exist, unsafe links, photos
+  whose file is missing.
+* **Site health**: whether the website and database are running, the **last backup** (a warning after 36 hours
+  without a successful backup: tell the Super Admin) and whether the hero text is readable.
+* **Upload storage**: how much space the website's photos and files use.
+* **Recent changes**: who changed what and when.
+
+### 5A.2 The home page hero (big banner)
+**Website > Home page hero**. You always edit a **draft**; visitors keep seeing the live hero until you
+publish.
+1. Write the **headline**, **sub-headline** and up to two **buttons** (label + link starting with / or https://).
+2. Choose **text alignment** and **text colour** (light or dark).
+3. Choose the **background**: *Theme colour* (default, brand black with the flame glow), *Photo* or *Video*.
+   * Photo: at least 1600 pixels wide, up to 5 MB. Move the **focal point** sliders and the **dark overlay**.
+   * Video: MP4 (H.264) or WebM, **silent** (no sound track), at most **15 seconds** and **15 MB**; best is a
+     loop of **10 seconds or less, 1080p, under 10 MB**. A **poster image is required**: visitors on a slow
+     connection, with data saver on, or who prefer less motion see the poster instead, and every visitor
+     sees it while the video loads.
+4. The **live preview** on the right changes as you type, and says whether the text is readable (WCAG AA). If
+   it warns, darken the overlay or change the text colour.
+5. **Save draft**, then **Preview the draft full size** to see it on the real page.
+6. **Publish draft** when it is right. **Revert to previous** puts the previous live hero back in one click.
+   **Discard draft** starts again from what is live.
+If no photo or video is set (or a file is missing), the hero simply uses the theme colour.
+When hero **slides** are switched on, the home page shows the slider instead (section 5.7).
+
+### 5A.3 Vision and Mission
+**Website > Vision and mission**. The wording appears on the home page, the About page, the footer and in
+search results, all from this one place.
+1. Choose Vision or Mission, type the new wording **exactly**, give a reason, **Save draft and preview**.
+2. Check the preview, then **Submit for approval**.
+3. The **Super Admin or the Executive Director** approves (they confirm with their password and code). You
+   cannot approve your own change.
+4. After approval, press **Publish**. The new wording is live everywhere at once.
+The history lists every published version; **Restore this version** sends an earlier wording for approval.
+(If the Super Admin has switched approval off, you publish straight after the preview.)
+
+### 5A.4 Activities
+**Admin > Activities** and **Activity categories**. The four categories (Charitable and Humanitarian Services,
+Evangelism and Missions, Discipleship, Revival Programme) each have their activities. For each activity: title,
+summary, text, photo (JPEG/PNG/WebP up to 3 MB), **schedule** ("Every last Friday, 6 pm"), **branches** (leave
+empty for all), the **Get involved** button (empty = the volunteer form), order, published, featured (home
+page) and SEO text. A new activity or category needs no developer. The **department** an activity feeds (staff
+dashboards) is set by the Super Admin only. Events linked to an activity appear on its page automatically.
+
+### 5A.5 Everything else you manage
+* **Site content**: ministry name, logos, favicon, About text, public email, phone, WhatsApp, address, footer.
+* **Branches**: each branch's address, phone and email.
+* **Social links**, **Pages** (About, Privacy, Terms and others; update **Last reviewed**), **Page text**
+  (headings and SEO titles/descriptions of every page), **Hero slides**, **Partners**, **Leaders** (the
+  leadership page) and the **gallery layout** (album order, cover and publishing).
+* Photos: JPEG, PNG or WebP; location data is removed automatically. SVG files, web pages and programs are
+  always refused.
+
+### 5A.6 Undo a mistake
+**Website > Changes and rollback** lists every change. **Restore** puts that item back exactly as it was then
+(photo included); a deleted item can be brought back with **Undelete**. Restoring is itself recorded, so it can
+be undone too.
+
+---
+
 ## 6. Finance & Resource Mobilization: giving settings
 *Giving settings, giving categories, current needs (formerly the "Finance & Admin" role). Confirming gifts and
 partnership registrations are now done in the staff portal (section 12).*
 
-### 6.1 Bank and mobile-money details
-**Giving settings**: account name, bank, account number, SWIFT, branch, currency and instructions; mobile
-money instructions. They appear on the Give and Partner pages **only** when *enabled* and complete. These
-details are stored encrypted and must **never** be put anywhere else (documents in the code, emails to
-developers, chat).
-
-Before saving new bank details, confirm them with the bank **by phone**. Fraudsters often send "updated
-bank details" emails.
+### 6.1 Bank and mobile-money details (two-person rule)
+Bank and mobile-money details are changed **only** in the portal: **Bank details** (Finance head, Founder,
+Executive Director and Super Admin; nobody else can open it, not even other Finance members or the Technical
+Team). They are not in the admin any more.
+1. **Finance head**: confirm the new details with the bank **by phone** (a number you already know, never one
+   from an email). Then **Propose a change**; you are asked for your password and authenticator code. Fill in
+   the details and the reason. The change is saved as **pending**: nothing changes on the website yet.
+2. An email alert goes to the Finance heads and the Founder/Super Admin. It shows only the **last four digits**
+   of the new account number. If you did not expect it, tell the Super Admin immediately.
+3. **Founder or Executive Director** (never the person who proposed it): open the pending change, compare each
+   line (changed lines are marked), check with the bank yourself, and **Confirm and publish** (password and
+   code again) or **Reject** with a reason.
+4. Only after confirmation do donors see the new details, with a **Last verified** date on the Give page.
+Every change, rejection and cancellation is kept in **History**. Only one change can be pending at a time.
+The details are stored encrypted and must **never** be put anywhere else (code, emails to developers, chat).
 
 ### 6.2 Confirming gifts
 Donors who give by bank transfer fill in "I have given" (a pledge). Nothing is confirmed until money arrives.
@@ -306,6 +402,12 @@ the integration.
 ### 6.5 Partnership registrations
 Arrive in the portal under **Finance → Partnership registrations** and are added to the donor pipeline as
 prospects automatically (section 12).
+
+### 6.6 Giving and partnership enquiries
+On the contact form visitors choose a **Subject**: General, Giving and finance, or Partnership. Giving and
+partnership messages go **only** to Finance: **Finance → Giving and partnership enquiries** in the portal, and
+the "new message" alert goes to the Finance heads (not to the general inbox). Membership never sees them. The
+same is true for partnership registrations, pledges and finance-volunteer applications.
 
 ---
 
